@@ -35,28 +35,18 @@ Professional CRM and underwriting tool for NNN (Triple Net) industrial propertie
 - React 18
 - Tailwind CSS
 - localStorage for data persistence
-- Netlify deployment
 
-## Deployment
-
-**Production:** main branch → https://crmaxisppoint.netlify.app
-**Staging:** dev branch → staging URL
-
-## Development Workflow
+## Development
 
 ```bash
-# Development/Staging
-git checkout dev
-# make changes
-git commit -m "Add feature"
-git push origin dev
-# → Auto-deploys to staging
+# Install dependencies
+npm install
 
-# Production (when ready)
-git checkout main
-git merge dev
-git push origin main
-# → Auto-deploys to production
+# Start development server
+npm start
+
+# Build for production
+npm run build
 ```
 
 ## Version
