@@ -36,18 +36,65 @@ Professional CRM and underwriting tool for NNN (Triple Net) industrial propertie
 - Tailwind CSS
 - localStorage for data persistence
 
-## Development
+## Local Development
+
+### Prerequisites
+- Node.js 18 or higher
+- VS Code (recommended)
+
+### Setup
+
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd NNN-CRM
+```
+
+2. **Install dependencies**
+```bash
+npm install
+```
+
+3. **Start development server**
+```bash
+npm start
+```
+
+The app will automatically open in your browser at `http://localhost:3000`
+
+### VS Code Setup
+
+This project includes VS Code configuration for optimal development experience:
+
+**Recommended Extensions** (auto-prompted on first open):
+- ESLint - Code linting
+- Prettier - Code formatting
+- ES7+ React Snippets - React code snippets
+- Tailwind CSS IntelliSense - Tailwind class autocomplete
+- Auto Rename Tag - Auto-rename paired HTML/JSX tags
+- Path Intellisense - Autocomplete file paths
+- Import Cost - Display import sizes inline
+
+**Editor Features**:
+- Auto-format on save
+- ESLint auto-fix on save
+- Tailwind CSS autocomplete
+- Emmet for JSX
+
+### Available Scripts
 
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm start
-
-# Build for production
-npm run build
+npm start      # Start development server (http://localhost:3000)
+npm run build  # Build production bundle
+npm test       # Run tests
 ```
+
+### Development Workflow
+
+1. Make your changes in VS Code
+2. Save files (auto-formatting will apply)
+3. Preview changes in browser (auto-refreshes)
+4. Commit your changes with descriptive messages
 
 ## Version
 V1.0 - Initial Release
