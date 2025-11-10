@@ -1,203 +1,285 @@
-# Simple Workflow - Just Tell Claude What You Want
+# Simple Workflow - Just Talk to Claude
 
-**Philosophy**: You focus on features. Claude handles git.
-
-## Your Simple Commands
-
-Just copy-paste these prompts to Claude. That's it.
+**The Easiest Way**: You describe what you want, Claude makes it happen, you see it instantly.
 
 ---
 
-### 🚀 "I want to start working on [feature/fix name]"
+## Your Simple Commands
 
-**Example**: "I want to start working on CSV export"
+Copy-paste these to Claude. That's all you need.
 
-**Claude will**:
-- Create a new branch for you
-- Set everything up
-- Tell you when you're ready to code
+### 🚀 "Change [something specific]"
+
+**Examples:**
+- "Change the header background to purple"
+- "Add a CSV export button to the property list"
+- "Make the cards bigger"
+- "Change the font to something modern"
+
+**What happens:**
+1. Claude edits the files
+2. Your browser updates in 1 second ⚡
+3. You see the change immediately
+
+**Try it again?**
+- "Actually make it dark purple instead"
+- Claude edits → Browser updates → Done!
 
 ---
 
 ### 💾 "Save my work"
 
-**Example**: "Save my work"
+**When to use:** After you've made several changes you like
 
-**Claude will**:
-- Check what files changed
-- Commit everything with a good message
-- Push to GitHub
-- Confirm it's saved
+**What Claude does:**
+- Commits everything with a clear message
+- Pushes to GitHub
+- Confirms it's saved
 
----
-
-### ✅ "I'm done with this feature, merge it"
-
-**Example**: "I'm done with this feature, merge it"
-
-**Claude will**:
-- Merge your work to main
-- Delete the feature branch
-- Clean everything up
-- Put you back on main, ready for next feature
+**You say:** "Save my work"
+**Claude says:** "✅ Saved! Committed: Add purple theme and CSV export button"
 
 ---
 
-### 🔍 "Where am I? What's my status?"
+### 🎯 "I want to work on [feature]"
 
-**Example**: "Where am I? What's my status?"
+**Examples:**
+- "I want to work on adding CSV export"
+- "I want to improve the property cards"
+- "I want to add broker performance metrics"
 
-**Claude will**:
-- Tell you what branch you're on
-- Show what files you've changed
-- Show what iteration you're on
-- Tell you what's been committed
-
----
-
-### 🧹 "Clean up everything and start fresh"
-
-**Example**: "Clean up everything and start fresh"
-
-**Claude will**:
-- Merge any outstanding work
-- Delete old branches
-- Clean up the repo
-- Put you on clean main branch
+**What Claude does:**
+- Creates a plan
+- May create a new branch if needed
+- Starts making the changes
+- Shows you progress
 
 ---
 
-### 📝 "Show me what I can work on next"
+### ✅ "I'm done with this feature"
 
-**Example**: "Show me what I can work on next"
+**What Claude does:**
+- Reviews what was built
+- Commits and pushes everything
+- Merges to main if on a feature branch
+- Cleans up
 
-**Claude will**:
-- Show the roadmap priorities
-- Recommend what to work on
-- Explain the next iteration
+**You're ready for the next thing!**
+
+---
+
+### 🔍 "Show me what this does"
+
+**When:** You want to understand a piece of code
+
+**Claude will:**
+- Explain the code in plain English
+- Show you how it works
+- Answer any questions
+
+---
+
+### 📝 "What should I work on next?"
+
+**Claude will:**
+- Show you the roadmap priorities
+- Recommend what to build next
+- Explain why it's important
+
+---
+
+### 🔄 "Undo that last change"
+
+**When:** You don't like what was just changed
+
+**Claude will:**
+- Revert the last change
+- Browser updates back to previous state
+
+---
+
+### ❓ "How do I [do something]?"
+
+**Examples:**
+- "How do I add a new property field?"
+- "How do I change the color scheme?"
+- "How do I export data?"
+
+**Claude explains and can implement it for you!**
 
 ---
 
 ## Your Daily Workflow
 
-### Morning:
+### Morning (1 minute)
 ```
-You: "I want to start working on property export feature"
-Claude: *creates branch, sets up*
-You: *codes in VS Code, saves files*
+1. Open your Codespace bookmark
+2. Open the Claude chat
+3. Say: "Start the dev server"
+   (Claude runs npm start for you)
+4. Browser opens showing your app
 ```
 
-### During the day:
+### During Development (All day)
 ```
-You: *make changes, test in browser*
+You: "Add a purple gradient background"
+→ Browser updates in 1 second
+→ See purple gradient
+
+You: "Hmm, too bright. Make it darker"
+→ Browser updates
+→ See darker gradient
+
+You: "Perfect! Now add a big CSV export button"
+→ Browser updates
+→ See the button
+
 You: "Save my work"
-Claude: *commits and pushes*
-You: *keep coding*
+→ Claude commits and pushes
+
+You: "What should I add next?"
+→ Claude shows roadmap
+
+(Repeat all day!)
 ```
 
-### End of day:
+### End of Day (30 seconds)
 ```
 You: "Save my work"
-Claude: *commits and pushes*
-# Done! Your work is safe.
+Claude: "✅ All saved!"
+You: Close tabs
 ```
 
-### When feature is done:
+---
+
+## The Magic Formula
+
 ```
-You: "I'm done with this feature, merge it"
-Claude: *merges to main, cleans up branches*
-You: "Show me what I can work on next"
-Claude: *shows roadmap*
+You describe what you want in plain English
+           ↓
+Claude edits the actual files
+           ↓
+Browser auto-refreshes in 1 second
+           ↓
+You see the change immediately
+           ↓
+Love it? Say "Save my work"
+Don't love it? Say "Change it to..."
+```
+
+**Iterate 20 times → Commit once**
+
+---
+
+## Example Conversation
+
+```
+You: "I want to add a way to export properties to CSV"
+
+Claude: "I'll add a CSV export feature. This will:
+         1. Add an Export button to the property list
+         2. Generate CSV with all property data
+         3. Download as properties.csv
+
+         Starting now..."
+
+         *edits files*
+
+         "✅ Done! Check your browser - there's a new
+         Export button at the top of the Assets tab."
+
+You: *sees button in browser*
+     "Cool! Can you make it green instead of blue?"
+
+Claude: *edits*
+        "✅ Now green!"
+
+You: *sees green button*
+     "Perfect! Can you also add broker info to the CSV?"
+
+Claude: *edits*
+        "✅ Done! Now includes broker names in the export."
+
+You: *tests export, sees broker names*
+     "This is great! Save my work"
+
+Claude: "✅ Saved and pushed!
+         Commit: Add CSV export with property and broker data"
 ```
 
 ---
 
 ## You Never Need To:
 
-❌ Create branches manually
+❌ Learn git commands
+❌ Understand branching
 ❌ Write commit messages
-❌ Remember git commands
-❌ Merge branches
-❌ Resolve conflicts (Claude will help)
-❌ Clean up old branches
+❌ Push/pull manually
+❌ Resolve merge conflicts
+❌ Deal with terminal commands
 
 ## You Only Need To:
 
-✅ Tell Claude what you want to work on
-✅ Code in VS Code
-✅ Save files (Ctrl+S)
-✅ Test in browser
-✅ Tell Claude to save your work
-✅ Tell Claude when you're done
+✅ Describe what you want
+✅ Look at your browser
+✅ Say if you like it or want changes
+✅ Tell Claude to save when ready
 
 ---
 
 ## Advanced Commands (Optional)
 
-### "Undo my last changes"
-Claude will revert uncommitted changes.
+### "Create a new experimental branch"
+For trying risky changes without affecting main.
 
-### "Show me what changed"
-Claude will show you a diff of your changes.
+### "Show me the git status"
+See what's changed but not committed.
 
-### "I want to try something experimental"
-Claude will create an experimental branch you can throw away later.
+### "Explain this calculation"
+Understand how the financial formulas work.
 
----
+### "Test this with fake data"
+Add sample properties to test features.
 
-## Behind The Scenes (You Don't Need To Know This)
-
-When you say "I want to start working on X":
-```bash
-git checkout main
-git pull origin main
-git checkout -b feature/x
-```
-
-When you say "Save my work":
-```bash
-git add -A
-git commit -m "Meaningful message based on your changes"
-git push origin feature/x
-```
-
-When you say "I'm done, merge it":
-```bash
-git checkout main
-git merge feature/x
-git push origin main
-git branch -d feature/x
-git push origin --delete feature/x
-```
-
-But you don't need to remember any of this! Just use the simple commands above.
+### "Make this responsive on mobile"
+Claude will adjust styling for mobile screens.
 
 ---
 
 ## Questions?
 
-**"What if I break something?"**
-→ Just say "Undo my changes" and Claude will fix it
+**"What if I want to code myself?"**
+→ Go ahead! Edit in Codespaces, save, browser updates. Claude can help when you need it.
 
-**"What if I want to see the git commands?"**
-→ Ask Claude "Show me the git commands you're running"
+**"What if Claude breaks something?"**
+→ Say "Undo that" or "Revert to how it was"
 
-**"What if I have a merge conflict?"**
-→ Claude will detect it and walk you through fixing it
+**"Can I see the code Claude writes?"**
+→ Yes! It's all in Codespaces. Read, learn, modify as you wish.
 
-**"Can I still use git commands if I want?"**
-→ Yes! This is just an easier way. You can always run git commands yourself.
+**"What if I'm offline?"**
+→ Codespaces needs internet. But commits are saved to GitHub for safety.
 
 ---
 
 ## The Point
 
-**Git is a tool, not the goal.**
+**You're the designer. Claude is the implementer.**
 
-Your goal: Build a great CRM
-Claude's job: Handle the git complexity
+You focus on:
+- What you want to build
+- How it should look
+- What features to add
 
-You tell Claude what you want in plain English.
-Claude does the git stuff.
+Claude focuses on:
+- Writing the code
+- Git management
+- Technical details
 
-Simple as that.
+Together: Build features fast! 🚀
+
+---
+
+See [CODESPACES-SETUP.md](./CODESPACES-SETUP.md) for initial setup.
+
+See [ROADMAP.md](./ROADMAP.md) for what to build next.
