@@ -18,6 +18,7 @@ export default function IndustrialCRM() {
   const [sensitivityPropertyId, setSensitivityPropertyId] = useState(null);
   const [sensitivityRowVar, setSensitivityRowVar] = useState('monthlyBaseRentPerSqft');
   const [sensitivityColVar, setSensitivityColVar] = useState('exitCapRate');
+  const [sensitivityOutputMetric, setSensitivityOutputMetric] = useState('equityMultiple');
   const [sensitivityRowMin, setSensitivityRowMin] = useState('');
   const [sensitivityRowMax, setSensitivityRowMax] = useState('');
   const [sensitivityColMin, setSensitivityColMin] = useState('');
@@ -385,7 +386,11 @@ export default function IndustrialCRM() {
           colVal,
           equityMultiple: metrics.equityMultiple,
           dscr: metrics.dscr,
-          cashOnCash: metrics.cashOnCash
+          cashOnCash: metrics.cashOnCash,
+          capRate: metrics.capRate,
+          annualCashFlow: metrics.annualCashFlow,
+          netProceedsAtExit: metrics.netProceedsAtExit,
+          noi: metrics.noi
         };
       });
     });
@@ -921,7 +926,27 @@ export default function IndustrialCRM() {
                         {sensitivityPropertyId === property.id && (
                           <div className={`mt-4 p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                             <div className={`text-sm font-bold ${textSecondaryClass} uppercase mb-4`}>
-                              Sensitivity Analysis - Equity Multiple
+                              Sensitivity Analysis
+                            </div>
+
+                            {/* Output Metric Selection */}
+                            <div className="mb-4">
+                              <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>
+                                Output Metric
+                              </label>
+                              <select
+                                value={sensitivityOutputMetric}
+                                onChange={(e) => setSensitivityOutputMetric(e.target.value)}
+                                className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                              >
+                                <option value="equityMultiple">Equity Multiple</option>
+                                <option value="dscr">DSCR (Debt Service Coverage Ratio)</option>
+                                <option value="cashOnCash">Cash-on-Cash Return %</option>
+                                <option value="capRate">Cap Rate %</option>
+                                <option value="annualCashFlow">Annual Cash Flow</option>
+                                <option value="netProceedsAtExit">Net Proceeds at Exit</option>
+                                <option value="noi">NOI (Net Operating Income)</option>
+                              </select>
                             </div>
 
                             {/* Variable Selection */}
@@ -1035,56 +1060,74 @@ export default function IndustrialCRM() {
                             </button>
 
                             {/* Sensitivity Table Display */}
-                            {sensitivityTable && (
-                              <div className="overflow-x-auto">
-                                <div className={`text-xs ${textSecondaryClass} mb-2 text-center`}>
-                                  {sensitivityTable.rowLabel} (rows) vs {sensitivityTable.colLabel} (columns) → Equity Multiple
-                                </div>
-                                <table className="w-full text-xs border-collapse">
-                                  <thead>
-                                    <tr>
-                                      <th className={`border ${borderClass} p-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
-                                        ↓ / →
-                                      </th>
-                                      {sensitivityTable.colValues.map((colVal, i) => (
-                                        <th key={i} className={`border ${borderClass} p-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
-                                          {sensitivityTable.colFormat(colVal)}
-                                        </th>
-                                      ))}
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {sensitivityTable.tableData.map((row, rowIdx) => (
-                                      <tr key={rowIdx}>
-                                        <td className={`border ${borderClass} p-2 font-semibold ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
-                                          {sensitivityTable.rowFormat(sensitivityTable.rowValues[rowIdx])}
-                                        </td>
-                                        {row.map((cell, colIdx) => {
-                                          // Color coding: Green (>2.0x), Yellow (1.5-2.0x), Red (<1.5x)
-                                          let bgColor = '';
-                                          if (cell.equityMultiple >= 2.0) {
-                                            bgColor = darkMode ? 'bg-green-900' : 'bg-green-100';
-                                          } else if (cell.equityMultiple >= 1.5) {
-                                            bgColor = darkMode ? 'bg-yellow-900' : 'bg-yellow-100';
-                                          } else {
-                                            bgColor = darkMode ? 'bg-red-900' : 'bg-red-100';
-                                          }
+                            {sensitivityTable && (() => {
+                              // Metric metadata
+                              const metricMeta = {
+                                equityMultiple: { label: 'Equity Multiple', format: (v) => v > 0 ? `${v.toFixed(2)}x` : 'N/A', good: 2.0, fair: 1.5 },
+                                dscr: { label: 'DSCR', format: (v) => v > 0 ? v.toFixed(2) : 'N/A', good: 1.25, fair: 1.0 },
+                                cashOnCash: { label: 'Cash-on-Cash %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 8, fair: 5 },
+                                capRate: { label: 'Cap Rate %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 7, fair: 5 },
+                                annualCashFlow: { label: 'Annual Cash Flow', format: (v) => formatCurrency(v), good: 50000, fair: 25000 },
+                                netProceedsAtExit: { label: 'Net Proceeds at Exit', format: (v) => formatCurrency(v), good: 500000, fair: 250000 },
+                                noi: { label: 'NOI', format: (v) => formatCurrency(v), good: 100000, fair: 50000 }
+                              };
 
-                                          return (
-                                            <td key={colIdx} className={`border ${borderClass} p-2 text-center font-semibold ${bgColor} ${textClass}`}>
-                                              {cell.equityMultiple > 0 ? `${cell.equityMultiple.toFixed(2)}x` : 'N/A'}
-                                            </td>
-                                          );
-                                        })}
+                              const selectedMetric = metricMeta[sensitivityOutputMetric];
+
+                              return (
+                                <div className="overflow-x-auto">
+                                  <div className={`text-xs ${textSecondaryClass} mb-2 text-center`}>
+                                    {sensitivityTable.rowLabel} (rows) vs {sensitivityTable.colLabel} (columns) → {selectedMetric.label}
+                                  </div>
+                                  <table className="w-full text-xs border-collapse">
+                                    <thead>
+                                      <tr>
+                                        <th className={`border ${borderClass} p-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                          ↓ / →
+                                        </th>
+                                        {sensitivityTable.colValues.map((colVal, i) => (
+                                          <th key={i} className={`border ${borderClass} p-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                            {sensitivityTable.colFormat(colVal)}
+                                          </th>
+                                        ))}
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                                <div className={`text-xs ${textSecondaryClass} mt-2 text-center`}>
-                                  Color Guide: Green ≥2.0x | Yellow 1.5-2.0x | Red &lt;1.5x
+                                    </thead>
+                                    <tbody>
+                                      {sensitivityTable.tableData.map((row, rowIdx) => (
+                                        <tr key={rowIdx}>
+                                          <td className={`border ${borderClass} p-2 font-semibold ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                            {sensitivityTable.rowFormat(sensitivityTable.rowValues[rowIdx])}
+                                          </td>
+                                          {row.map((cell, colIdx) => {
+                                            // Get metric value
+                                            const value = cell[sensitivityOutputMetric];
+
+                                            // Color coding based on metric thresholds
+                                            let bgColor = '';
+                                            if (value >= selectedMetric.good) {
+                                              bgColor = darkMode ? 'bg-green-900' : 'bg-green-100';
+                                            } else if (value >= selectedMetric.fair) {
+                                              bgColor = darkMode ? 'bg-yellow-900' : 'bg-yellow-100';
+                                            } else {
+                                              bgColor = darkMode ? 'bg-red-900' : 'bg-red-100';
+                                            }
+
+                                            return (
+                                              <td key={colIdx} className={`border ${borderClass} p-2 text-center font-semibold ${bgColor} ${textClass}`}>
+                                                {selectedMetric.format(value)}
+                                              </td>
+                                            );
+                                          })}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                  <div className={`text-xs ${textSecondaryClass} mt-2 text-center`}>
+                                    Color Guide: Green ≥{selectedMetric.format(selectedMetric.good)} | Yellow {selectedMetric.format(selectedMetric.fair)}-{selectedMetric.format(selectedMetric.good)} | Red &lt;{selectedMetric.format(selectedMetric.fair)}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              );
+                            })()}
                           </div>
                         )}
                       </div>
