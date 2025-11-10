@@ -4,13 +4,21 @@ Professional CRM and underwriting tool for NNN (Triple Net) industrial propertie
 
 ## ⚡ Quick Start (5 Minutes)
 
-**The simplest way to develop: GitHub Codespaces + Claude**
+**Simple local development with Claude:**
 
-1. **Open Codespaces**: https://github.com/PurplePean/NNN-CRM → Code → Codespaces → Create
-2. **Start dev server**: `npm install && npm start`
-3. **Tell Claude what you want** → See changes instantly in your browser!
+```bash
+# Clone the repo
+git clone https://github.com/PurplePean/NNN-CRM.git
+cd NNN-CRM
 
-**Full setup guide**: [CODESPACES-SETUP.md](./CODESPACES-SETUP.md)
+# Install and start
+npm install
+npm start
+```
+
+Browser opens to `localhost:3000` - you're ready!
+
+**Tell Claude what to build** → Claude edits & pushes → **Run `git pull`** → See changes in 5 seconds!
 
 ---
 
@@ -50,43 +58,46 @@ Professional CRM and underwriting tool for NNN (Triple Net) industrial propertie
 - React 18
 - Tailwind CSS
 - localStorage for data persistence
-- GitHub Codespaces for development
+- Local development with git pull workflow
 
 ---
 
 ## How Development Works
 
-### The Simple Way (Recommended)
+### Your Setup
 
-**You have 3 browser tabs:**
-1. **Codespaces** - VS Code in browser
-2. **localhost:3000** - Your running app
+**You have 3 windows:**
+1. **VS Code** - Viewing your local clone
+2. **Browser (localhost:3000)** - Your running app
 3. **Claude chat** - Where you tell Claude what to build
 
 **Your workflow:**
 ```
 You: "Add a purple background"
-→ Claude edits the files
-→ Browser updates in 1 second ⚡
+→ Claude edits files and pushes to GitHub
+→ Claude: "Done! Run: git pull"
+
+You: Run git pull in terminal (5 seconds)
+→ Browser auto-refreshes
 → You see purple background
 
 You: "Make it darker"
-→ Claude edits
+→ Claude edits and pushes
+→ You: git pull
 → Browser updates
 → You see darker purple
 
 You: "Perfect! Save my work"
-→ Claude commits and pushes ✅
+→ Claude: "Already saved and pushed! ✅"
 ```
 
-**No git commands. No installations. Just describe what you want.**
+**Fast updates (5 seconds). Claude handles all git complexity.**
 
 ---
 
 ## Documentation
 
-- **[CODESPACES-SETUP.md](./CODESPACES-SETUP.md)** - ⭐ **START HERE** - 5-minute setup guide
-- **[SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)** - Simple commands for working with Claude
+- **[SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)** - ⭐ **START HERE** - Simple commands for working with Claude
 - **[ROADMAP.md](./ROADMAP.md)** - What to build next, priorities, feature backlog
 
 ---
@@ -115,48 +126,31 @@ See [SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md) for all available commands.
 ### Daily Workflow
 
 **Morning (1 minute):**
-- Open your Codespace
-- Run `npm start`
-- Open browser tab
+- Open VS Code in your project folder
+- Run `npm start` in terminal
+- Browser opens to localhost:3000
 
 **During the day:**
-- Tell Claude what you want
-- See it appear in your browser instantly
+- Tell Claude what you want (in chat)
+- Claude edits and pushes to GitHub
+- Run `git pull` (5 seconds)
+- Browser auto-refreshes
 - Iterate fast (20 changes → 1 commit)
 - Tell Claude to save when ready
 
 **End of day:**
 - "Save my work"
-- Close tabs
+- Stop npm start (Ctrl+C)
 
 ### Iteration Approach
 
 1. **Describe what you want** - "I want to add CSV export"
-2. **Claude builds it** - Makes changes, you see them live
-3. **Iterate quickly** - "Make it green", "Add this field", etc.
-4. **Save once** - When you're happy: "Save my work"
+2. **Claude builds it** - Makes changes and pushes to GitHub
+3. **You pull changes** - Run `git pull` (5 seconds)
+4. **Iterate quickly** - "Make it green", "Add this field", etc.
+5. **Save once** - When you're happy: "Save my work"
 
-**No git complexity. No manual commits. Just build features!**
-
----
-
-## Local Development (Alternative)
-
-If you prefer to run locally instead of Codespaces:
-
-```bash
-# Clone repo
-git clone https://github.com/PurplePean/NNN-CRM.git
-cd NNN-CRM
-
-# Install and start
-npm install
-npm start
-
-# Browser opens to localhost:3000
-```
-
-**Note**: With local development, you'll need to run `git pull` to see Claude's changes (not instant).
+**Minimal git knowledge needed. Claude handles commits/pushes. You just pull!**
 
 ---
 

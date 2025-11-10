@@ -6,7 +6,7 @@ This document tracks planned iterations, feature backlog, and priorities.
 
 **Version**: 1.0
 **Current Iteration**: Ready to start Iteration 3!
-**Development Method**: GitHub Codespaces + Claude (instant updates)
+**Development Method**: Local development + Git pull (fast updates)
 **Last Updated**: 2025-11-10
 
 ## Completed Iterations
@@ -31,11 +31,11 @@ This document tracks planned iterations, feature backlog, and priorities.
 
 **Goals**:
 - ✅ Remove Netlify deployment configuration
-- ✅ Setup GitHub Codespaces workflow
+- ✅ Setup local development workflow
 - ✅ Create simple Claude-driven development process
-- ✅ Documentation for instant iteration workflow
+- ✅ Documentation for fast iteration workflow
 
-**Outcome**: Ultra-simple development workflow with instant browser updates. No git knowledge required - just tell Claude what you want in plain English and see changes in 1 second!
+**Outcome**: Simple development workflow with fast browser updates. Clone locally, tell Claude what you want in plain English, run git pull to see changes in 5 seconds. No complex git knowledge required!
 
 ---
 
