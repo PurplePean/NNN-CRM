@@ -1,6 +1,6 @@
 # Simple Workflow - Just Talk to Claude
 
-**The Easiest Way**: You describe what you want, Claude makes it happen, you see it instantly.
+**The Easiest Way**: You describe what you want, Claude makes it happen, you run `git pull`, you see it in 5 seconds.
 
 ---
 
@@ -17,13 +17,14 @@ Copy-paste these to Claude. That's all you need.
 - "Change the font to something modern"
 
 **What happens:**
-1. Claude edits the files
-2. Your browser updates in 1 second ⚡
-3. You see the change immediately
+1. Claude edits the files and pushes to GitHub
+2. Claude says: "Done! Run: git pull"
+3. You run `git pull` in your terminal (5 seconds)
+4. Browser auto-refreshes and shows the change ⚡
 
 **Try it again?**
 - "Actually make it dark purple instead"
-- Claude edits → Browser updates → Done!
+- Claude edits → You: git pull → Browser updates → Done!
 
 ---
 
@@ -113,29 +114,35 @@ Copy-paste these to Claude. That's all you need.
 
 ### Morning (1 minute)
 ```
-1. Open your Codespace bookmark
-2. Open the Claude chat
-3. Say: "Start the dev server"
-   (Claude runs npm start for you)
-4. Browser opens showing your app
+1. Open VS Code in your project folder
+2. Open terminal and run: npm start
+3. Browser opens showing your app at localhost:3000
+4. Open Claude chat in browser
 ```
 
 ### During Development (All day)
 ```
-You: "Add a purple gradient background"
-→ Browser updates in 1 second
+You (in chat): "Add a purple gradient background"
+→ Claude edits and pushes
+→ Claude: "Done! Run: git pull"
+→ You run: git pull
+→ Browser updates (5 seconds)
 → See purple gradient
 
 You: "Hmm, too bright. Make it darker"
+→ Claude edits and pushes
+→ You: git pull
 → Browser updates
 → See darker gradient
 
 You: "Perfect! Now add a big CSV export button"
+→ Claude edits and pushes
+→ You: git pull
 → Browser updates
 → See the button
 
 You: "Save my work"
-→ Claude commits and pushes
+→ Claude: "Already saved and pushed!"
 
 You: "What should I add next?"
 → Claude shows roadmap
@@ -147,7 +154,7 @@ You: "What should I add next?"
 ```
 You: "Save my work"
 Claude: "✅ All saved!"
-You: Close tabs
+You: Stop npm start (Ctrl+C), close VS Code
 ```
 
 ---
@@ -157,17 +164,19 @@ You: Close tabs
 ```
 You describe what you want in plain English
            ↓
-Claude edits the actual files
+Claude edits files and pushes to GitHub
            ↓
-Browser auto-refreshes in 1 second
+You run: git pull (5 seconds)
            ↓
-You see the change immediately
+Browser auto-refreshes
+           ↓
+You see the change
            ↓
 Love it? Say "Save my work"
 Don't love it? Say "Change it to..."
 ```
 
-**Iterate 20 times → Commit once**
+**Iterate 20 times → Commit once → Fast updates (5 seconds)**
 
 ---
 
@@ -249,16 +258,16 @@ Claude will adjust styling for mobile screens.
 ## Questions?
 
 **"What if I want to code myself?"**
-→ Go ahead! Edit in Codespaces, save, browser updates. Claude can help when you need it.
+→ Go ahead! Edit in VS Code locally, save, browser updates. Claude can help when you need it.
 
 **"What if Claude breaks something?"**
-→ Say "Undo that" or "Revert to how it was"
+→ Say "Undo that" or "Revert to how it was" - Claude can revert commits
 
 **"Can I see the code Claude writes?"**
-→ Yes! It's all in Codespaces. Read, learn, modify as you wish.
+→ Yes! It's all in your local clone. Read, learn, modify as you wish.
 
 **"What if I'm offline?"**
-→ Codespaces needs internet. But commits are saved to GitHub for safety.
+→ You can code offline! Just can't git pull Claude's changes until you're back online.
 
 ---
 
@@ -280,6 +289,6 @@ Together: Build features fast! 🚀
 
 ---
 
-See [CODESPACES-SETUP.md](./CODESPACES-SETUP.md) for initial setup.
+See [README.md](./README.md) for initial setup instructions.
 
 See [ROADMAP.md](./ROADMAP.md) for what to build next.
