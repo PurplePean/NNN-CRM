@@ -98,26 +98,33 @@ npm test       # Run tests
 
 ## Project Documentation
 
-This project uses a structured workflow for easy iteration and maintenance:
+This project uses a simple, automated workflow:
 
-- **[WORKFLOW.md](./WORKFLOW.md)** - Branch strategy, git workflow, and daily development process
-- **[ITERATIONS.md](./ITERATIONS.md)** - How to plan and execute iterations
-- **[ROADMAP.md](./ROADMAP.md)** - Feature backlog, priorities, and iteration status
+- **[SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)** - ⭐ **START HERE** - Simple commands, Claude handles git
+- **[ROADMAP.md](./ROADMAP.md)** - What to work on next, feature backlog, priorities
+- **[ITERATIONS.md](./ITERATIONS.md)** - How iterations work (reference only)
+- **[WORKFLOW.md](./WORKFLOW.md)** - Detailed git workflow (reference only)
 
-**New to the project?** Start with [WORKFLOW.md](./WORKFLOW.md)
+### Quick Start
 
-**Planning work?** Check [ROADMAP.md](./ROADMAP.md) for priorities
+**Want to work on something?** Just tell Claude:
+- "I want to start working on [feature name]"
+- "Save my work"
+- "I'm done with this feature, merge it"
 
-**Starting an iteration?** Follow the guide in [ITERATIONS.md](./ITERATIONS.md)
+That's it! Claude handles all the git complexity. See [SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md) for all commands.
+
+**Need ideas?** Check [ROADMAP.md](./ROADMAP.md) to see what's next.
 
 ## Contributing
 
-1. Read [WORKFLOW.md](./WORKFLOW.md) for git and development practices
-2. Check [ROADMAP.md](./ROADMAP.md) for current priorities
-3. Create a feature branch from `main`
-4. Make your changes with frequent commits
-5. Open a pull request (template auto-populates)
-6. Merge to `main` when approved
+1. Tell Claude what you want to work on
+2. Code in VS Code (files auto-format on save)
+3. Test in browser (auto-refreshes)
+4. Tell Claude "Save my work" regularly
+5. Tell Claude "I'm done, merge it" when complete
+
+No git knowledge required!
 
 ## Version
 V1.0 - Initial Release

@@ -234,6 +234,58 @@ This document tracks planned iterations, feature backlog, and priorities.
 
 ---
 
+### Iteration 11: Backend & Database Integration
+**Priority**: 🟡 Medium (Future)
+**Effort**: 1-2 weeks
+**Theme**: Infrastructure
+**Goal**: Replace localStorage with persistent backend
+
+**Why**: localStorage is browser-only, not shareable, and risky (cleared if user clears browser data). Need real persistence for production use.
+
+**Backend Options**:
+1. **Google Sheets API** (Simplest)
+   - Free, familiar interface
+   - Easy data viewing/editing
+   - Built-in sharing/permissions
+   - Good for MVP
+
+2. **Supabase** (PostgreSQL)
+   - Free tier generous
+   - Real-time updates
+   - Built-in auth
+   - PostgreSQL database
+
+3. **Firebase/Firestore** (NoSQL)
+   - Google Cloud platform
+   - Real-time sync
+   - Good free tier
+   - NoSQL flexibility
+
+**Tasks**:
+- Choose backend (recommend: Google Sheets for MVP, migrate to Supabase later)
+- Set up backend/API
+- Create data migration script (localStorage → backend)
+- Update all CRUD operations to use API calls
+- Add loading states to UI
+- Add error handling for network failures
+- Add offline mode (cache + sync when online)
+- Test data persistence
+- Migrate existing localStorage data
+- Add authentication (if multi-user)
+
+**Success Criteria**:
+- Data persists across browsers
+- Can share data between users (if needed)
+- No data loss on browser clear
+- Smooth migration from localStorage
+
+**Notes**:
+- This is a breaking change (localStorage → backend)
+- Need migration strategy for existing users
+- Consider keeping localStorage as backup/cache
+
+---
+
 ## Feature Backlog
 
 These are potential features, not yet scheduled for specific iterations.
