@@ -96,5 +96,28 @@ npm test       # Run tests
 3. Preview changes in browser (auto-refreshes)
 4. Commit your changes with descriptive messages
 
+## Project Documentation
+
+This project uses a structured workflow for easy iteration and maintenance:
+
+- **[WORKFLOW.md](./WORKFLOW.md)** - Branch strategy, git workflow, and daily development process
+- **[ITERATIONS.md](./ITERATIONS.md)** - How to plan and execute iterations
+- **[ROADMAP.md](./ROADMAP.md)** - Feature backlog, priorities, and iteration status
+
+**New to the project?** Start with [WORKFLOW.md](./WORKFLOW.md)
+
+**Planning work?** Check [ROADMAP.md](./ROADMAP.md) for priorities
+
+**Starting an iteration?** Follow the guide in [ITERATIONS.md](./ITERATIONS.md)
+
+## Contributing
+
+1. Read [WORKFLOW.md](./WORKFLOW.md) for git and development practices
+2. Check [ROADMAP.md](./ROADMAP.md) for current priorities
+3. Create a feature branch from `main`
+4. Make your changes with frequent commits
+5. Open a pull request (template auto-populates)
+6. Merge to `main` when approved
+
 ## Version
 V1.0 - Initial Release
