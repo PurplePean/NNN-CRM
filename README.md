@@ -2,6 +2,18 @@
 
 Professional CRM and underwriting tool for NNN (Triple Net) industrial properties.
 
+## ⚡ Quick Start (5 Minutes)
+
+**The simplest way to develop: GitHub Codespaces + Claude**
+
+1. **Open Codespaces**: https://github.com/PurplePean/NNN-CRM → Code → Codespaces → Create
+2. **Start dev server**: `npm install && npm start`
+3. **Tell Claude what you want** → See changes instantly in your browser!
+
+**Full setup guide**: [CODESPACES-SETUP.md](./CODESPACES-SETUP.md)
+
+---
+
 ## Features
 
 ### Property Management
@@ -29,102 +41,157 @@ Professional CRM and underwriting tool for NNN (Triple Net) industrial propertie
 - Real-time calculations
 - Responsive design
 - Dark mode toggle
-- localStorage persistence
+- localStorage persistence (backend coming soon!)
+
+---
 
 ## Tech Stack
+
 - React 18
 - Tailwind CSS
 - localStorage for data persistence
+- GitHub Codespaces for development
 
-## Local Development
+---
 
-### Prerequisites
-- Node.js 18 or higher
-- VS Code (recommended)
+## How Development Works
 
-### Setup
+### The Simple Way (Recommended)
 
-1. **Clone the repository**
-```bash
-git clone <repository-url>
-cd NNN-CRM
+**You have 3 browser tabs:**
+1. **Codespaces** - VS Code in browser
+2. **localhost:3000** - Your running app
+3. **Claude chat** - Where you tell Claude what to build
+
+**Your workflow:**
+```
+You: "Add a purple background"
+→ Claude edits the files
+→ Browser updates in 1 second ⚡
+→ You see purple background
+
+You: "Make it darker"
+→ Claude edits
+→ Browser updates
+→ You see darker purple
+
+You: "Perfect! Save my work"
+→ Claude commits and pushes ✅
 ```
 
-2. **Install dependencies**
-```bash
-npm install
+**No git commands. No installations. Just describe what you want.**
+
+---
+
+## Documentation
+
+- **[CODESPACES-SETUP.md](./CODESPACES-SETUP.md)** - ⭐ **START HERE** - 5-minute setup guide
+- **[SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)** - Simple commands for working with Claude
+- **[ROADMAP.md](./ROADMAP.md)** - What to build next, priorities, feature backlog
+
+---
+
+## Working with Claude
+
+Just use plain English commands:
+
+```
+"I want to work on CSV export"
+"Add a button to export properties"
+"Change the header color to blue"
+"Make the cards bigger"
+"Save my work"
+"What should I work on next?"
 ```
 
-3. **Start development server**
-```bash
-npm start
-```
+Claude handles all the technical details!
 
-The app will automatically open in your browser at `http://localhost:3000`
+See [SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md) for all available commands.
 
-### VS Code Setup
+---
 
-This project includes VS Code configuration for optimal development experience:
+## Development Process
 
-**Recommended Extensions** (auto-prompted on first open):
-- ESLint - Code linting
-- Prettier - Code formatting
-- ES7+ React Snippets - React code snippets
-- Tailwind CSS IntelliSense - Tailwind class autocomplete
-- Auto Rename Tag - Auto-rename paired HTML/JSX tags
-- Path Intellisense - Autocomplete file paths
-- Import Cost - Display import sizes inline
+### Daily Workflow
 
-**Editor Features**:
-- Auto-format on save
-- ESLint auto-fix on save
-- Tailwind CSS autocomplete
-- Emmet for JSX
+**Morning (1 minute):**
+- Open your Codespace
+- Run `npm start`
+- Open browser tab
 
-### Available Scripts
+**During the day:**
+- Tell Claude what you want
+- See it appear in your browser instantly
+- Iterate fast (20 changes → 1 commit)
+- Tell Claude to save when ready
 
-```bash
-npm start      # Start development server (http://localhost:3000)
-npm run build  # Build production bundle
-npm test       # Run tests
-```
-
-### Development Workflow
-
-1. Make your changes in VS Code
-2. Save files (auto-formatting will apply)
-3. Preview changes in browser (auto-refreshes)
-4. Commit your changes with descriptive messages
-
-## Project Documentation
-
-This project uses a simple, automated workflow:
-
-- **[SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)** - ⭐ **START HERE** - Simple commands, Claude handles git
-- **[ROADMAP.md](./ROADMAP.md)** - What to work on next, feature backlog, priorities
-- **[ITERATIONS.md](./ITERATIONS.md)** - How iterations work (reference only)
-- **[WORKFLOW.md](./WORKFLOW.md)** - Detailed git workflow (reference only)
-
-### Quick Start
-
-**Want to work on something?** Just tell Claude:
-- "I want to start working on [feature name]"
+**End of day:**
 - "Save my work"
-- "I'm done with this feature, merge it"
+- Close tabs
 
-That's it! Claude handles all the git complexity. See [SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md) for all commands.
+### Iteration Approach
 
-**Need ideas?** Check [ROADMAP.md](./ROADMAP.md) to see what's next.
+1. **Describe what you want** - "I want to add CSV export"
+2. **Claude builds it** - Makes changes, you see them live
+3. **Iterate quickly** - "Make it green", "Add this field", etc.
+4. **Save once** - When you're happy: "Save my work"
 
-## Contributing
+**No git complexity. No manual commits. Just build features!**
 
-1. Tell Claude what you want to work on
-2. Code in VS Code (files auto-format on save)
-3. Test in browser (auto-refreshes)
-4. Tell Claude "Save my work" regularly
-5. Tell Claude "I'm done, merge it" when complete
+---
 
-No git knowledge required!
+## Local Development (Alternative)
+
+If you prefer to run locally instead of Codespaces:
+
+```bash
+# Clone repo
+git clone https://github.com/PurplePean/NNN-CRM.git
+cd NNN-CRM
+
+# Install and start
+npm install
+npm start
+
+# Browser opens to localhost:3000
+```
+
+**Note**: With local development, you'll need to run `git pull` to see Claude's changes (not instant).
+
+---
 
 ## Version
-V1.0 - Initial Release
+
+**V1.0** - Initial Release
+- Core CRM functionality
+- Property & broker management
+- Financial underwriting calculations
+- Dark mode & responsive design
+
+**V1.1** - Coming Soon
+- Component-based architecture
+- Backend integration (Google Sheets or Supabase)
+- CSV import/export
+- Enhanced underwriting features
+
+See [ROADMAP.md](./ROADMAP.md) for full feature roadmap.
+
+---
+
+## Questions?
+
+**"How do I get started?"**
+→ Read [CODESPACES-SETUP.md](./CODESPACES-SETUP.md)
+
+**"How do I work with Claude?"**
+→ Read [SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)
+
+**"What should I build next?"**
+→ Check [ROADMAP.md](./ROADMAP.md)
+
+**"Can I code myself too?"**
+→ Yes! Edit in Codespaces, save, browser updates. Claude helps when you need it.
+
+---
+
+Built with ❤️ for NNN industrial property professionals.
