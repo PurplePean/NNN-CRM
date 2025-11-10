@@ -14,6 +14,16 @@ export default function IndustrialCRM() {
   const [inlineBrokerData, setInlineBrokerData] = useState({});
   const [darkMode, setDarkMode] = useState(false);
 
+  // Sensitivity Analysis state
+  const [sensitivityPropertyId, setSensitivityPropertyId] = useState(null);
+  const [sensitivityRowVar, setSensitivityRowVar] = useState('monthlyBaseRentPerSqft');
+  const [sensitivityColVar, setSensitivityColVar] = useState('exitCapRate');
+  const [sensitivityRowMin, setSensitivityRowMin] = useState('');
+  const [sensitivityRowMax, setSensitivityRowMax] = useState('');
+  const [sensitivityColMin, setSensitivityColMin] = useState('');
+  const [sensitivityColMax, setSensitivityColMax] = useState('');
+  const [sensitivityTable, setSensitivityTable] = useState(null);
+
   // Load from localStorage
   useEffect(() => {
     const savedProperties = localStorage.getItem('properties');
@@ -321,6 +331,75 @@ export default function IndustrialCRM() {
       remainingLoanBalance,
       netProceedsAtExit,
       equityMultiple
+    };
+  };
+
+  // Generate sensitivity analysis table
+  const generateSensitivityTable = (property, rowVar, colVar, rowMin, rowMax, colMin, colMax) => {
+    const gridSize = 7; // 7x7 table
+
+    // Define variable metadata
+    const varMetadata = {
+      monthlyBaseRentPerSqft: { label: 'Monthly Rent/SF', format: (v) => `$${v.toFixed(2)}`, isPercent: false },
+      purchasePrice: { label: 'Purchase Price', format: (v) => formatCurrency(v), isPercent: false },
+      improvements: { label: 'Improvements', format: (v) => formatCurrency(v), isPercent: false },
+      closingCosts: { label: 'Closing Costs', format: (v) => formatCurrency(v), isPercent: false },
+      ltvPercent: { label: 'LTV %', format: (v) => `${v.toFixed(1)}%`, isPercent: true },
+      interestRate: { label: 'Interest Rate', format: (v) => `${v.toFixed(2)}%`, isPercent: true },
+      exitCapRate: { label: 'Exit Cap Rate', format: (v) => `${v.toFixed(2)}%`, isPercent: true },
+      holdingPeriodMonths: { label: 'Holding Period (months)', format: (v) => `${Math.round(v)}m`, isPercent: false }
+    };
+
+    // Parse min/max values
+    const rowMinVal = parseFloat(rowMin) || 0;
+    const rowMaxVal = parseFloat(rowMax) || 0;
+    const colMinVal = parseFloat(colMin) || 0;
+    const colMaxVal = parseFloat(colMax) || 0;
+
+    if (rowMinVal >= rowMaxVal || colMinVal >= colMaxVal) {
+      return null; // Invalid ranges
+    }
+
+    // Generate row and column values
+    const rowStep = (rowMaxVal - rowMinVal) / (gridSize - 1);
+    const colStep = (colMaxVal - colMinVal) / (gridSize - 1);
+
+    const rowValues = Array.from({ length: gridSize }, (_, i) => rowMinVal + (i * rowStep));
+    const colValues = Array.from({ length: gridSize }, (_, i) => colMinVal + (i * colStep));
+
+    // Generate table data
+    const tableData = rowValues.map(rowVal => {
+      return colValues.map(colVal => {
+        // Create modified property
+        const modifiedProp = {
+          ...property,
+          [rowVar]: rowVar === 'monthlyBaseRentPerSqft' ? rowVal.toFixed(2) : rowVal.toString(),
+          [colVar]: colVar === 'monthlyBaseRentPerSqft' ? colVal.toFixed(2) : colVal.toString()
+        };
+
+        // Calculate metrics for this scenario
+        const metrics = calculateMetrics(modifiedProp);
+
+        return {
+          rowVal,
+          colVal,
+          equityMultiple: metrics.equityMultiple,
+          dscr: metrics.dscr,
+          cashOnCash: metrics.cashOnCash
+        };
+      });
+    });
+
+    return {
+      rowValues,
+      colValues,
+      tableData,
+      rowVar,
+      colVar,
+      rowLabel: varMetadata[rowVar]?.label || rowVar,
+      colLabel: varMetadata[colVar]?.label || colVar,
+      rowFormat: varMetadata[rowVar]?.format || ((v) => v.toFixed(2)),
+      colFormat: varMetadata[colVar]?.format || ((v) => v.toFixed(2))
     };
   };
 
@@ -807,6 +886,207 @@ export default function IndustrialCRM() {
                             <div className={`text-lg font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{metrics.equityMultiple > 0 ? `${metrics.equityMultiple.toFixed(2)}x` : 'N/A'}</div>
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Sensitivity Analysis */}
+                    {property.holdingPeriodMonths && (
+                      <div className="mb-4">
+                        <button
+                          onClick={() => {
+                            if (sensitivityPropertyId === property.id) {
+                              setSensitivityPropertyId(null);
+                              setSensitivityTable(null);
+                            } else {
+                              setSensitivityPropertyId(property.id);
+                              setSensitivityTable(null);
+                              // Set default ranges based on current property values
+                              const currentRent = parseFloat(property.monthlyBaseRentPerSqft) || 1.0;
+                              const currentExitCap = parseFloat(property.exitCapRate) || 7.0;
+                              setSensitivityRowMin((currentRent * 0.7).toFixed(2));
+                              setSensitivityRowMax((currentRent * 1.3).toFixed(2));
+                              setSensitivityColMin((currentExitCap - 2).toFixed(2));
+                              setSensitivityColMax((currentExitCap + 2).toFixed(2));
+                            }
+                          }}
+                          className={`w-full px-4 py-2 rounded-lg font-semibold transition ${
+                            darkMode
+                              ? 'bg-purple-900 hover:bg-purple-800 text-purple-200'
+                              : 'bg-purple-100 hover:bg-purple-200 text-purple-900'
+                          }`}
+                        >
+                          {sensitivityPropertyId === property.id ? '− Hide' : '+ Show'} Sensitivity Analysis
+                        </button>
+
+                        {sensitivityPropertyId === property.id && (
+                          <div className={`mt-4 p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                            <div className={`text-sm font-bold ${textSecondaryClass} uppercase mb-4`}>
+                              Sensitivity Analysis - Equity Multiple
+                            </div>
+
+                            {/* Variable Selection */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              {/* Row Variable */}
+                              <div>
+                                <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>
+                                  Row Variable
+                                </label>
+                                <select
+                                  value={sensitivityRowVar}
+                                  onChange={(e) => setSensitivityRowVar(e.target.value)}
+                                  className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                >
+                                  <option value="monthlyBaseRentPerSqft">Monthly Rent/SF</option>
+                                  <option value="purchasePrice">Purchase Price</option>
+                                  <option value="improvements">Improvements</option>
+                                  <option value="closingCosts">Closing Costs</option>
+                                  <option value="ltvPercent">LTV %</option>
+                                  <option value="interestRate">Interest Rate</option>
+                                  <option value="exitCapRate">Exit Cap Rate</option>
+                                  <option value="holdingPeriodMonths">Holding Period</option>
+                                </select>
+
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <div>
+                                    <label className={`block text-xs ${textSecondaryClass} mb-1`}>Min</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={sensitivityRowMin}
+                                      onChange={(e) => setSensitivityRowMin(e.target.value)}
+                                      className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className={`block text-xs ${textSecondaryClass} mb-1`}>Max</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={sensitivityRowMax}
+                                      onChange={(e) => setSensitivityRowMax(e.target.value)}
+                                      className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Column Variable */}
+                              <div>
+                                <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>
+                                  Column Variable
+                                </label>
+                                <select
+                                  value={sensitivityColVar}
+                                  onChange={(e) => setSensitivityColVar(e.target.value)}
+                                  className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                >
+                                  <option value="monthlyBaseRentPerSqft">Monthly Rent/SF</option>
+                                  <option value="purchasePrice">Purchase Price</option>
+                                  <option value="improvements">Improvements</option>
+                                  <option value="closingCosts">Closing Costs</option>
+                                  <option value="ltvPercent">LTV %</option>
+                                  <option value="interestRate">Interest Rate</option>
+                                  <option value="exitCapRate">Exit Cap Rate</option>
+                                  <option value="holdingPeriodMonths">Holding Period</option>
+                                </select>
+
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <div>
+                                    <label className={`block text-xs ${textSecondaryClass} mb-1`}>Min</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={sensitivityColMin}
+                                      onChange={(e) => setSensitivityColMin(e.target.value)}
+                                      className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className={`block text-xs ${textSecondaryClass} mb-1`}>Max</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={sensitivityColMax}
+                                      onChange={(e) => setSensitivityColMax(e.target.value)}
+                                      className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Generate Button */}
+                            <button
+                              onClick={() => {
+                                const table = generateSensitivityTable(
+                                  property,
+                                  sensitivityRowVar,
+                                  sensitivityColVar,
+                                  sensitivityRowMin,
+                                  sensitivityRowMax,
+                                  sensitivityColMin,
+                                  sensitivityColMax
+                                );
+                                setSensitivityTable(table);
+                              }}
+                              className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition mb-4"
+                            >
+                              Generate Sensitivity Table
+                            </button>
+
+                            {/* Sensitivity Table Display */}
+                            {sensitivityTable && (
+                              <div className="overflow-x-auto">
+                                <div className={`text-xs ${textSecondaryClass} mb-2 text-center`}>
+                                  {sensitivityTable.rowLabel} (rows) vs {sensitivityTable.colLabel} (columns) → Equity Multiple
+                                </div>
+                                <table className="w-full text-xs border-collapse">
+                                  <thead>
+                                    <tr>
+                                      <th className={`border ${borderClass} p-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                        ↓ / →
+                                      </th>
+                                      {sensitivityTable.colValues.map((colVal, i) => (
+                                        <th key={i} className={`border ${borderClass} p-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                          {sensitivityTable.colFormat(colVal)}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {sensitivityTable.tableData.map((row, rowIdx) => (
+                                      <tr key={rowIdx}>
+                                        <td className={`border ${borderClass} p-2 font-semibold ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                          {sensitivityTable.rowFormat(sensitivityTable.rowValues[rowIdx])}
+                                        </td>
+                                        {row.map((cell, colIdx) => {
+                                          // Color coding: Green (>2.0x), Yellow (1.5-2.0x), Red (<1.5x)
+                                          let bgColor = '';
+                                          if (cell.equityMultiple >= 2.0) {
+                                            bgColor = darkMode ? 'bg-green-900' : 'bg-green-100';
+                                          } else if (cell.equityMultiple >= 1.5) {
+                                            bgColor = darkMode ? 'bg-yellow-900' : 'bg-yellow-100';
+                                          } else {
+                                            bgColor = darkMode ? 'bg-red-900' : 'bg-red-100';
+                                          }
+
+                                          return (
+                                            <td key={colIdx} className={`border ${borderClass} p-2 text-center font-semibold ${bgColor} ${textClass}`}>
+                                              {cell.equityMultiple > 0 ? `${cell.equityMultiple.toFixed(2)}x` : 'N/A'}
+                                            </td>
+                                          );
+                                        })}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                                <div className={`text-xs ${textSecondaryClass} mt-2 text-center`}>
+                                  Color Guide: Green ≥2.0x | Yellow 1.5-2.0x | Red &lt;1.5x
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
