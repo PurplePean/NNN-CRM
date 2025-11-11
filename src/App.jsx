@@ -216,6 +216,94 @@ export default function IndustrialCRM() {
     e.target.value = '';
   };
 
+  const handlePhotoUrlAdd = (url) => {
+    if (!url || !url.trim()) return;
+
+    const currentPhotos = formData.photos || [];
+    if (currentPhotos.length >= 10) {
+      alert('Maximum 10 photos per property');
+      return;
+    }
+
+    // Create an image to validate and convert the URL
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+
+    img.onload = () => {
+      // Convert image to base64
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      try {
+        const base64String = canvas.toDataURL('image/jpeg', 0.9);
+
+        // Check approximate size (base64 is ~33% larger than binary)
+        if (base64String.length > 2.7 * 1024 * 1024) { // ~2MB
+          alert('Image from URL is too large. Try a smaller image.');
+          return;
+        }
+
+        setFormData(prevData => ({
+          ...prevData,
+          photos: [...(prevData.photos || []), {
+            id: Date.now() + Math.random(),
+            data: base64String,
+            name: url.split('/').pop() || 'image.jpg'
+          }]
+        }));
+      } catch (error) {
+        alert('Could not load image from URL. Make sure the image URL is publicly accessible.');
+      }
+    };
+
+    img.onerror = () => {
+      alert('Could not load image from URL. Make sure it\'s a valid image URL and publicly accessible.');
+    };
+
+    img.src = url;
+  };
+
+  const handlePasteImage = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const currentPhotos = formData.photos || [];
+    if (currentPhotos.length >= 10) {
+      alert('Maximum 10 photos per property');
+      e.preventDefault();
+      return;
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const blob = items[i].getAsFile();
+
+        if (blob.size > 2 * 1024 * 1024) {
+          alert('Pasted image is too large. Maximum size is 2MB.');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setFormData(prevData => ({
+            ...prevData,
+            photos: [...(prevData.photos || []), {
+              id: Date.now() + Math.random(),
+              data: event.target.result,
+              name: `pasted-${Date.now()}.png`
+            }]
+          }));
+        };
+        reader.readAsDataURL(blob);
+        break;
+      }
+    }
+  };
+
   const handleDeletePhoto = (photoId) => {
     setFormData({
       ...formData,
@@ -784,13 +872,69 @@ export default function IndustrialCRM() {
                   {/* Photos Section */}
                   <div className="col-span-2 mt-4">
                     <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Property Photos</h3>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handlePhotoUpload}
-                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    />
+
+                    {/* Method 1: Upload from file */}
+                    <div className="mb-3">
+                      <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
+                        Upload from file:
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotoUpload}
+                        className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+
+                    {/* Method 2: Paste from URL */}
+                    <div className="mb-3">
+                      <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
+                        Or paste image URL:
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          placeholder="https://example.com/image.jpg"
+                          id="photoUrlInput"
+                          className={`flex-1 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handlePhotoUrlAdd(e.target.value);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            const input = document.getElementById('photoUrlInput');
+                            handlePhotoUrlAdd(input.value);
+                            input.value = '';
+                          }}
+                          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Method 3: Paste from clipboard */}
+                    <div className="mb-3">
+                      <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
+                        Or paste image directly (Ctrl+V / Cmd+V):
+                      </label>
+                      <div
+                        contentEditable
+                        onPaste={handlePasteImage}
+                        className={`w-full px-4 py-3 rounded-lg border-2 border-dashed ${inputBorderClass} ${inputBgClass} ${textSecondaryClass} focus:outline-none focus:ring-2 focus:ring-blue-500 italic text-center cursor-text`}
+                        suppressContentEditableWarning
+                      >
+                        Click here and paste image (Ctrl+V / Cmd+V)
+                      </div>
+                    </div>
+
                     <p className={`text-xs ${textSecondaryClass} mt-2`}>
                       Maximum 10 photos, 2MB per image. Supported formats: JPG, PNG, GIF, WebP
                     </p>
