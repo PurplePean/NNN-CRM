@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2, Plus, Edit2, Search, Moon, Sun, X } from 'lucide-react';
 
 export default function IndustrialCRM() {
@@ -13,6 +13,11 @@ export default function IndustrialCRM() {
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
   const [darkMode, setDarkMode] = useState(false);
+
+  // Photo lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxPhotos, setLightboxPhotos] = useState([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Sensitivity Analysis state
   const [sensitivityPropertyId, setSensitivityPropertyId] = useState(null);
@@ -310,6 +315,39 @@ export default function IndustrialCRM() {
       photos: (formData.photos || []).filter(photo => photo.id !== photoId)
     });
   };
+
+  // Lightbox handlers
+  const openLightbox = (photos, index) => {
+    setLightboxPhotos(photos);
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
+
+  const nextPhoto = useCallback(() => {
+    setLightboxIndex((lightboxIndex + 1) % lightboxPhotos.length);
+  }, [lightboxIndex, lightboxPhotos.length]);
+
+  const prevPhoto = useCallback(() => {
+    setLightboxIndex((lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length);
+  }, [lightboxIndex, lightboxPhotos.length]);
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (!lightboxOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') nextPhoto();
+      if (e.key === 'ArrowLeft') prevPhoto();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxOpen, nextPhoto, prevPhoto]);
 
   // Broker form handlers
   const handleAddBroker = () => {
@@ -1055,13 +1093,13 @@ export default function IndustrialCRM() {
                           Property Photos ({property.photos.length})
                         </h4>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          {property.photos.map(photo => (
+                          {property.photos.map((photo, index) => (
                             <div key={photo.id} className={`relative group rounded-lg overflow-hidden border-2 ${borderClass} ${hoverBgClass} cursor-pointer transition`}>
                               <img
                                 src={photo.data}
                                 alt={photo.name}
                                 className="w-full h-32 object-cover"
-                                onClick={() => window.open(photo.data, '_blank')}
+                                onClick={() => openLightbox(property.photos, index)}
                               />
                               <div className={`absolute bottom-0 left-0 right-0 ${darkMode ? 'bg-black bg-opacity-70' : 'bg-white bg-opacity-90'} p-1 opacity-0 group-hover:opacity-100 transition`}>
                                 <p className={`text-xs ${textClass} truncate`}>{photo.name}</p>
@@ -1617,6 +1655,78 @@ export default function IndustrialCRM() {
           </div>
         )}
       </div>
+
+      {/* Photo Lightbox Modal */}
+      {lightboxOpen && lightboxPhotos.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90"
+          onClick={closeLightbox}
+        >
+          {/* Close Button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition z-50"
+          >
+            <X size={36} />
+          </button>
+
+          {/* Previous Button */}
+          {lightboxPhotos.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                prevPhoto();
+              }}
+              className="absolute left-4 text-white hover:text-gray-300 transition z-50"
+            >
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+
+          {/* Image Container */}
+          <div
+            className="max-w-7xl max-h-[90vh] px-16"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={lightboxPhotos[lightboxIndex]?.data}
+              alt={lightboxPhotos[lightboxIndex]?.name}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            />
+            {/* Image Info */}
+            <div className="text-center mt-4 text-white">
+              <p className="text-lg font-semibold">{lightboxPhotos[lightboxIndex]?.name}</p>
+              <p className="text-sm text-gray-300 mt-1">
+                {lightboxIndex + 1} / {lightboxPhotos.length}
+              </p>
+            </div>
+          </div>
+
+          {/* Next Button */}
+          {lightboxPhotos.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                nextPhoto();
+              }}
+              className="absolute right-4 text-white hover:text-gray-300 transition z-50"
+            >
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+
+          {/* Instructions */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm text-center">
+            <p className="opacity-75">
+              Use arrow keys to navigate • Press ESC to close • Click outside to close
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
