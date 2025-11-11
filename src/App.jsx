@@ -121,7 +121,8 @@ export default function IndustrialCRM() {
       holdingPeriodMonths: '',
       crexi: '',
       notes: '',
-      brokerIds: []
+      brokerIds: [],
+      photos: []
     });
     setEditingId(null);
     setShowPropertyForm(true);
@@ -131,7 +132,8 @@ export default function IndustrialCRM() {
   const handleEditProperty = (property) => {
     setFormData({
       ...property,
-      brokerIds: property.brokerIds || []
+      brokerIds: property.brokerIds || [],
+      photos: property.photos || []
     });
     setEditingId(property.id);
     setShowPropertyForm(true);
@@ -168,6 +170,57 @@ export default function IndustrialCRM() {
     if (window.confirm('Are you sure you want to delete this property?')) {
       setProperties(properties.filter(p => p.id !== id));
     }
+  };
+
+  // Photo handlers
+  const handlePhotoUpload = (e) => {
+    const files = Array.from(e.target.files);
+
+    // Check if adding these files would exceed a reasonable limit (e.g., 10 photos per property)
+    const currentPhotos = formData.photos || [];
+    if (currentPhotos.length + files.length > 10) {
+      alert('Maximum 10 photos per property');
+      return;
+    }
+
+    files.forEach(file => {
+      // Check file size (limit to 2MB per image to avoid localStorage issues)
+      if (file.size > 2 * 1024 * 1024) {
+        alert(`${file.name} is too large. Maximum file size is 2MB.`);
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not an image file.`);
+        return;
+      }
+
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64String = event.target.result;
+        setFormData(prevData => ({
+          ...prevData,
+          photos: [...(prevData.photos || []), {
+            id: Date.now() + Math.random(), // Unique ID for each photo
+            data: base64String,
+            name: file.name
+          }]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset the input so the same file can be uploaded again if needed
+    e.target.value = '';
+  };
+
+  const handleDeletePhoto = (photoId) => {
+    setFormData({
+      ...formData,
+      photos: (formData.photos || []).filter(photo => photo.id !== photoId)
+    });
   };
 
   // Broker form handlers
@@ -728,6 +781,46 @@ export default function IndustrialCRM() {
                     )}
                   </div>
 
+                  {/* Photos Section */}
+                  <div className="col-span-2 mt-4">
+                    <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Property Photos</h3>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handlePhotoUpload}
+                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    />
+                    <p className={`text-xs ${textSecondaryClass} mt-2`}>
+                      Maximum 10 photos, 2MB per image. Supported formats: JPG, PNG, GIF, WebP
+                    </p>
+
+                    {/* Photo Preview Grid */}
+                    {formData.photos && formData.photos.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        {formData.photos.map(photo => (
+                          <div key={photo.id} className={`relative group rounded-lg overflow-hidden border-2 ${borderClass}`}>
+                            <img
+                              src={photo.data}
+                              alt={photo.name}
+                              className="w-full h-32 object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePhoto(photo.id)}
+                              className="absolute top-1 right-1 bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition hover:bg-red-700"
+                            >
+                              <X size={16} />
+                            </button>
+                            <div className={`absolute bottom-0 left-0 right-0 ${darkMode ? 'bg-black bg-opacity-70' : 'bg-white bg-opacity-90'} p-1`}>
+                              <p className={`text-xs ${textClass} truncate`}>{photo.name}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Other */}
                   <input
                     type="text"
@@ -810,6 +903,30 @@ export default function IndustrialCRM() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Property Photos Gallery */}
+                    {property.photos && property.photos.length > 0 && (
+                      <div className="mb-6">
+                        <h4 className={`text-sm font-semibold ${textSecondaryClass} uppercase mb-3`}>
+                          Property Photos ({property.photos.length})
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {property.photos.map(photo => (
+                            <div key={photo.id} className={`relative group rounded-lg overflow-hidden border-2 ${borderClass} ${hoverBgClass} cursor-pointer transition`}>
+                              <img
+                                src={photo.data}
+                                alt={photo.name}
+                                className="w-full h-32 object-cover"
+                                onClick={() => window.open(photo.data, '_blank')}
+                              />
+                              <div className={`absolute bottom-0 left-0 right-0 ${darkMode ? 'bg-black bg-opacity-70' : 'bg-white bg-opacity-90'} p-1 opacity-0 group-hover:opacity-100 transition`}>
+                                <p className={`text-xs ${textClass} truncate`}>{photo.name}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* All-in Cost & Financing Summary */}
                     <div className={`p-4 rounded-lg mb-6 ${metricsBgClass}`}>
