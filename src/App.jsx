@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2, Plus, Edit2, Search, Moon, Sun, X } from 'lucide-react';
 
 export default function IndustrialCRM() {
@@ -13,6 +13,17 @@ export default function IndustrialCRM() {
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
   const [darkMode, setDarkMode] = useState(false);
+
+  // Photo lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxPhotos, setLightboxPhotos] = useState([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Note-taking state
+  const [noteContent, setNoteContent] = useState({});
+  const [noteCategory, setNoteCategory] = useState({});
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNoteContent, setEditingNoteContent] = useState('');
 
   // Sensitivity Analysis state
   const [sensitivityPropertyId, setSensitivityPropertyId] = useState(null);
@@ -121,7 +132,8 @@ export default function IndustrialCRM() {
       holdingPeriodMonths: '',
       crexi: '',
       notes: '',
-      brokerIds: []
+      brokerIds: [],
+      photos: []
     });
     setEditingId(null);
     setShowPropertyForm(true);
@@ -131,7 +143,8 @@ export default function IndustrialCRM() {
   const handleEditProperty = (property) => {
     setFormData({
       ...property,
-      brokerIds: property.brokerIds || []
+      brokerIds: property.brokerIds || [],
+      photos: property.photos || []
     });
     setEditingId(property.id);
     setShowPropertyForm(true);
@@ -169,6 +182,288 @@ export default function IndustrialCRM() {
       setProperties(properties.filter(p => p.id !== id));
     }
   };
+
+  // Note handlers
+  const handleAddNote = (entityType, entityId, content, category = 'general') => {
+    if (!content.trim()) return;
+
+    const newNote = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      content: content.trim(),
+      category: category
+    };
+
+    if (entityType === 'property') {
+      setProperties(properties.map(p => {
+        if (p.id === entityId) {
+          return {
+            ...p,
+            noteHistory: [...(p.noteHistory || []), newNote]
+          };
+        }
+        return p;
+      }));
+    } else if (entityType === 'broker') {
+      setBrokers(brokers.map(b => {
+        if (b.id === entityId) {
+          return {
+            ...b,
+            noteHistory: [...(b.noteHistory || []), newNote]
+          };
+        }
+        return b;
+      }));
+    }
+  };
+
+  const handleEditNote = (entityType, entityId, noteId, newContent) => {
+    if (!newContent.trim()) return;
+
+    if (entityType === 'property') {
+      setProperties(properties.map(p => {
+        if (p.id === entityId) {
+          return {
+            ...p,
+            noteHistory: (p.noteHistory || []).map(note =>
+              note.id === noteId
+                ? { ...note, content: newContent.trim(), edited: true, editedAt: new Date().toISOString() }
+                : note
+            )
+          };
+        }
+        return p;
+      }));
+    } else if (entityType === 'broker') {
+      setBrokers(brokers.map(b => {
+        if (b.id === entityId) {
+          return {
+            ...b,
+            noteHistory: (b.noteHistory || []).map(note =>
+              note.id === noteId
+                ? { ...note, content: newContent.trim(), edited: true, editedAt: new Date().toISOString() }
+                : note
+            )
+          };
+        }
+        return b;
+      }));
+    }
+  };
+
+  const handleDeleteNote = (entityType, entityId, noteId) => {
+    if (!window.confirm('Delete this note?')) return;
+
+    if (entityType === 'property') {
+      setProperties(properties.map(p => {
+        if (p.id === entityId) {
+          return {
+            ...p,
+            noteHistory: (p.noteHistory || []).filter(note => note.id !== noteId)
+          };
+        }
+        return p;
+      }));
+    } else if (entityType === 'broker') {
+      setBrokers(brokers.map(b => {
+        if (b.id === entityId) {
+          return {
+            ...b,
+            noteHistory: (b.noteHistory || []).filter(note => note.id !== noteId)
+          };
+        }
+        return b;
+      }));
+    }
+  };
+
+  // Format relative time
+  const formatRelativeTime = (timestamp) => {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const diffMs = now - then;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return then.toLocaleDateString();
+  };
+
+  // Photo handlers
+  const handlePhotoUpload = (e) => {
+    const files = Array.from(e.target.files);
+
+    // Check if adding these files would exceed a reasonable limit (e.g., 10 photos per property)
+    const currentPhotos = formData.photos || [];
+    if (currentPhotos.length + files.length > 10) {
+      alert('Maximum 10 photos per property');
+      return;
+    }
+
+    files.forEach(file => {
+      // Check file size (limit to 2MB per image to avoid localStorage issues)
+      if (file.size > 2 * 1024 * 1024) {
+        alert(`${file.name} is too large. Maximum file size is 2MB.`);
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not an image file.`);
+        return;
+      }
+
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64String = event.target.result;
+        setFormData(prevData => ({
+          ...prevData,
+          photos: [...(prevData.photos || []), {
+            id: Date.now() + Math.random(), // Unique ID for each photo
+            data: base64String,
+            name: file.name
+          }]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset the input so the same file can be uploaded again if needed
+    e.target.value = '';
+  };
+
+  const handlePhotoUrlAdd = (url) => {
+    if (!url || !url.trim()) return;
+
+    const currentPhotos = formData.photos || [];
+    if (currentPhotos.length >= 10) {
+      alert('Maximum 10 photos per property');
+      return;
+    }
+
+    // Create an image to validate and convert the URL
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+
+    img.onload = () => {
+      // Convert image to base64
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      try {
+        const base64String = canvas.toDataURL('image/jpeg', 0.9);
+
+        // Check approximate size (base64 is ~33% larger than binary)
+        if (base64String.length > 2.7 * 1024 * 1024) { // ~2MB
+          alert('Image from URL is too large. Try a smaller image.');
+          return;
+        }
+
+        setFormData(prevData => ({
+          ...prevData,
+          photos: [...(prevData.photos || []), {
+            id: Date.now() + Math.random(),
+            data: base64String,
+            name: url.split('/').pop() || 'image.jpg'
+          }]
+        }));
+      } catch (error) {
+        alert('Could not load image from URL. Make sure the image URL is publicly accessible.');
+      }
+    };
+
+    img.onerror = () => {
+      alert('Could not load image from URL. Make sure it\'s a valid image URL and publicly accessible.');
+    };
+
+    img.src = url;
+  };
+
+  const handlePasteImage = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const currentPhotos = formData.photos || [];
+    if (currentPhotos.length >= 10) {
+      alert('Maximum 10 photos per property');
+      e.preventDefault();
+      return;
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const blob = items[i].getAsFile();
+
+        if (blob.size > 2 * 1024 * 1024) {
+          alert('Pasted image is too large. Maximum size is 2MB.');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setFormData(prevData => ({
+            ...prevData,
+            photos: [...(prevData.photos || []), {
+              id: Date.now() + Math.random(),
+              data: event.target.result,
+              name: `pasted-${Date.now()}.png`
+            }]
+          }));
+        };
+        reader.readAsDataURL(blob);
+        break;
+      }
+    }
+  };
+
+  const handleDeletePhoto = (photoId) => {
+    setFormData({
+      ...formData,
+      photos: (formData.photos || []).filter(photo => photo.id !== photoId)
+    });
+  };
+
+  // Lightbox handlers
+  const openLightbox = (photos, index) => {
+    setLightboxPhotos(photos);
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
+
+  const nextPhoto = useCallback(() => {
+    setLightboxIndex((lightboxIndex + 1) % lightboxPhotos.length);
+  }, [lightboxIndex, lightboxPhotos.length]);
+
+  const prevPhoto = useCallback(() => {
+    setLightboxIndex((lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length);
+  }, [lightboxIndex, lightboxPhotos.length]);
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (!lightboxOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') nextPhoto();
+      if (e.key === 'ArrowLeft') prevPhoto();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxOpen, nextPhoto, prevPhoto]);
 
   // Broker form handlers
   const handleAddBroker = () => {
@@ -728,6 +1023,102 @@ export default function IndustrialCRM() {
                     )}
                   </div>
 
+                  {/* Photos Section */}
+                  <div className="col-span-2 mt-4">
+                    <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Property Photos</h3>
+
+                    {/* Method 1: Upload from file */}
+                    <div className="mb-3">
+                      <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
+                        Upload from file:
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotoUpload}
+                        className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+
+                    {/* Method 2: Paste from URL */}
+                    <div className="mb-3">
+                      <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
+                        Or paste image URL:
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          placeholder="https://example.com/image.jpg"
+                          id="photoUrlInput"
+                          className={`flex-1 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handlePhotoUrlAdd(e.target.value);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            const input = document.getElementById('photoUrlInput');
+                            handlePhotoUrlAdd(input.value);
+                            input.value = '';
+                          }}
+                          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Method 3: Paste from clipboard */}
+                    <div className="mb-3">
+                      <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
+                        Or paste image directly (Ctrl+V / Cmd+V):
+                      </label>
+                      <div
+                        contentEditable
+                        onPaste={handlePasteImage}
+                        className={`w-full px-4 py-3 rounded-lg border-2 border-dashed ${inputBorderClass} ${inputBgClass} ${textSecondaryClass} focus:outline-none focus:ring-2 focus:ring-blue-500 italic text-center cursor-text`}
+                        suppressContentEditableWarning
+                      >
+                        Click here and paste image (Ctrl+V / Cmd+V)
+                      </div>
+                    </div>
+
+                    <p className={`text-xs ${textSecondaryClass} mt-2`}>
+                      Maximum 10 photos, 2MB per image. Supported formats: JPG, PNG, GIF, WebP
+                    </p>
+
+                    {/* Photo Preview Grid */}
+                    {formData.photos && formData.photos.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        {formData.photos.map(photo => (
+                          <div key={photo.id} className={`relative group rounded-lg overflow-hidden border-2 ${borderClass}`}>
+                            <img
+                              src={photo.data}
+                              alt={photo.name}
+                              className="w-full h-32 object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePhoto(photo.id)}
+                              className="absolute top-1 right-1 bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition hover:bg-red-700"
+                            >
+                              <X size={16} />
+                            </button>
+                            <div className={`absolute bottom-0 left-0 right-0 ${darkMode ? 'bg-black bg-opacity-70' : 'bg-white bg-opacity-90'} p-1`}>
+                              <p className={`text-xs ${textClass} truncate`}>{photo.name}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Other */}
                   <input
                     type="text"
@@ -735,12 +1126,6 @@ export default function IndustrialCRM() {
                     value={formData.crexi || ''}
                     onChange={(e) => setFormData({ ...formData, crexi: e.target.value })}
                     className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
-                  <textarea
-                    placeholder="Deal Notes"
-                    value={formData.notes || ''}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 h-24`}
                   />
                 </div>
 
@@ -810,6 +1195,30 @@ export default function IndustrialCRM() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Property Photos Gallery */}
+                    {property.photos && property.photos.length > 0 && (
+                      <div className="mb-6">
+                        <h4 className={`text-sm font-semibold ${textSecondaryClass} uppercase mb-3`}>
+                          Property Photos ({property.photos.length})
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {property.photos.map((photo, index) => (
+                            <div key={photo.id} className={`relative group rounded-lg overflow-hidden border-2 ${borderClass} ${hoverBgClass} cursor-pointer transition`}>
+                              <img
+                                src={photo.data}
+                                alt={photo.name}
+                                className="w-full h-32 object-cover"
+                                onClick={() => openLightbox(property.photos, index)}
+                              />
+                              <div className={`absolute bottom-0 left-0 right-0 ${darkMode ? 'bg-black bg-opacity-70' : 'bg-white bg-opacity-90'} p-1 opacity-0 group-hover:opacity-100 transition`}>
+                                <p className={`text-xs ${textClass} truncate`}>{photo.name}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* All-in Cost & Financing Summary */}
                     <div className={`p-4 rounded-lg mb-6 ${metricsBgClass}`}>
@@ -1153,12 +1562,154 @@ export default function IndustrialCRM() {
                       </div>
                     </div>
 
-                    {property.notes && (
-                      <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-4 rounded-lg`}>
-                        <div className={`text-xs font-bold ${textSecondaryClass} uppercase mb-2`}>Deal Notes</div>
-                        <p className={`${textClass} text-sm whitespace-pre-wrap`}>{property.notes}</p>
+                    {/* Notes & Activity Section */}
+                    <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-6 rounded-lg`}>
+                      <div className={`text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between`}>
+                        <span>Notes & Activity</span>
+                        <span className={`text-xs ${textSecondaryClass} normal-case`}>
+                          {(property.noteHistory || []).length} note{(property.noteHistory || []).length !== 1 ? 's' : ''}
+                        </span>
                       </div>
-                    )}
+
+                      {/* Add Note Form */}
+                      <div className="mb-4">
+                        <div className="flex gap-2 mb-2">
+                          <select
+                            value={noteCategory[`property-${property.id}`] || 'general'}
+                            onChange={(e) => setNoteCategory({ ...noteCategory, [`property-${property.id}`]: e.target.value })}
+                            className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          >
+                            <option value="general">📝 General</option>
+                            <option value="call">📞 Call</option>
+                            <option value="meeting">🤝 Meeting</option>
+                            <option value="email">📧 Email</option>
+                            <option value="site-visit">🏢 Site Visit</option>
+                            <option value="due-diligence">🔍 Due Diligence</option>
+                            <option value="follow-up">⏰ Follow-up</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <textarea
+                            placeholder="Add a note..."
+                            value={noteContent[`property-${property.id}`] || ''}
+                            onChange={(e) => setNoteContent({ ...noteContent, [`property-${property.id}`]: e.target.value })}
+                            className={`flex-1 px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                            rows="2"
+                          />
+                          <button
+                            onClick={() => {
+                              handleAddNote('property', property.id, noteContent[`property-${property.id}`], noteCategory[`property-${property.id}`] || 'general');
+                              setNoteContent({ ...noteContent, [`property-${property.id}`]: '' });
+                            }}
+                            className="px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Note History */}
+                      <div className="space-y-3">
+                        {(property.noteHistory || []).length === 0 && (
+                          <p className={`text-sm ${textSecondaryClass} italic text-center py-4`}>
+                            No notes yet. Add your first note above.
+                          </p>
+                        )}
+                        {(property.noteHistory || [])
+                          .slice()
+                          .reverse()
+                          .map(note => {
+                            const categoryColors = {
+                              general: darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800',
+                              call: darkMode ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800',
+                              meeting: darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800',
+                              email: darkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-800',
+                              'site-visit': darkMode ? 'bg-orange-900 text-orange-200' : 'bg-orange-100 text-orange-800',
+                              'due-diligence': darkMode ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800',
+                              'follow-up': darkMode ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                            };
+
+                            const categoryLabels = {
+                              general: '📝 General',
+                              call: '📞 Call',
+                              meeting: '🤝 Meeting',
+                              email: '📧 Email',
+                              'site-visit': '🏢 Site Visit',
+                              'due-diligence': '🔍 Due Diligence',
+                              'follow-up': '⏰ Follow-up'
+                            };
+
+                            return (
+                              <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-3 rounded-lg border ${borderClass}`}>
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs px-2 py-1 rounded ${categoryColors[note.category] || categoryColors.general}`}>
+                                      {categoryLabels[note.category] || categoryLabels.general}
+                                    </span>
+                                    <span className={`text-xs ${textSecondaryClass}`}>
+                                      {formatRelativeTime(note.timestamp)}
+                                      {note.edited && ' (edited)'}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    {editingNoteId === note.id ? (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            handleEditNote('property', property.id, note.id, editingNoteContent);
+                                            setEditingNoteId(null);
+                                            setEditingNoteContent('');
+                                          }}
+                                          className="text-green-600 hover:text-green-700 text-xs p-1"
+                                        >
+                                          Save
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setEditingNoteId(null);
+                                            setEditingNoteContent('');
+                                          }}
+                                          className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            setEditingNoteId(note.id);
+                                            setEditingNoteContent(note.content);
+                                          }}
+                                          className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                        >
+                                          <Edit2 size={14} />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteNote('property', property.id, note.id)}
+                                          className="text-red-600 hover:text-red-700 text-xs p-1"
+                                        >
+                                          <Trash2 size={14} />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                {editingNoteId === note.id ? (
+                                  <textarea
+                                    value={editingNoteContent}
+                                    onChange={(e) => setEditingNoteContent(e.target.value)}
+                                    className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    rows="3"
+                                  />
+                                ) : (
+                                  <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{note.content}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -1241,12 +1792,6 @@ export default function IndustrialCRM() {
                     value={formData.licenseNumber || ''}
                     onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
                     className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
-                  <textarea
-                    placeholder="Conversations & Notes"
-                    value={formData.conversations || ''}
-                    onChange={(e) => setFormData({ ...formData, conversations: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 h-32`}
                   />
                 </div>
 
@@ -1338,12 +1883,154 @@ export default function IndustrialCRM() {
                     )}
                   </div>
 
-                  {broker.conversations && (
-                    <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-4 rounded-lg`}>
-                      <div className={`text-xs font-bold ${textSecondaryClass} uppercase mb-2`}>Conversations & Notes</div>
-                      <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{broker.conversations}</p>
+                  {/* Notes & Activity Section */}
+                  <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-6 rounded-lg`}>
+                    <div className={`text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between`}>
+                      <span>Notes & Activity</span>
+                      <span className={`text-xs ${textSecondaryClass} normal-case`}>
+                        {(broker.noteHistory || []).length} note{(broker.noteHistory || []).length !== 1 ? 's' : ''}
+                      </span>
                     </div>
-                  )}
+
+                    {/* Add Note Form */}
+                    <div className="mb-4">
+                      <div className="flex gap-2 mb-2">
+                        <select
+                          value={noteCategory[`broker-${broker.id}`] || 'general'}
+                          onChange={(e) => setNoteCategory({ ...noteCategory, [`broker-${broker.id}`]: e.target.value })}
+                          className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        >
+                          <option value="general">📝 General</option>
+                          <option value="call">📞 Call</option>
+                          <option value="meeting">🤝 Meeting</option>
+                          <option value="email">📧 Email</option>
+                          <option value="site-visit">🏢 Site Visit</option>
+                          <option value="due-diligence">🔍 Due Diligence</option>
+                          <option value="follow-up">⏰ Follow-up</option>
+                        </select>
+                      </div>
+                      <div className="flex gap-2">
+                        <textarea
+                          placeholder="Add a note..."
+                          value={noteContent[`broker-${broker.id}`] || ''}
+                          onChange={(e) => setNoteContent({ ...noteContent, [`broker-${broker.id}`]: e.target.value })}
+                          className={`flex-1 px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                          rows="2"
+                        />
+                        <button
+                          onClick={() => {
+                            handleAddNote('broker', broker.id, noteContent[`broker-${broker.id}`], noteCategory[`broker-${broker.id}`] || 'general');
+                            setNoteContent({ ...noteContent, [`broker-${broker.id}`]: '' });
+                          }}
+                          className="px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Note History */}
+                    <div className="space-y-3">
+                      {(broker.noteHistory || []).length === 0 && (
+                        <p className={`text-sm ${textSecondaryClass} italic text-center py-4`}>
+                          No notes yet. Add your first note above.
+                        </p>
+                      )}
+                      {(broker.noteHistory || [])
+                        .slice()
+                        .reverse()
+                        .map(note => {
+                          const categoryColors = {
+                            general: darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800',
+                            call: darkMode ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800',
+                            meeting: darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800',
+                            email: darkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-800',
+                            'site-visit': darkMode ? 'bg-orange-900 text-orange-200' : 'bg-orange-100 text-orange-800',
+                            'due-diligence': darkMode ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800',
+                            'follow-up': darkMode ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                          };
+
+                          const categoryLabels = {
+                            general: '📝 General',
+                            call: '📞 Call',
+                            meeting: '🤝 Meeting',
+                            email: '📧 Email',
+                            'site-visit': '🏢 Site Visit',
+                            'due-diligence': '🔍 Due Diligence',
+                            'follow-up': '⏰ Follow-up'
+                          };
+
+                          return (
+                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-3 rounded-lg border ${borderClass}`}>
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs px-2 py-1 rounded ${categoryColors[note.category] || categoryColors.general}`}>
+                                    {categoryLabels[note.category] || categoryLabels.general}
+                                  </span>
+                                  <span className={`text-xs ${textSecondaryClass}`}>
+                                    {formatRelativeTime(note.timestamp)}
+                                    {note.edited && ' (edited)'}
+                                  </span>
+                                </div>
+                                <div className="flex gap-1">
+                                  {editingNoteId === note.id ? (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          handleEditNote('broker', broker.id, note.id, editingNoteContent);
+                                          setEditingNoteId(null);
+                                          setEditingNoteContent('');
+                                        }}
+                                        className="text-green-600 hover:text-green-700 text-xs p-1"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setEditingNoteId(null);
+                                          setEditingNoteContent('');
+                                        }}
+                                        className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          setEditingNoteId(note.id);
+                                          setEditingNoteContent(note.content);
+                                        }}
+                                        className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                      >
+                                        <Edit2 size={14} />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteNote('broker', broker.id, note.id)}
+                                        className="text-red-600 hover:text-red-700 text-xs p-1"
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              {editingNoteId === note.id ? (
+                                <textarea
+                                  value={editingNoteContent}
+                                  onChange={(e) => setEditingNoteContent(e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                  rows="3"
+                                />
+                              ) : (
+                                <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{note.content}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1356,6 +2043,78 @@ export default function IndustrialCRM() {
           </div>
         )}
       </div>
+
+      {/* Photo Lightbox Modal */}
+      {lightboxOpen && lightboxPhotos.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90"
+          onClick={closeLightbox}
+        >
+          {/* Close Button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition z-50"
+          >
+            <X size={36} />
+          </button>
+
+          {/* Previous Button */}
+          {lightboxPhotos.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                prevPhoto();
+              }}
+              className="absolute left-4 text-white hover:text-gray-300 transition z-50"
+            >
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+
+          {/* Image Container */}
+          <div
+            className="max-w-7xl max-h-[90vh] px-16"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={lightboxPhotos[lightboxIndex]?.data}
+              alt={lightboxPhotos[lightboxIndex]?.name}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            />
+            {/* Image Info */}
+            <div className="text-center mt-4 text-white">
+              <p className="text-lg font-semibold">{lightboxPhotos[lightboxIndex]?.name}</p>
+              <p className="text-sm text-gray-300 mt-1">
+                {lightboxIndex + 1} / {lightboxPhotos.length}
+              </p>
+            </div>
+          </div>
+
+          {/* Next Button */}
+          {lightboxPhotos.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                nextPhoto();
+              }}
+              className="absolute right-4 text-white hover:text-gray-300 transition z-50"
+            >
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+
+          {/* Instructions */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm text-center">
+            <p className="opacity-75">
+              Use arrow keys to navigate • Press ESC to close • Click outside to close
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
