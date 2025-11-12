@@ -19,6 +19,12 @@ export default function IndustrialCRM() {
   const [lightboxPhotos, setLightboxPhotos] = useState([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  // Note-taking state
+  const [noteContent, setNoteContent] = useState({});
+  const [noteCategory, setNoteCategory] = useState({});
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNoteContent, setEditingNoteContent] = useState('');
+
   // Sensitivity Analysis state
   const [sensitivityPropertyId, setSensitivityPropertyId] = useState(null);
   const [sensitivityRowVar, setSensitivityRowVar] = useState('monthlyBaseRentPerSqft');
@@ -175,6 +181,116 @@ export default function IndustrialCRM() {
     if (window.confirm('Are you sure you want to delete this property?')) {
       setProperties(properties.filter(p => p.id !== id));
     }
+  };
+
+  // Note handlers
+  const handleAddNote = (entityType, entityId, content, category = 'general') => {
+    if (!content.trim()) return;
+
+    const newNote = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      content: content.trim(),
+      category: category
+    };
+
+    if (entityType === 'property') {
+      setProperties(properties.map(p => {
+        if (p.id === entityId) {
+          return {
+            ...p,
+            noteHistory: [...(p.noteHistory || []), newNote]
+          };
+        }
+        return p;
+      }));
+    } else if (entityType === 'broker') {
+      setBrokers(brokers.map(b => {
+        if (b.id === entityId) {
+          return {
+            ...b,
+            noteHistory: [...(b.noteHistory || []), newNote]
+          };
+        }
+        return b;
+      }));
+    }
+  };
+
+  const handleEditNote = (entityType, entityId, noteId, newContent) => {
+    if (!newContent.trim()) return;
+
+    if (entityType === 'property') {
+      setProperties(properties.map(p => {
+        if (p.id === entityId) {
+          return {
+            ...p,
+            noteHistory: (p.noteHistory || []).map(note =>
+              note.id === noteId
+                ? { ...note, content: newContent.trim(), edited: true, editedAt: new Date().toISOString() }
+                : note
+            )
+          };
+        }
+        return p;
+      }));
+    } else if (entityType === 'broker') {
+      setBrokers(brokers.map(b => {
+        if (b.id === entityId) {
+          return {
+            ...b,
+            noteHistory: (b.noteHistory || []).map(note =>
+              note.id === noteId
+                ? { ...note, content: newContent.trim(), edited: true, editedAt: new Date().toISOString() }
+                : note
+            )
+          };
+        }
+        return b;
+      }));
+    }
+  };
+
+  const handleDeleteNote = (entityType, entityId, noteId) => {
+    if (!window.confirm('Delete this note?')) return;
+
+    if (entityType === 'property') {
+      setProperties(properties.map(p => {
+        if (p.id === entityId) {
+          return {
+            ...p,
+            noteHistory: (p.noteHistory || []).filter(note => note.id !== noteId)
+          };
+        }
+        return p;
+      }));
+    } else if (entityType === 'broker') {
+      setBrokers(brokers.map(b => {
+        if (b.id === entityId) {
+          return {
+            ...b,
+            noteHistory: (b.noteHistory || []).filter(note => note.id !== noteId)
+          };
+        }
+        return b;
+      }));
+    }
+  };
+
+  // Format relative time
+  const formatRelativeTime = (timestamp) => {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const diffMs = now - then;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return then.toLocaleDateString();
   };
 
   // Photo handlers
@@ -1011,12 +1127,6 @@ export default function IndustrialCRM() {
                     onChange={(e) => setFormData({ ...formData, crexi: e.target.value })}
                     className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   />
-                  <textarea
-                    placeholder="Deal Notes"
-                    value={formData.notes || ''}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 h-24`}
-                  />
                 </div>
 
                 <div className="flex gap-3">
@@ -1452,12 +1562,154 @@ export default function IndustrialCRM() {
                       </div>
                     </div>
 
-                    {property.notes && (
-                      <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-4 rounded-lg`}>
-                        <div className={`text-xs font-bold ${textSecondaryClass} uppercase mb-2`}>Deal Notes</div>
-                        <p className={`${textClass} text-sm whitespace-pre-wrap`}>{property.notes}</p>
+                    {/* Notes & Activity Section */}
+                    <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-6 rounded-lg`}>
+                      <div className={`text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between`}>
+                        <span>Notes & Activity</span>
+                        <span className={`text-xs ${textSecondaryClass} normal-case`}>
+                          {(property.noteHistory || []).length} note{(property.noteHistory || []).length !== 1 ? 's' : ''}
+                        </span>
                       </div>
-                    )}
+
+                      {/* Add Note Form */}
+                      <div className="mb-4">
+                        <div className="flex gap-2 mb-2">
+                          <select
+                            value={noteCategory[`property-${property.id}`] || 'general'}
+                            onChange={(e) => setNoteCategory({ ...noteCategory, [`property-${property.id}`]: e.target.value })}
+                            className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          >
+                            <option value="general">📝 General</option>
+                            <option value="call">📞 Call</option>
+                            <option value="meeting">🤝 Meeting</option>
+                            <option value="email">📧 Email</option>
+                            <option value="site-visit">🏢 Site Visit</option>
+                            <option value="due-diligence">🔍 Due Diligence</option>
+                            <option value="follow-up">⏰ Follow-up</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <textarea
+                            placeholder="Add a note..."
+                            value={noteContent[`property-${property.id}`] || ''}
+                            onChange={(e) => setNoteContent({ ...noteContent, [`property-${property.id}`]: e.target.value })}
+                            className={`flex-1 px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                            rows="2"
+                          />
+                          <button
+                            onClick={() => {
+                              handleAddNote('property', property.id, noteContent[`property-${property.id}`], noteCategory[`property-${property.id}`] || 'general');
+                              setNoteContent({ ...noteContent, [`property-${property.id}`]: '' });
+                            }}
+                            className="px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Note History */}
+                      <div className="space-y-3">
+                        {(property.noteHistory || []).length === 0 && (
+                          <p className={`text-sm ${textSecondaryClass} italic text-center py-4`}>
+                            No notes yet. Add your first note above.
+                          </p>
+                        )}
+                        {(property.noteHistory || [])
+                          .slice()
+                          .reverse()
+                          .map(note => {
+                            const categoryColors = {
+                              general: darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800',
+                              call: darkMode ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800',
+                              meeting: darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800',
+                              email: darkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-800',
+                              'site-visit': darkMode ? 'bg-orange-900 text-orange-200' : 'bg-orange-100 text-orange-800',
+                              'due-diligence': darkMode ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800',
+                              'follow-up': darkMode ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                            };
+
+                            const categoryLabels = {
+                              general: '📝 General',
+                              call: '📞 Call',
+                              meeting: '🤝 Meeting',
+                              email: '📧 Email',
+                              'site-visit': '🏢 Site Visit',
+                              'due-diligence': '🔍 Due Diligence',
+                              'follow-up': '⏰ Follow-up'
+                            };
+
+                            return (
+                              <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-3 rounded-lg border ${borderClass}`}>
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs px-2 py-1 rounded ${categoryColors[note.category] || categoryColors.general}`}>
+                                      {categoryLabels[note.category] || categoryLabels.general}
+                                    </span>
+                                    <span className={`text-xs ${textSecondaryClass}`}>
+                                      {formatRelativeTime(note.timestamp)}
+                                      {note.edited && ' (edited)'}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    {editingNoteId === note.id ? (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            handleEditNote('property', property.id, note.id, editingNoteContent);
+                                            setEditingNoteId(null);
+                                            setEditingNoteContent('');
+                                          }}
+                                          className="text-green-600 hover:text-green-700 text-xs p-1"
+                                        >
+                                          Save
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setEditingNoteId(null);
+                                            setEditingNoteContent('');
+                                          }}
+                                          className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            setEditingNoteId(note.id);
+                                            setEditingNoteContent(note.content);
+                                          }}
+                                          className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                        >
+                                          <Edit2 size={14} />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteNote('property', property.id, note.id)}
+                                          className="text-red-600 hover:text-red-700 text-xs p-1"
+                                        >
+                                          <Trash2 size={14} />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                {editingNoteId === note.id ? (
+                                  <textarea
+                                    value={editingNoteContent}
+                                    onChange={(e) => setEditingNoteContent(e.target.value)}
+                                    className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    rows="3"
+                                  />
+                                ) : (
+                                  <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{note.content}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -1540,12 +1792,6 @@ export default function IndustrialCRM() {
                     value={formData.licenseNumber || ''}
                     onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
                     className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
-                  <textarea
-                    placeholder="Conversations & Notes"
-                    value={formData.conversations || ''}
-                    onChange={(e) => setFormData({ ...formData, conversations: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 h-32`}
                   />
                 </div>
 
@@ -1637,12 +1883,154 @@ export default function IndustrialCRM() {
                     )}
                   </div>
 
-                  {broker.conversations && (
-                    <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-4 rounded-lg`}>
-                      <div className={`text-xs font-bold ${textSecondaryClass} uppercase mb-2`}>Conversations & Notes</div>
-                      <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{broker.conversations}</p>
+                  {/* Notes & Activity Section */}
+                  <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-6 rounded-lg`}>
+                    <div className={`text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between`}>
+                      <span>Notes & Activity</span>
+                      <span className={`text-xs ${textSecondaryClass} normal-case`}>
+                        {(broker.noteHistory || []).length} note{(broker.noteHistory || []).length !== 1 ? 's' : ''}
+                      </span>
                     </div>
-                  )}
+
+                    {/* Add Note Form */}
+                    <div className="mb-4">
+                      <div className="flex gap-2 mb-2">
+                        <select
+                          value={noteCategory[`broker-${broker.id}`] || 'general'}
+                          onChange={(e) => setNoteCategory({ ...noteCategory, [`broker-${broker.id}`]: e.target.value })}
+                          className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        >
+                          <option value="general">📝 General</option>
+                          <option value="call">📞 Call</option>
+                          <option value="meeting">🤝 Meeting</option>
+                          <option value="email">📧 Email</option>
+                          <option value="site-visit">🏢 Site Visit</option>
+                          <option value="due-diligence">🔍 Due Diligence</option>
+                          <option value="follow-up">⏰ Follow-up</option>
+                        </select>
+                      </div>
+                      <div className="flex gap-2">
+                        <textarea
+                          placeholder="Add a note..."
+                          value={noteContent[`broker-${broker.id}`] || ''}
+                          onChange={(e) => setNoteContent({ ...noteContent, [`broker-${broker.id}`]: e.target.value })}
+                          className={`flex-1 px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                          rows="2"
+                        />
+                        <button
+                          onClick={() => {
+                            handleAddNote('broker', broker.id, noteContent[`broker-${broker.id}`], noteCategory[`broker-${broker.id}`] || 'general');
+                            setNoteContent({ ...noteContent, [`broker-${broker.id}`]: '' });
+                          }}
+                          className="px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Note History */}
+                    <div className="space-y-3">
+                      {(broker.noteHistory || []).length === 0 && (
+                        <p className={`text-sm ${textSecondaryClass} italic text-center py-4`}>
+                          No notes yet. Add your first note above.
+                        </p>
+                      )}
+                      {(broker.noteHistory || [])
+                        .slice()
+                        .reverse()
+                        .map(note => {
+                          const categoryColors = {
+                            general: darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800',
+                            call: darkMode ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800',
+                            meeting: darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800',
+                            email: darkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-800',
+                            'site-visit': darkMode ? 'bg-orange-900 text-orange-200' : 'bg-orange-100 text-orange-800',
+                            'due-diligence': darkMode ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800',
+                            'follow-up': darkMode ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                          };
+
+                          const categoryLabels = {
+                            general: '📝 General',
+                            call: '📞 Call',
+                            meeting: '🤝 Meeting',
+                            email: '📧 Email',
+                            'site-visit': '🏢 Site Visit',
+                            'due-diligence': '🔍 Due Diligence',
+                            'follow-up': '⏰ Follow-up'
+                          };
+
+                          return (
+                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-3 rounded-lg border ${borderClass}`}>
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs px-2 py-1 rounded ${categoryColors[note.category] || categoryColors.general}`}>
+                                    {categoryLabels[note.category] || categoryLabels.general}
+                                  </span>
+                                  <span className={`text-xs ${textSecondaryClass}`}>
+                                    {formatRelativeTime(note.timestamp)}
+                                    {note.edited && ' (edited)'}
+                                  </span>
+                                </div>
+                                <div className="flex gap-1">
+                                  {editingNoteId === note.id ? (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          handleEditNote('broker', broker.id, note.id, editingNoteContent);
+                                          setEditingNoteId(null);
+                                          setEditingNoteContent('');
+                                        }}
+                                        className="text-green-600 hover:text-green-700 text-xs p-1"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setEditingNoteId(null);
+                                          setEditingNoteContent('');
+                                        }}
+                                        className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          setEditingNoteId(note.id);
+                                          setEditingNoteContent(note.content);
+                                        }}
+                                        className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                      >
+                                        <Edit2 size={14} />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteNote('broker', broker.id, note.id)}
+                                        className="text-red-600 hover:text-red-700 text-xs p-1"
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              {editingNoteId === note.id ? (
+                                <textarea
+                                  value={editingNoteContent}
+                                  onChange={(e) => setEditingNoteContent(e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                  rows="3"
+                                />
+                              ) : (
+                                <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{note.content}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
