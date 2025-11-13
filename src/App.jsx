@@ -2258,7 +2258,7 @@ export default function IndustrialCRM() {
                       Favorite Asset Classes (select all that apply)
                     </label>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {['NNN Industrial', 'NNN Retail', 'NNN Office', 'Multi-Family', 'Self-Storage', 'Other'].map(assetClass => (
+                      {['NNN Industrial', 'NNN Retail', 'NNN Office', 'Multi-Family', 'Self-Storage', 'CRE Lending', 'Other'].map(assetClass => (
                         <label key={assetClass} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
