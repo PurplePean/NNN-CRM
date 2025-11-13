@@ -577,14 +577,20 @@ export default function IndustrialCRM() {
       creExperience: '',
       background: '',
       riskTolerance: '',
-      customTags: []
+      customTags: [],
+      initialNotes: '',
+      initialNoteCategory: 'general'
     });
     setEditingId(null);
     setShowPartnerForm(true);
   };
 
   const handleEditPartner = (partner) => {
-    setFormData(partner);
+    setFormData({
+      ...partner,
+      initialNotes: '',
+      initialNoteCategory: 'general'
+    });
     setEditingId(partner.id);
     setShowPartnerForm(true);
   };
@@ -595,10 +601,39 @@ export default function IndustrialCRM() {
       return;
     }
 
+    // Prepare initial note if provided
+    const initialNoteHistory = [];
+    if (formData.initialNotes && formData.initialNotes.trim()) {
+      initialNoteHistory.push({
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        content: formData.initialNotes.trim(),
+        category: formData.initialNoteCategory || 'general',
+        edited: false
+      });
+    }
+
+    // Remove initialNotes fields from saved data
+    const { initialNotes, initialNoteCategory, ...partnerData } = formData;
+
     if (editingId) {
-      setPartners(partners.map(p => p.id === editingId ? { ...formData, id: editingId } : p));
+      setPartners(partners.map(p => {
+        if (p.id === editingId) {
+          // When editing, append new note to existing notes if provided
+          const updatedNoteHistory = initialNoteHistory.length > 0
+            ? [...(p.noteHistory || []), ...initialNoteHistory]
+            : p.noteHistory;
+          return { ...partnerData, id: editingId, noteHistory: updatedNoteHistory };
+        }
+        return p;
+      }));
     } else {
-      setPartners([...partners, { ...formData, id: Date.now() }]);
+      // When creating new partner, add initial note
+      setPartners([...partners, {
+        ...partnerData,
+        id: Date.now(),
+        noteHistory: initialNoteHistory
+      }]);
     }
 
     setShowPartnerForm(false);
@@ -2258,6 +2293,27 @@ export default function IndustrialCRM() {
                         setFormData({ ...formData, customTags: tags });
                       }}
                       className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    />
+                  </div>
+
+                  {/* Initial Notes */}
+                  <div className="col-span-2 mt-4">
+                    <h4 className={`text-md font-semibold ${textClass} mb-3`}>Initial Notes</h4>
+                    <select
+                      value={formData.initialNoteCategory || 'general'}
+                      onChange={(e) => setFormData({ ...formData, initialNoteCategory: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2`}
+                    >
+                      <option value="general">📝 General</option>
+                      <option value="call">📞 Call</option>
+                      <option value="meeting">🤝 Meeting</option>
+                      <option value="email">📧 Email</option>
+                    </select>
+                    <textarea
+                      placeholder="Add notes about this partner (optional)..."
+                      value={formData.initialNotes || ''}
+                      onChange={(e) => setFormData({ ...formData, initialNotes: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 h-24`}
                     />
                   </div>
                 </div>
