@@ -4,10 +4,12 @@ import { Trash2, Plus, Edit2, Search, Moon, Sun, X } from 'lucide-react';
 export default function IndustrialCRM() {
   const [properties, setProperties] = useState([]);
   const [brokers, setBrokers] = useState([]);
+  const [partners, setPartners] = useState([]);
   const [activeTab, setActiveTab] = useState('assets');
   const [searchTerm, setSearchTerm] = useState('');
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [showBrokerForm, setShowBrokerForm] = useState(false);
+  const [showPartnerForm, setShowPartnerForm] = useState(false);
   const [showInlineBrokerForm, setShowInlineBrokerForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
@@ -40,9 +42,11 @@ export default function IndustrialCRM() {
   useEffect(() => {
     const savedProperties = localStorage.getItem('properties');
     const savedBrokers = localStorage.getItem('brokers');
+    const savedPartners = localStorage.getItem('partners');
     const savedDarkMode = localStorage.getItem('darkMode');
     if (savedProperties) setProperties(JSON.parse(savedProperties));
     if (savedBrokers) setBrokers(JSON.parse(savedBrokers));
+    if (savedPartners) setPartners(JSON.parse(savedPartners));
     if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
   }, []);
 
@@ -54,6 +58,10 @@ export default function IndustrialCRM() {
   useEffect(() => {
     localStorage.setItem('brokers', JSON.stringify(brokers));
   }, [brokers]);
+
+  useEffect(() => {
+    localStorage.setItem('partners', JSON.stringify(partners));
+  }, [partners]);
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
@@ -557,6 +565,87 @@ export default function IndustrialCRM() {
     }
   };
 
+  // Partner form handlers
+  const handleAddPartner = () => {
+    setFormData({
+      name: '',
+      entityName: '',
+      email: '',
+      phone: '',
+      checkSize: '',
+      assetClasses: [],
+      creExperience: '',
+      background: '',
+      riskTolerance: '',
+      customTags: [],
+      initialNotes: '',
+      initialNoteCategory: 'general'
+    });
+    setEditingId(null);
+    setShowPartnerForm(true);
+  };
+
+  const handleEditPartner = (partner) => {
+    setFormData({
+      ...partner,
+      initialNotes: '',
+      initialNoteCategory: 'general'
+    });
+    setEditingId(partner.id);
+    setShowPartnerForm(true);
+  };
+
+  const handleSavePartner = () => {
+    if (!formData.name) {
+      alert('Please enter partner name');
+      return;
+    }
+
+    // Prepare initial note if provided
+    const initialNoteHistory = [];
+    if (formData.initialNotes && formData.initialNotes.trim()) {
+      initialNoteHistory.push({
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        content: formData.initialNotes.trim(),
+        category: formData.initialNoteCategory || 'general',
+        edited: false
+      });
+    }
+
+    // Remove initialNotes fields from saved data
+    const { initialNotes, initialNoteCategory, ...partnerData } = formData;
+
+    if (editingId) {
+      setPartners(partners.map(p => {
+        if (p.id === editingId) {
+          // When editing, append new note to existing notes if provided
+          const updatedNoteHistory = initialNoteHistory.length > 0
+            ? [...(p.noteHistory || []), ...initialNoteHistory]
+            : p.noteHistory;
+          return { ...partnerData, id: editingId, noteHistory: updatedNoteHistory };
+        }
+        return p;
+      }));
+    } else {
+      // When creating new partner, add initial note
+      setPartners([...partners, {
+        ...partnerData,
+        id: Date.now(),
+        noteHistory: initialNoteHistory
+      }]);
+    }
+
+    setShowPartnerForm(false);
+    setFormData({});
+  };
+
+  const handleDeletePartner = (id) => {
+    if (window.confirm('Are you sure you want to delete this partner?')) {
+      setPartners(partners.filter(p => p.id !== id));
+    }
+  };
+
   // Calculate comprehensive metrics
   const calculateMetrics = (prop) => {
     // Parse inputs (strip commas)
@@ -761,6 +850,16 @@ export default function IndustrialCRM() {
             }`}
           >
             Brokers ({brokers.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('partners')}
+            className={`px-6 py-3 font-semibold border-b-2 transition ${
+              activeTab === 'partners'
+                ? 'border-blue-600 text-blue-600'
+                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+            }`}
+          >
+            Partners ({partners.length})
           </button>
         </div>
 
@@ -2038,6 +2137,465 @@ export default function IndustrialCRM() {
             {brokers.length === 0 && !showBrokerForm && (
               <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
                 <p className={`${textSecondaryClass} text-lg`}>No brokers yet. Click "Add Broker" to get started!</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Partners Tab */}
+        {activeTab === 'partners' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className={`text-2xl font-bold ${textClass}`}>Partners & LPs</h2>
+                <p className={textSecondaryClass}>Manage your equity partners and limited partners</p>
+              </div>
+              <button
+                onClick={handleAddPartner}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
+              >
+                <Plus size={20} />
+                Add Partner
+              </button>
+            </div>
+
+            {/* Partner Form */}
+            {showPartnerForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8`}>
+                <h3 className={`text-xl font-bold ${textClass} mb-6`}>
+                  {editingId ? 'Edit Partner' : 'New Partner'}
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Contact Info */}
+                  <input
+                    type="text"
+                    placeholder="Name *"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Entity/Company Name"
+                    value={formData.entityName || ''}
+                    onChange={(e) => setFormData({ ...formData, entityName: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={formData.email || ''}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone"
+                    value={formData.phone || ''}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+
+                  {/* Investment Profile */}
+                  <div className="col-span-2 mt-4">
+                    <h4 className={`text-md font-semibold ${textClass} mb-3`}>Investment Profile</h4>
+                  </div>
+
+                  <select
+                    value={formData.checkSize || ''}
+                    onChange={(e) => setFormData({ ...formData, checkSize: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="">Typical Check Size</option>
+                    <option value="$50K-$100K">$50K-$100K</option>
+                    <option value="$100K-$250K">$100K-$250K</option>
+                    <option value="$250K-$500K">$250K-$500K</option>
+                    <option value="$500K-$1M">$500K-$1M</option>
+                    <option value="$1M+">$1M+</option>
+                  </select>
+
+                  <select
+                    value={formData.creExperience || ''}
+                    onChange={(e) => setFormData({ ...formData, creExperience: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="">CRE Experience Level</option>
+                    <option value="First-Time Investor">First-Time Investor</option>
+                    <option value="1-3 Deals">1-3 Deals</option>
+                    <option value="Experienced (5+ Deals)">Experienced (5+ Deals)</option>
+                    <option value="Sophisticated Investor">Sophisticated Investor</option>
+                  </select>
+
+                  <select
+                    value={formData.background || ''}
+                    onChange={(e) => setFormData({ ...formData, background: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="">Background</option>
+                    <option value="Real Estate Professional">Real Estate Professional</option>
+                    <option value="Business Owner">Business Owner</option>
+                    <option value="Finance/Banking">Finance/Banking</option>
+                    <option value="W2/Professional">W2/Professional</option>
+                    <option value="Inherited Wealth">Inherited Wealth</option>
+                    <option value="Self-Made">Self-Made</option>
+                  </select>
+
+                  <select
+                    value={formData.riskTolerance || ''}
+                    onChange={(e) => setFormData({ ...formData, riskTolerance: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="">Risk Tolerance</option>
+                    <option value="Conservative">Conservative</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Aggressive">Aggressive</option>
+                  </select>
+
+                  {/* Asset Classes (multiple select) */}
+                  <div className="col-span-2">
+                    <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                      Favorite Asset Classes (select all that apply)
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {['NNN Industrial', 'NNN Retail', 'NNN Office', 'Multi-Family', 'Self-Storage', 'CRE Lending', 'Other'].map(assetClass => (
+                        <label key={assetClass} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={(formData.assetClasses || []).includes(assetClass)}
+                            onChange={(e) => {
+                              const current = formData.assetClasses || [];
+                              if (e.target.checked) {
+                                setFormData({ ...formData, assetClasses: [...current, assetClass] });
+                              } else {
+                                setFormData({ ...formData, assetClasses: current.filter(ac => ac !== assetClass) });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className={`text-sm ${textClass}`}>{assetClass}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Tags */}
+                  <div className="col-span-2">
+                    <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                      Tags (comma-separated: Active, 1031 Exchange, Repeat Investor, etc.)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Active, 1031 Exchange, Preferred Partner"
+                      value={(formData.customTags || []).join(', ')}
+                      onChange={(e) => {
+                        const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                        setFormData({ ...formData, customTags: tags });
+                      }}
+                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    />
+                  </div>
+
+                  {/* Initial Notes */}
+                  <div className="col-span-2 mt-4">
+                    <h4 className={`text-md font-semibold ${textClass} mb-3`}>Initial Notes</h4>
+                    <select
+                      value={formData.initialNoteCategory || 'general'}
+                      onChange={(e) => setFormData({ ...formData, initialNoteCategory: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2`}
+                    >
+                      <option value="general">📝 General</option>
+                      <option value="call">📞 Call</option>
+                      <option value="meeting">🤝 Meeting</option>
+                      <option value="email">📧 Email</option>
+                    </select>
+                    <textarea
+                      placeholder="Add notes about this partner (optional)..."
+                      value={formData.initialNotes || ''}
+                      onChange={(e) => setFormData({ ...formData, initialNotes: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 h-24`}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={handleSavePartner}
+                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                  >
+                    {editingId ? 'Update Partner' : 'Create Partner'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPartnerForm(false);
+                      setFormData({});
+                    }}
+                    className={`px-6 py-3 rounded-lg font-semibold transition ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-200 hover:bg-gray-300'} ${textClass}`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Partner Cards */}
+            <div className="grid gap-6">
+              {partners.filter(partner =>
+                partner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                partner.entityName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                partner.email?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map(partner => (
+                <div key={partner.id} className={`${cardBgClass} rounded-xl shadow-lg p-6`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className={`text-xl font-bold ${textClass}`}>{partner.name}</h3>
+                      {partner.entityName && (
+                        <p className={`${textSecondaryClass} text-sm`}>{partner.entityName}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditPartner(partner)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                      >
+                        <Edit2 size={20} />
+                      </button>
+                      <button
+                        onClick={() => handleDeletePartner(partner.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Contact Info */}
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 pb-4 border-b ${borderClass}`}>
+                    {partner.email && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
+                        <span className={`${textClass} ml-2`}>{partner.email}</span>
+                      </div>
+                    )}
+                    {partner.phone && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
+                        <span className={`${textClass} ml-2`}>{partner.phone}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Investment Profile */}
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-4`}>
+                    {partner.checkSize && (
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Check Size</div>
+                        <div className={`text-sm font-medium ${textClass}`}>{partner.checkSize}</div>
+                      </div>
+                    )}
+                    {partner.creExperience && (
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>CRE Experience</div>
+                        <div className={`text-sm font-medium ${textClass}`}>{partner.creExperience}</div>
+                      </div>
+                    )}
+                    {partner.background && (
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Background</div>
+                        <div className={`text-sm font-medium ${textClass}`}>{partner.background}</div>
+                      </div>
+                    )}
+                    {partner.riskTolerance && (
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Risk Tolerance</div>
+                        <div className={`text-sm font-medium ${textClass}`}>{partner.riskTolerance}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Asset Classes */}
+                  {partner.assetClasses && partner.assetClasses.length > 0 && (
+                    <div className="mb-4">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>Asset Classes</div>
+                      <div className="flex flex-wrap gap-2">
+                        {partner.assetClasses.map(ac => (
+                          <span key={ac} className={`px-3 py-1 rounded-full text-xs font-medium ${darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
+                            {ac}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Custom Tags */}
+                  {partner.customTags && partner.customTags.length > 0 && (
+                    <div className="mb-4">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>Tags</div>
+                      <div className="flex flex-wrap gap-2">
+                        {partner.customTags.map(tag => (
+                          <span key={tag} className={`px-3 py-1 rounded-full text-xs font-medium ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-800'}`}>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notes & Activity Section */}
+                  <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-6 rounded-lg`}>
+                    <div className={`text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between`}>
+                      <span>Notes & Activity</span>
+                      <span className={`text-xs ${textSecondaryClass} normal-case`}>
+                        {(partner.noteHistory || []).length} note{(partner.noteHistory || []).length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    {/* Add Note Form */}
+                    <div className="mb-4">
+                      <div className="flex gap-2 mb-2">
+                        <select
+                          value={noteCategory[`partner-${partner.id}`] || 'general'}
+                          onChange={(e) => setNoteCategory({ ...noteCategory, [`partner-${partner.id}`]: e.target.value })}
+                          className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        >
+                          <option value="general">📝 General</option>
+                          <option value="call">📞 Call</option>
+                          <option value="meeting">🤝 Meeting</option>
+                          <option value="email">📧 Email</option>
+                          <option value="site-visit">🏢 Site Visit</option>
+                          <option value="due-diligence">🔍 Due Diligence</option>
+                          <option value="follow-up">⏰ Follow-up</option>
+                        </select>
+                      </div>
+                      <div className="flex gap-2">
+                        <textarea
+                          placeholder="Add a note..."
+                          value={noteContent[`partner-${partner.id}`] || ''}
+                          onChange={(e) => setNoteContent({ ...noteContent, [`partner-${partner.id}`]: e.target.value })}
+                          className={`flex-1 px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                          rows="2"
+                        />
+                        <button
+                          onClick={() => {
+                            handleAddNote('partner', partner.id, noteContent[`partner-${partner.id}`], noteCategory[`partner-${partner.id}`] || 'general');
+                            setNoteContent({ ...noteContent, [`partner-${partner.id}`]: '' });
+                          }}
+                          className="px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Note History */}
+                    <div className="space-y-3">
+                      {(partner.noteHistory || []).length === 0 && (
+                        <p className={`text-sm ${textSecondaryClass} italic text-center py-4`}>
+                          No notes yet. Add your first note above.
+                        </p>
+                      )}
+                      {(partner.noteHistory || [])
+                        .slice()
+                        .reverse()
+                        .map(note => {
+                          const categoryColors = {
+                            general: darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800',
+                            call: darkMode ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800',
+                            meeting: darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800',
+                            email: darkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-800',
+                            'site-visit': darkMode ? 'bg-orange-900 text-orange-200' : 'bg-orange-100 text-orange-800',
+                            'due-diligence': darkMode ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800',
+                            'follow-up': darkMode ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                          };
+
+                          const categoryLabels = {
+                            general: '📝 General',
+                            call: '📞 Call',
+                            meeting: '🤝 Meeting',
+                            email: '📧 Email',
+                            'site-visit': '🏢 Site Visit',
+                            'due-diligence': '🔍 Due Diligence',
+                            'follow-up': '⏰ Follow-up'
+                          };
+
+                          return (
+                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-3 rounded-lg border ${borderClass}`}>
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs px-2 py-1 rounded ${categoryColors[note.category] || categoryColors.general}`}>
+                                    {categoryLabels[note.category] || categoryLabels.general}
+                                  </span>
+                                  <span className={`text-xs ${textSecondaryClass}`}>
+                                    {formatRelativeTime(note.timestamp)}
+                                    {note.edited && ' (edited)'}
+                                  </span>
+                                </div>
+                                <div className="flex gap-1">
+                                  {editingNoteId === note.id ? (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          handleEditNote('partner', partner.id, note.id, editingNoteContent);
+                                          setEditingNoteId(null);
+                                          setEditingNoteContent('');
+                                        }}
+                                        className="text-green-600 hover:text-green-700 text-xs p-1"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setEditingNoteId(null);
+                                          setEditingNoteContent('');
+                                        }}
+                                        className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          setEditingNoteId(note.id);
+                                          setEditingNoteContent(note.content);
+                                        }}
+                                        className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                      >
+                                        <Edit2 size={14} />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteNote('partner', partner.id, note.id)}
+                                        className="text-red-600 hover:text-red-700 text-xs p-1"
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              {editingNoteId === note.id ? (
+                                <textarea
+                                  value={editingNoteContent}
+                                  onChange={(e) => setEditingNoteContent(e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                  rows="3"
+                                />
+                              ) : (
+                                <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{note.content}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {partners.length === 0 && !showPartnerForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                <p className={`${textSecondaryClass} text-lg`}>No partners yet. Click "Add Partner" to get started!</p>
               </div>
             )}
           </div>
