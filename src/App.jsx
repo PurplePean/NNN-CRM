@@ -5,11 +5,13 @@ export default function IndustrialCRM() {
   const [properties, setProperties] = useState([]);
   const [brokers, setBrokers] = useState([]);
   const [partners, setPartners] = useState([]);
+  const [gatekeepers, setGatekeepers] = useState([]);
   const [activeTab, setActiveTab] = useState('assets');
   const [searchTerm, setSearchTerm] = useState('');
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [showBrokerForm, setShowBrokerForm] = useState(false);
   const [showPartnerForm, setShowPartnerForm] = useState(false);
+  const [showGatekeeperForm, setShowGatekeeperForm] = useState(false);
   const [showInlineBrokerForm, setShowInlineBrokerForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
@@ -43,10 +45,12 @@ export default function IndustrialCRM() {
     const savedProperties = localStorage.getItem('properties');
     const savedBrokers = localStorage.getItem('brokers');
     const savedPartners = localStorage.getItem('partners');
+    const savedGatekeepers = localStorage.getItem('gatekeepers');
     const savedDarkMode = localStorage.getItem('darkMode');
     if (savedProperties) setProperties(JSON.parse(savedProperties));
     if (savedBrokers) setBrokers(JSON.parse(savedBrokers));
     if (savedPartners) setPartners(JSON.parse(savedPartners));
+    if (savedGatekeepers) setGatekeepers(JSON.parse(savedGatekeepers));
     if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
   }, []);
 
@@ -62,6 +66,10 @@ export default function IndustrialCRM() {
   useEffect(() => {
     localStorage.setItem('partners', JSON.stringify(partners));
   }, [partners]);
+
+  useEffect(() => {
+    localStorage.setItem('gatekeepers', JSON.stringify(gatekeepers));
+  }, [gatekeepers]);
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
@@ -517,6 +525,48 @@ export default function IndustrialCRM() {
     }
   };
 
+  // Gatekeeper form handlers
+  const handleAddGatekeeper = () => {
+    setFormData({
+      name: '',
+      title: '',
+      email: '',
+      phone: '',
+      company: '',
+      relatedTo: ''
+    });
+    setEditingId(null);
+    setShowGatekeeperForm(true);
+  };
+
+  const handleEditGatekeeper = (gatekeeper) => {
+    setFormData(gatekeeper);
+    setEditingId(gatekeeper.id);
+    setShowGatekeeperForm(true);
+  };
+
+  const handleSaveGatekeeper = () => {
+    if (!formData.name) {
+      alert('Please enter gatekeeper name');
+      return;
+    }
+
+    if (editingId) {
+      setGatekeepers(gatekeepers.map(g => g.id === editingId ? { ...formData, id: editingId } : g));
+    } else {
+      setGatekeepers([...gatekeepers, { ...formData, id: Date.now() }]);
+    }
+
+    setShowGatekeeperForm(false);
+    setFormData({});
+  };
+
+  const handleDeleteGatekeeper = (id) => {
+    if (window.confirm('Are you sure you want to delete this gatekeeper?')) {
+      setGatekeepers(gatekeepers.filter(g => g.id !== id));
+    }
+  };
+
   // Inline broker handlers (for quick-add within property form)
   const handleShowInlineBrokerForm = () => {
     setInlineBrokerData({
@@ -830,10 +880,10 @@ export default function IndustrialCRM() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Tabs */}
-        <div className={`flex gap-4 mb-8 border-b ${borderClass}`}>
+        <div className={`flex gap-4 mb-8 border-b ${borderClass} overflow-x-auto`}>
           <button
             onClick={() => setActiveTab('assets')}
-            className={`px-6 py-3 font-semibold border-b-2 transition ${
+            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
               activeTab === 'assets'
                 ? 'border-blue-600 text-blue-600'
                 : `border-transparent ${textSecondaryClass} hover:${textClass}`
@@ -843,7 +893,7 @@ export default function IndustrialCRM() {
           </button>
           <button
             onClick={() => setActiveTab('brokers')}
-            className={`px-6 py-3 font-semibold border-b-2 transition ${
+            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
               activeTab === 'brokers'
                 ? 'border-blue-600 text-blue-600'
                 : `border-transparent ${textSecondaryClass} hover:${textClass}`
@@ -852,14 +902,34 @@ export default function IndustrialCRM() {
             Brokers ({brokers.length})
           </button>
           <button
+            onClick={() => setActiveTab('gatekeepers')}
+            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+              activeTab === 'gatekeepers'
+                ? 'border-blue-600 text-blue-600'
+                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+            }`}
+          >
+            Gatekeepers ({gatekeepers.length})
+          </button>
+          <button
             onClick={() => setActiveTab('partners')}
-            className={`px-6 py-3 font-semibold border-b-2 transition ${
+            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
               activeTab === 'partners'
                 ? 'border-blue-600 text-blue-600'
                 : `border-transparent ${textSecondaryClass} hover:${textClass}`
             }`}
           >
             Partners ({partners.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('contacts')}
+            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+              activeTab === 'contacts'
+                ? 'border-blue-600 text-blue-600'
+                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+            }`}
+          >
+            Total Contacts ({brokers.length + gatekeepers.length})
           </button>
         </div>
 
@@ -2596,6 +2666,281 @@ export default function IndustrialCRM() {
             {partners.length === 0 && !showPartnerForm && (
               <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
                 <p className={`${textSecondaryClass} text-lg`}>No partners yet. Click "Add Partner" to get started!</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Gatekeepers Tab */}
+        {activeTab === 'gatekeepers' && (
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="flex-1"></div>
+              <button
+                onClick={handleAddGatekeeper}
+                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                <Plus size={20} /> Add Gatekeeper
+              </button>
+            </div>
+
+            {/* Gatekeeper Form */}
+            {showGatekeeperForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
+                <h2 className={`text-2xl font-bold ${textClass} mb-6`}>
+                  {editingId ? 'Edit Gatekeeper' : 'Add New Gatekeeper'}
+                </h2>
+
+                <div className="space-y-6 mb-6">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Title (e.g., Executive Assistant, Office Manager)"
+                    value={formData.title || ''}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={formData.email || ''}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone"
+                    value={formData.phone || ''}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Company/Firm"
+                    value={formData.company || ''}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Related To (optional - broker or contact they gate for)"
+                    value={formData.relatedTo || ''}
+                    onChange={(e) => setFormData({ ...formData, relatedTo: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSaveGatekeeper}
+                    className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    {editingId ? 'Update' : 'Add'} Gatekeeper
+                  </button>
+                  <button
+                    onClick={() => setShowGatekeeperForm(false)}
+                    className={`flex-1 border ${borderClass} ${textSecondaryClass} font-semibold py-3 rounded-lg ${hoverBgClass} transition`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Gatekeepers List */}
+            <div className="grid gap-6">
+              {gatekeepers.map(gatekeeper => (
+                <div key={gatekeeper.id} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className={`text-2xl font-bold ${textClass}`}>{gatekeeper.name}</h3>
+                      {gatekeeper.title && (
+                        <p className={`${textSecondaryClass} text-sm mt-1`}>{gatekeeper.title}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditGatekeeper(gatekeeper)}
+                        className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                      >
+                        <Edit2 size={20} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteGatekeeper(gatekeeper.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {gatekeeper.company && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Company:</span>
+                        <span className={`${textClass} ml-2`}>{gatekeeper.company}</span>
+                      </div>
+                    )}
+                    {gatekeeper.email && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
+                        <a href={`mailto:${gatekeeper.email}`} className="text-blue-600 hover:underline ml-2">
+                          {gatekeeper.email}
+                        </a>
+                      </div>
+                    )}
+                    {gatekeeper.phone && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
+                        <a href={`tel:${gatekeeper.phone}`} className="text-blue-600 hover:underline ml-2">
+                          {gatekeeper.phone}
+                        </a>
+                      </div>
+                    )}
+                    {gatekeeper.relatedTo && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Related To:</span>
+                        <span className={`${textClass} ml-2`}>{gatekeeper.relatedTo}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {gatekeepers.length === 0 && !showGatekeeperForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                <p className={`${textSecondaryClass} text-lg`}>No gatekeepers yet. Click "Add Gatekeeper" to get started!</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Total Contacts Tab */}
+        {activeTab === 'contacts' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className={`text-2xl font-bold ${textClass}`}>Total Contacts</h2>
+                <p className={textSecondaryClass}>All brokers and gatekeepers in one place</p>
+              </div>
+            </div>
+
+            {/* Combined Contacts List */}
+            <div className="grid gap-6">
+              {/* Brokers */}
+              {brokers.map(broker => (
+                <div key={`broker-${broker.id}`} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className={`text-2xl font-bold ${textClass}`}>{broker.name}</h3>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
+                          BROKER
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('brokers')}
+                      className={`text-sm ${textSecondaryClass} hover:${textClass} transition`}
+                    >
+                      View Details →
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {broker.firmName && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Firm:</span>
+                        <span className={`${textClass} ml-2`}>{broker.firmName}</span>
+                      </div>
+                    )}
+                    {broker.email && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
+                        <a href={`mailto:${broker.email}`} className="text-blue-600 hover:underline ml-2">
+                          {broker.email}
+                        </a>
+                      </div>
+                    )}
+                    {broker.phone && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
+                        <a href={`tel:${broker.phone}`} className="text-blue-600 hover:underline ml-2">
+                          {broker.phone}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Gatekeepers */}
+              {gatekeepers.map(gatekeeper => (
+                <div key={`gatekeeper-${gatekeeper.id}`} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className={`text-2xl font-bold ${textClass}`}>{gatekeeper.name}</h3>
+                        <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">
+                          GATEKEEPER
+                        </span>
+                      </div>
+                      {gatekeeper.title && (
+                        <p className={`${textSecondaryClass} text-sm mt-1`}>{gatekeeper.title}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('gatekeepers')}
+                      className={`text-sm ${textSecondaryClass} hover:${textClass} transition`}
+                    >
+                      View Details →
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {gatekeeper.company && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Company:</span>
+                        <span className={`${textClass} ml-2`}>{gatekeeper.company}</span>
+                      </div>
+                    )}
+                    {gatekeeper.email && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
+                        <a href={`mailto:${gatekeeper.email}`} className="text-blue-600 hover:underline ml-2">
+                          {gatekeeper.email}
+                        </a>
+                      </div>
+                    )}
+                    {gatekeeper.phone && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
+                        <a href={`tel:${gatekeeper.phone}`} className="text-blue-600 hover:underline ml-2">
+                          {gatekeeper.phone}
+                        </a>
+                      </div>
+                    )}
+                    {gatekeeper.relatedTo && (
+                      <div className="text-sm">
+                        <span className={`font-medium ${textSecondaryClass}`}>Related To:</span>
+                        <span className={`${textClass} ml-2`}>{gatekeeper.relatedTo}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {brokers.length === 0 && gatekeepers.length === 0 && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                <p className={`${textSecondaryClass} text-lg`}>No contacts yet. Add brokers and gatekeepers to get started!</p>
               </div>
             )}
           </div>
