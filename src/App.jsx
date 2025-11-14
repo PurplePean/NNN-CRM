@@ -33,7 +33,7 @@ export default function IndustrialCRM() {
   const [sensitivityPropertyId, setSensitivityPropertyId] = useState(null);
   const [sensitivityRowVar, setSensitivityRowVar] = useState('monthlyBaseRentPerSqft');
   const [sensitivityColVar, setSensitivityColVar] = useState('exitCapRate');
-  const [sensitivityOutputMetric, setSensitivityOutputMetric] = useState('equityMultiple');
+  const [sensitivityOutputMetric, setSensitivityOutputMetric] = useState('irr');
   const [sensitivityRowMin, setSensitivityRowMin] = useState('');
   const [sensitivityRowMax, setSensitivityRowMax] = useState('');
   const [sensitivityColMin, setSensitivityColMin] = useState('');
@@ -696,6 +696,59 @@ export default function IndustrialCRM() {
     }
   };
 
+  // Calculate IRR (Internal Rate of Return) using Newton-Raphson method
+  const calculateIRR = (cashFlows) => {
+    // cashFlows array: [initial investment (negative), year 1, year 2, ..., year N]
+    if (!cashFlows || cashFlows.length < 2) return 0;
+
+    // Check if all cash flows are the same sign (no IRR exists)
+    const allPositive = cashFlows.every(cf => cf >= 0);
+    const allNegative = cashFlows.every(cf => cf <= 0);
+    if (allPositive || allNegative) return 0;
+
+    // NPV function for a given rate
+    const npv = (rate) => {
+      return cashFlows.reduce((sum, cf, index) => {
+        return sum + cf / Math.pow(1 + rate, index);
+      }, 0);
+    };
+
+    // Derivative of NPV for Newton-Raphson
+    const npvDerivative = (rate) => {
+      return cashFlows.reduce((sum, cf, index) => {
+        if (index === 0) return sum;
+        return sum - (index * cf) / Math.pow(1 + rate, index + 1);
+      }, 0);
+    };
+
+    // Newton-Raphson iteration
+    let guess = 0.1; // Start with 10% guess
+    const maxIterations = 100;
+    const tolerance = 0.00001;
+
+    for (let i = 0; i < maxIterations; i++) {
+      const npvValue = npv(guess);
+      const npvDerivValue = npvDerivative(guess);
+
+      // Avoid division by zero
+      if (Math.abs(npvDerivValue) < 0.000001) break;
+
+      const newGuess = guess - npvValue / npvDerivValue;
+
+      // Check for convergence
+      if (Math.abs(newGuess - guess) < tolerance) {
+        return newGuess * 100; // Return as percentage
+      }
+
+      guess = newGuess;
+
+      // Prevent unrealistic values
+      if (guess < -0.99 || guess > 10) return 0;
+    }
+
+    return guess * 100; // Return as percentage
+  };
+
   // Calculate comprehensive metrics
   const calculateMetrics = (prop) => {
     // Parse inputs (strip commas)
@@ -749,6 +802,31 @@ export default function IndustrialCRM() {
     const netProceedsAtExit = exitValue - remainingLoanBalance;
     const equityMultiple = equityRequired > 0 ? netProceedsAtExit / equityRequired : 0;
 
+    // Calculate IRR (Internal Rate of Return)
+    let irr = 0;
+    if (holdingPeriodMonths > 0 && equityRequired > 0) {
+      const holdingPeriodYears = holdingPeriodMonths / 12;
+      const cashFlows = [];
+
+      // Year 0: Initial equity investment (negative)
+      cashFlows.push(-equityRequired);
+
+      // Years 1 through N: Annual cash flows
+      for (let year = 1; year <= Math.floor(holdingPeriodYears); year++) {
+        cashFlows.push(annualCashFlow);
+      }
+
+      // Final year: Add exit proceeds to final cash flow
+      if (cashFlows.length > 1) {
+        cashFlows[cashFlows.length - 1] += netProceedsAtExit;
+      } else {
+        // If holding period < 1 year, still calculate with single period
+        cashFlows.push(annualCashFlow * (holdingPeriodMonths / 12) + netProceedsAtExit);
+      }
+
+      irr = calculateIRR(cashFlows);
+    }
+
     return {
       allInCost,
       monthlyRent,
@@ -765,7 +843,8 @@ export default function IndustrialCRM() {
       exitValue,
       remainingLoanBalance,
       netProceedsAtExit,
-      equityMultiple
+      equityMultiple,
+      irr
     };
   };
 
@@ -824,7 +903,8 @@ export default function IndustrialCRM() {
           capRate: metrics.capRate,
           annualCashFlow: metrics.annualCashFlow,
           netProceedsAtExit: metrics.netProceedsAtExit,
-          noi: metrics.noi
+          noi: metrics.noi,
+          irr: metrics.irr
         };
       });
     });
@@ -1451,7 +1531,7 @@ export default function IndustrialCRM() {
                     {property.holdingPeriodMonths && (
                       <div className={`p-4 rounded-lg mb-4 ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                         <div className={`text-sm font-bold ${textSecondaryClass} uppercase mb-3`}>Exit Analysis ({property.holdingPeriodMonths} months)</div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                           <div>
                             <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Exit Value</div>
                             <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.exitValue)}</div>
@@ -1467,6 +1547,10 @@ export default function IndustrialCRM() {
                           <div>
                             <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Equity Multiple</div>
                             <div className={`text-lg font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{metrics.equityMultiple > 0 ? `${metrics.equityMultiple.toFixed(2)}x` : 'N/A'}</div>
+                          </div>
+                          <div>
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>IRR</div>
+                            <div className={`text-lg font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{metrics.irr > 0 ? `${metrics.irr.toFixed(2)}%` : 'N/A'}</div>
                           </div>
                         </div>
                       </div>
@@ -1517,6 +1601,7 @@ export default function IndustrialCRM() {
                                 onChange={(e) => setSensitivityOutputMetric(e.target.value)}
                                 className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
                               >
+                                <option value="irr">IRR (Internal Rate of Return) %</option>
                                 <option value="equityMultiple">Equity Multiple</option>
                                 <option value="dscr">DSCR (Debt Service Coverage Ratio)</option>
                                 <option value="cashOnCash">Cash-on-Cash Return %</option>
@@ -1641,6 +1726,7 @@ export default function IndustrialCRM() {
                             {sensitivityTable && (() => {
                               // Metric metadata
                               const metricMeta = {
+                                irr: { label: 'IRR %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 15, fair: 10 },
                                 equityMultiple: { label: 'Equity Multiple', format: (v) => v > 0 ? `${v.toFixed(2)}x` : 'N/A', good: 2.0, fair: 1.5 },
                                 dscr: { label: 'DSCR', format: (v) => v > 0 ? v.toFixed(2) : 'N/A', good: 1.25, fair: 1.0 },
                                 cashOnCash: { label: 'Cash-on-Cash %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 8, fair: 5 },
