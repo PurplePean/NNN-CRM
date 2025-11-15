@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle } from 'lucide-react';
+import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target } from 'lucide-react';
 
 export default function IndustrialCRM() {
   const [properties, setProperties] = useState([]);
   const [brokers, setBrokers] = useState([]);
   const [partners, setPartners] = useState([]);
   const [gatekeepers, setGatekeepers] = useState([]);
-  const [activeTab, setActiveTab] = useState('assets');
+  const [events, setEvents] = useState([]);
+  const [followUps, setFollowUps] = useState([]);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [showBrokerForm, setShowBrokerForm] = useState(false);
   const [showPartnerForm, setShowPartnerForm] = useState(false);
   const [showGatekeeperForm, setShowGatekeeperForm] = useState(false);
   const [showInlineBrokerForm, setShowInlineBrokerForm] = useState(false);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
@@ -46,11 +50,15 @@ export default function IndustrialCRM() {
     const savedBrokers = localStorage.getItem('brokers');
     const savedPartners = localStorage.getItem('partners');
     const savedGatekeepers = localStorage.getItem('gatekeepers');
+    const savedEvents = localStorage.getItem('events');
+    const savedFollowUps = localStorage.getItem('followUps');
     const savedDarkMode = localStorage.getItem('darkMode');
     if (savedProperties) setProperties(JSON.parse(savedProperties));
     if (savedBrokers) setBrokers(JSON.parse(savedBrokers));
     if (savedPartners) setPartners(JSON.parse(savedPartners));
     if (savedGatekeepers) setGatekeepers(JSON.parse(savedGatekeepers));
+    if (savedEvents) setEvents(JSON.parse(savedEvents));
+    if (savedFollowUps) setFollowUps(JSON.parse(savedFollowUps));
     if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
   }, []);
 
@@ -70,6 +78,14 @@ export default function IndustrialCRM() {
   useEffect(() => {
     localStorage.setItem('gatekeepers', JSON.stringify(gatekeepers));
   }, [gatekeepers]);
+
+  useEffect(() => {
+    localStorage.setItem('events', JSON.stringify(events));
+  }, [events]);
+
+  useEffect(() => {
+    localStorage.setItem('followUps', JSON.stringify(followUps));
+  }, [followUps]);
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
@@ -108,6 +124,64 @@ export default function IndustrialCRM() {
   // Strip commas for storage
   const stripCommas = (value) => {
     return value ? value.replace(/,/g, '') : '';
+  };
+
+  // Date formatting utilities
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
+
+  const getDaysAgo = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const today = new Date();
+    const diffTime = today - date;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const isOverdue = (dateString) => {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
+  const isDueToday = (dateString) => {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  // Google Calendar export
+  const exportToGoogleCalendar = (event) => {
+    const title = encodeURIComponent(event.title);
+    const details = encodeURIComponent(event.description || '');
+    const location = encodeURIComponent(event.location || '');
+
+    // Format dates for Google Calendar (YYYYMMDDTHHmmss)
+    const startDate = new Date(event.date);
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour later
+
+    const formatGoogleDate = (date) => {
+      return date.toISOString().replace(/-|:|\.\d+/g, '');
+    };
+
+    const dates = `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`;
+
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+    window.open(url, '_blank');
   };
 
   // Calculate amortization payment
@@ -832,7 +906,7 @@ export default function IndustrialCRM() {
   };
 
   const clearAllData = () => {
-    if (!window.confirm('⚠️ WARNING: This will permanently delete ALL data (properties, brokers, partners, gatekeepers). This cannot be undone. Continue?')) return;
+    if (!window.confirm('⚠️ WARNING: This will permanently delete ALL data (properties, brokers, partners, gatekeepers, events, follow-ups). This cannot be undone. Continue?')) return;
 
     if (!window.confirm('Are you absolutely sure? This is your last chance to cancel.')) return;
 
@@ -840,6 +914,8 @@ export default function IndustrialCRM() {
     setBrokers([]);
     setPartners([]);
     setGatekeepers([]);
+    setEvents([]);
+    setFollowUps([]);
     setSensitivityTable(null);
     setSensitivityPropertyId(null);
 
@@ -1138,6 +1214,39 @@ export default function IndustrialCRM() {
         {/* Tabs */}
         <div className={`flex gap-4 mb-8 border-b ${borderClass} overflow-x-auto`}>
           <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center gap-2 px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+              activeTab === 'dashboard'
+                ? 'border-blue-600 text-blue-600'
+                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+            }`}
+          >
+            <TrendingUp size={18} />
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('followups')}
+            className={`flex items-center gap-2 px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+              activeTab === 'followups'
+                ? 'border-blue-600 text-blue-600'
+                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+            }`}
+          >
+            <Bell size={18} />
+            Follow-ups ({followUps.filter(f => f.status !== 'completed').length})
+          </button>
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={`flex items-center gap-2 px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+              activeTab === 'calendar'
+                ? 'border-blue-600 text-blue-600'
+                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+            }`}
+          >
+            <Calendar size={18} />
+            Calendar ({events.length})
+          </button>
+          <button
             onClick={() => setActiveTab('assets')}
             className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
               activeTab === 'assets'
@@ -1188,6 +1297,204 @@ export default function IndustrialCRM() {
             Total Contacts ({brokers.length + gatekeepers.length})
           </button>
         </div>
+
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            {/* Portfolio Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Total Properties</div>
+                  <Building2 size={24} className="text-blue-500" />
+                </div>
+                <div className={`text-3xl font-bold ${textClass}`}>{properties.length}</div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                  Portfolio Value: {formatCurrency(properties.reduce((sum, p) => sum + (parseFloat(stripCommas(p.purchasePrice || 0))), 0))}
+                </div>
+              </div>
+
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Avg IRR</div>
+                  <Target size={24} className="text-green-500" />
+                </div>
+                <div className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                  {properties.length > 0
+                    ? `${(properties.reduce((sum, p) => {
+                        const metrics = calculateMetrics(p);
+                        return sum + (metrics.irr || 0);
+                      }, 0) / properties.length).toFixed(1)}%`
+                    : 'N/A'}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>Average across portfolio</div>
+              </div>
+
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Total NOI</div>
+                  <DollarSign size={24} className="text-purple-500" />
+                </div>
+                <div className={`text-3xl font-bold ${textClass}`}>
+                  {formatCurrency(properties.reduce((sum, p) => {
+                    const metrics = calculateMetrics(p);
+                    return sum + (metrics.noi || 0);
+                  }, 0))}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>Net Operating Income</div>
+              </div>
+
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
+                  <Bell size={24} className="text-orange-500" />
+                </div>
+                <div className={`text-3xl font-bold ${textClass}`}>
+                  {followUps.filter(f => f.status !== 'completed').length}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                  {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Follow-ups */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
+                  <Bell size={24} />
+                  Upcoming Follow-ups
+                </h3>
+                <button
+                  onClick={() => setActiveTab('followups')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
+                >
+                  View All →
+                </button>
+              </div>
+
+              {followUps.filter(f => f.status !== 'completed').length === 0 ? (
+                <div className={`text-center py-8 ${textSecondaryClass}`}>
+                  <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
+                  <p>No pending follow-ups. You're all caught up!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {followUps
+                    .filter(f => f.status !== 'completed')
+                    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+                    .slice(0, 5)
+                    .map(followUp => {
+                      const overdue = isOverdue(followUp.dueDate);
+                      const dueToday = isDueToday(followUp.dueDate);
+                      const statusColor = overdue ? 'red' : dueToday ? 'yellow' : 'green';
+
+                      return (
+                        <div key={followUp.id} className={`p-4 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                {overdue && <AlertCircle size={16} className="text-red-500" />}
+                                {dueToday && <Clock size={16} className="text-yellow-500" />}
+                                {!overdue && !dueToday && <Clock size={16} className="text-green-500" />}
+                                <span className={`text-sm font-semibold ${textClass}`}>{followUp.contactName}</span>
+                                <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                  {followUp.type}
+                                </span>
+                              </div>
+                              <p className={`text-sm ${textSecondaryClass} ml-6`}>{followUp.notes || 'No notes'}</p>
+                              <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} ml-6 mt-1`}>
+                                {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+            {/* Upcoming Calendar Events */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
+                  <Calendar size={24} />
+                  Upcoming Events
+                </h3>
+                <button
+                  onClick={() => setActiveTab('calendar')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
+                >
+                  View All →
+                </button>
+              </div>
+
+              {events.filter(e => new Date(e.date) >= new Date()).length === 0 ? (
+                <div className={`text-center py-8 ${textSecondaryClass}`}>
+                  <Calendar size={48} className="mx-auto mb-2 opacity-50" />
+                  <p>No upcoming events scheduled.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {events
+                    .filter(e => new Date(e.date) >= new Date())
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .slice(0, 5)
+                    .map(event => (
+                      <div key={event.id} className={`p-4 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Calendar size={16} className="text-blue-500" />
+                              <span className={`text-sm font-semibold ${textClass}`}>{event.title}</span>
+                              <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                {event.type}
+                              </span>
+                            </div>
+                            {event.location && (
+                              <p className={`text-sm ${textSecondaryClass} ml-6`}>📍 {event.location}</p>
+                            )}
+                            <p className={`text-xs ${textSecondaryClass} ml-6 mt-1`}>
+                              {formatDateTime(event.date)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                onClick={() => setActiveTab('assets')}
+                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
+              >
+                <Building2 size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
+                <div className={`font-semibold ${textClass}`}>View Properties</div>
+                <div className={`text-sm ${textSecondaryClass}`}>{properties.length} assets</div>
+              </button>
+              <button
+                onClick={() => setActiveTab('followups')}
+                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
+              >
+                <Bell size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
+                <div className={`font-semibold ${textClass}`}>Manage Follow-ups</div>
+                <div className={`text-sm ${textSecondaryClass}`}>{followUps.filter(f => f.status !== 'completed').length} active</div>
+              </button>
+              <button
+                onClick={() => setActiveTab('calendar')}
+                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
+              >
+                <Calendar size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
+                <div className={`font-semibold ${textClass}`}>View Calendar</div>
+                <div className={`text-sm ${textSecondaryClass}`}>{events.length} events</div>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Assets Tab */}
         {activeTab === 'assets' && (
