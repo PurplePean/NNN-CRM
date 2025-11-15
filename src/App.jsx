@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2, Plus, Edit2, Search, Moon, Sun, X } from 'lucide-react';
+import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle } from 'lucide-react';
 
 export default function IndustrialCRM() {
   const [properties, setProperties] = useState([]);
@@ -33,7 +33,7 @@ export default function IndustrialCRM() {
   const [sensitivityPropertyId, setSensitivityPropertyId] = useState(null);
   const [sensitivityRowVar, setSensitivityRowVar] = useState('monthlyBaseRentPerSqft');
   const [sensitivityColVar, setSensitivityColVar] = useState('exitCapRate');
-  const [sensitivityOutputMetric, setSensitivityOutputMetric] = useState('equityMultiple');
+  const [sensitivityOutputMetric, setSensitivityOutputMetric] = useState('irr');
   const [sensitivityRowMin, setSensitivityRowMin] = useState('');
   const [sensitivityRowMax, setSensitivityRowMax] = useState('');
   const [sensitivityColMin, setSensitivityColMin] = useState('');
@@ -696,6 +696,209 @@ export default function IndustrialCRM() {
     }
   };
 
+  // Test Data Functions
+  const loadTestData = () => {
+    if (!window.confirm('This will load sample data. Continue?')) return;
+
+    const now = new Date().toISOString();
+    const testBrokers = [
+      { id: 1001, name: 'Sarah Mitchell', company: 'CBRE', email: 'sarah.mitchell@cbre.com', phone: '555-0101', noteHistory: [] },
+      { id: 1002, name: 'James Chen', company: 'JLL', email: 'james.chen@jll.com', phone: '555-0102', noteHistory: [] },
+      { id: 1003, name: 'Maria Rodriguez', company: 'Cushman & Wakefield', email: 'maria.r@cushwake.com', phone: '555-0103', noteHistory: [] },
+      { id: 1004, name: 'David Park', company: 'Colliers', email: 'dpark@colliers.com', phone: '555-0104', noteHistory: [] }
+    ];
+
+    const testPartners = [
+      { id: 2001, name: 'Redwood Capital Partners', type: 'Institutional', commitmentAmount: '5000000', email: 'ir@redwoodcp.com', phone: '555-0201', noteHistory: [{ id: 1, timestamp: now, content: 'Prefers value-add opportunities in industrial sector', category: 'general', edited: false }] },
+      { id: 2002, name: 'Summit Equity Group', type: 'Family Office', commitmentAmount: '2500000', email: 'investments@summitequity.com', phone: '555-0202', noteHistory: [] },
+      { id: 2003, name: 'Northstar Ventures', type: 'High Net Worth', commitmentAmount: '1000000', email: 'contact@northstarvc.com', phone: '555-0203', noteHistory: [] },
+      { id: 2004, name: 'Pacific Industrial Fund', type: 'Institutional', commitmentAmount: '10000000', assetClass: 'CRE Lending', email: 'deals@pacificindustrial.com', phone: '555-0204', noteHistory: [] }
+    ];
+
+    const testGatekeepers = [
+      { id: 3001, name: 'Jennifer Walsh', title: 'Investment Director', company: 'Redwood Capital Partners', email: 'jwalsh@redwoodcp.com', phone: '555-0301', relatedTo: 'Redwood Capital Partners' },
+      { id: 3002, name: 'Robert Kim', title: 'Chief Investment Officer', company: 'Summit Equity Group', email: 'rkim@summitequity.com', phone: '555-0302', relatedTo: 'Summit Equity Group' },
+      { id: 3003, name: 'Lisa Martinez', title: 'Senior Asset Manager', company: 'Pacific Industrial Fund', email: 'lmartinez@pacificindustrial.com', phone: '555-0303', relatedTo: 'Pacific Industrial Fund' }
+    ];
+
+    const testProperties = [
+      {
+        id: 4001,
+        address: '2450 Industrial Parkway, Phoenix, AZ',
+        squareFeet: '125000',
+        monthlyBaseRentPerSqft: '0.85',
+        purchasePrice: '8500000',
+        improvements: '450000',
+        closingCosts: '85000',
+        ltvPercent: '70',
+        interestRate: '5.75',
+        loanTerm: '25',
+        debtServiceType: 'standard',
+        exitCapRate: '6.5',
+        holdingPeriodMonths: '60',
+        brokerIds: [1001],
+        noteHistory: [
+          { id: 1, timestamp: now, content: 'Single-tenant Amazon last-mile facility. 15-year NNN lease with 2% annual escalations.', category: 'general', edited: false }
+        ],
+        photos: []
+      },
+      {
+        id: 4002,
+        address: '7800 Distribution Center Dr, Dallas, TX',
+        squareFeet: '215000',
+        monthlyBaseRentPerSqft: '0.72',
+        purchasePrice: '14200000',
+        improvements: '0',
+        closingCosts: '142000',
+        ltvPercent: '65',
+        interestRate: '5.5',
+        loanTerm: '30',
+        debtServiceType: 'standard',
+        exitCapRate: '6.25',
+        holdingPeriodMonths: '84',
+        brokerIds: [1002, 1003],
+        noteHistory: [
+          { id: 1, timestamp: now, content: 'Multi-tenant Class A warehouse. Major tenants: FedEx (40%), UPS (35%), Home Depot (25%).', category: 'general', edited: false }
+        ],
+        photos: []
+      },
+      {
+        id: 4003,
+        address: '1250 Commerce Blvd, Atlanta, GA',
+        squareFeet: '85000',
+        monthlyBaseRentPerSqft: '0.95',
+        purchasePrice: '6800000',
+        improvements: '250000',
+        closingCosts: '68000',
+        ltvPercent: '75',
+        interestRate: '6.0',
+        loanTerm: '20',
+        debtServiceType: 'standard',
+        exitCapRate: '6.75',
+        holdingPeriodMonths: '36',
+        brokerIds: [1004],
+        noteHistory: [],
+        photos: []
+      },
+      {
+        id: 4004,
+        address: '9500 Logistics Way, Indianapolis, IN',
+        squareFeet: '175000',
+        monthlyBaseRentPerSqft: '0.68',
+        purchasePrice: '10500000',
+        improvements: '850000',
+        closingCosts: '105000',
+        ltvPercent: '70',
+        interestRate: '5.85',
+        loanTerm: '25',
+        debtServiceType: 'interestOnly',
+        exitCapRate: '6.5',
+        holdingPeriodMonths: '60',
+        brokerIds: [1001, 1002],
+        noteHistory: [
+          { id: 1, timestamp: now, content: 'Cold storage facility. Tenant: Sysco Foods. 20-year absolute NNN lease.', category: 'general', edited: false },
+          { id: 2, timestamp: now, content: 'Excellent refrigeration infrastructure - recent $1.2M upgrade included in improvements.', category: 'financial', edited: false }
+        ],
+        photos: []
+      },
+      {
+        id: 4005,
+        address: '3320 Freeway Industrial Park, Charlotte, NC',
+        squareFeet: '95000',
+        monthlyBaseRentPerSqft: '0.78',
+        purchasePrice: '6200000',
+        improvements: '180000',
+        closingCosts: '62000',
+        ltvPercent: '68',
+        interestRate: '5.65',
+        loanTerm: '30',
+        debtServiceType: 'standard',
+        exitCapRate: '6.35',
+        holdingPeriodMonths: '48',
+        brokerIds: [1003],
+        noteHistory: [
+          { id: 1, timestamp: now, content: 'Flex industrial space. Current tenant: regional manufacturing firm with 12-year lease remaining.', category: 'general', edited: false }
+        ],
+        photos: []
+      }
+    ];
+
+    setBrokers(testBrokers);
+    setPartners(testPartners);
+    setGatekeepers(testGatekeepers);
+    setProperties(testProperties);
+
+    alert('Test data loaded! You now have 5 properties, 4 brokers, 4 partners, and 3 gatekeepers.');
+  };
+
+  const clearAllData = () => {
+    if (!window.confirm('⚠️ WARNING: This will permanently delete ALL data (properties, brokers, partners, gatekeepers). This cannot be undone. Continue?')) return;
+
+    if (!window.confirm('Are you absolutely sure? This is your last chance to cancel.')) return;
+
+    setProperties([]);
+    setBrokers([]);
+    setPartners([]);
+    setGatekeepers([]);
+    setSensitivityTable(null);
+    setSensitivityPropertyId(null);
+
+    alert('All data has been cleared.');
+  };
+
+  // Calculate IRR (Internal Rate of Return) using Newton-Raphson method
+  const calculateIRR = (cashFlows) => {
+    // cashFlows array: [initial investment (negative), year 1, year 2, ..., year N]
+    if (!cashFlows || cashFlows.length < 2) return 0;
+
+    // Check if all cash flows are the same sign (no IRR exists)
+    const allPositive = cashFlows.every(cf => cf >= 0);
+    const allNegative = cashFlows.every(cf => cf <= 0);
+    if (allPositive || allNegative) return 0;
+
+    // NPV function for a given rate
+    const npv = (rate) => {
+      return cashFlows.reduce((sum, cf, index) => {
+        return sum + cf / Math.pow(1 + rate, index);
+      }, 0);
+    };
+
+    // Derivative of NPV for Newton-Raphson
+    const npvDerivative = (rate) => {
+      return cashFlows.reduce((sum, cf, index) => {
+        if (index === 0) return sum;
+        return sum - (index * cf) / Math.pow(1 + rate, index + 1);
+      }, 0);
+    };
+
+    // Newton-Raphson iteration
+    let guess = 0.1; // Start with 10% guess
+    const maxIterations = 100;
+    const tolerance = 0.00001;
+
+    for (let i = 0; i < maxIterations; i++) {
+      const npvValue = npv(guess);
+      const npvDerivValue = npvDerivative(guess);
+
+      // Avoid division by zero
+      if (Math.abs(npvDerivValue) < 0.000001) break;
+
+      const newGuess = guess - npvValue / npvDerivValue;
+
+      // Check for convergence
+      if (Math.abs(newGuess - guess) < tolerance) {
+        return newGuess * 100; // Return as percentage
+      }
+
+      guess = newGuess;
+
+      // Prevent unrealistic values
+      if (guess < -0.99 || guess > 10) return 0;
+    }
+
+    return guess * 100; // Return as percentage
+  };
+
   // Calculate comprehensive metrics
   const calculateMetrics = (prop) => {
     // Parse inputs (strip commas)
@@ -749,6 +952,31 @@ export default function IndustrialCRM() {
     const netProceedsAtExit = exitValue - remainingLoanBalance;
     const equityMultiple = equityRequired > 0 ? netProceedsAtExit / equityRequired : 0;
 
+    // Calculate IRR (Internal Rate of Return)
+    let irr = 0;
+    if (holdingPeriodMonths > 0 && equityRequired > 0) {
+      const holdingPeriodYears = holdingPeriodMonths / 12;
+      const cashFlows = [];
+
+      // Year 0: Initial equity investment (negative)
+      cashFlows.push(-equityRequired);
+
+      // Years 1 through N: Annual cash flows
+      for (let year = 1; year <= Math.floor(holdingPeriodYears); year++) {
+        cashFlows.push(annualCashFlow);
+      }
+
+      // Final year: Add exit proceeds to final cash flow
+      if (cashFlows.length > 1) {
+        cashFlows[cashFlows.length - 1] += netProceedsAtExit;
+      } else {
+        // If holding period < 1 year, still calculate with single period
+        cashFlows.push(annualCashFlow * (holdingPeriodMonths / 12) + netProceedsAtExit);
+      }
+
+      irr = calculateIRR(cashFlows);
+    }
+
     return {
       allInCost,
       monthlyRent,
@@ -765,7 +993,8 @@ export default function IndustrialCRM() {
       exitValue,
       remainingLoanBalance,
       netProceedsAtExit,
-      equityMultiple
+      equityMultiple,
+      irr
     };
   };
 
@@ -824,7 +1053,8 @@ export default function IndustrialCRM() {
           capRate: metrics.capRate,
           annualCashFlow: metrics.annualCashFlow,
           netProceedsAtExit: metrics.netProceedsAtExit,
-          noi: metrics.noi
+          noi: metrics.noi,
+          irr: metrics.irr
         };
       });
     });
@@ -868,13 +1098,39 @@ export default function IndustrialCRM() {
             <h1 className={`text-3xl font-bold ${textClass}`}>Industrial Asset CRM</h1>
             <p className={`${textSecondaryClass} text-sm mt-1`}>NNN Property Management & Underwriting</p>
           </div>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className={`p-2 rounded-lg ${hoverBgClass} transition`}
-            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {darkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-slate-600" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={loadTestData}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                darkMode
+                  ? 'bg-blue-900 hover:bg-blue-800 text-blue-200'
+                  : 'bg-blue-100 hover:bg-blue-200 text-blue-900'
+              }`}
+              title="Load sample data for testing"
+            >
+              <Database size={18} />
+              Load Test Data
+            </button>
+            <button
+              onClick={clearAllData}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                darkMode
+                  ? 'bg-red-900 hover:bg-red-800 text-red-200'
+                  : 'bg-red-100 hover:bg-red-200 text-red-900'
+              }`}
+              title="Clear all data permanently"
+            >
+              <AlertTriangle size={18} />
+              Clear All
+            </button>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-lg ${hoverBgClass} transition`}
+              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {darkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-slate-600" />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1451,7 +1707,7 @@ export default function IndustrialCRM() {
                     {property.holdingPeriodMonths && (
                       <div className={`p-4 rounded-lg mb-4 ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                         <div className={`text-sm font-bold ${textSecondaryClass} uppercase mb-3`}>Exit Analysis ({property.holdingPeriodMonths} months)</div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                           <div>
                             <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Exit Value</div>
                             <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.exitValue)}</div>
@@ -1467,6 +1723,10 @@ export default function IndustrialCRM() {
                           <div>
                             <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Equity Multiple</div>
                             <div className={`text-lg font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{metrics.equityMultiple > 0 ? `${metrics.equityMultiple.toFixed(2)}x` : 'N/A'}</div>
+                          </div>
+                          <div>
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>IRR</div>
+                            <div className={`text-lg font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{metrics.irr > 0 ? `${metrics.irr.toFixed(2)}%` : 'N/A'}</div>
                           </div>
                         </div>
                       </div>
@@ -1517,6 +1777,7 @@ export default function IndustrialCRM() {
                                 onChange={(e) => setSensitivityOutputMetric(e.target.value)}
                                 className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
                               >
+                                <option value="irr">IRR (Internal Rate of Return) %</option>
                                 <option value="equityMultiple">Equity Multiple</option>
                                 <option value="dscr">DSCR (Debt Service Coverage Ratio)</option>
                                 <option value="cashOnCash">Cash-on-Cash Return %</option>
@@ -1641,6 +1902,7 @@ export default function IndustrialCRM() {
                             {sensitivityTable && (() => {
                               // Metric metadata
                               const metricMeta = {
+                                irr: { label: 'IRR %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 18, fair: 13 },
                                 equityMultiple: { label: 'Equity Multiple', format: (v) => v > 0 ? `${v.toFixed(2)}x` : 'N/A', good: 2.0, fair: 1.5 },
                                 dscr: { label: 'DSCR', format: (v) => v > 0 ? v.toFixed(2) : 'N/A', good: 1.25, fair: 1.0 },
                                 cashOnCash: { label: 'Cash-on-Cash %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 8, fair: 5 },
