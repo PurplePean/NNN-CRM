@@ -2,6 +2,8 @@
 
 This guide will get you up and running with the NNN CRM on your laptop in **5 minutes**.
 
+> **For AI Assistants:** This is user-facing documentation. Read [.claude/AI-CONTEXT.md](./.claude/AI-CONTEXT.md) for AI-specific instructions.
+
 ---
 
 ## 📋 Prerequisites

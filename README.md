@@ -2,6 +2,8 @@
 
 Professional CRM and underwriting tool for NNN (Triple Net) industrial properties.
 
+> **For AI Assistants (Claude Code, etc.):** Read [.claude/AI-CONTEXT.md](./.claude/AI-CONTEXT.md) first for complete context, workflow rules, and instructions.
+
 ## ⚡ Quick Start (5 Minutes)
 
 **Local development with feature branch workflow:**
@@ -100,9 +102,14 @@ You: "Perfect! Create a PR"
 
 ## Documentation
 
+### For Developers
 - **[LOCAL-SETUP.md](./LOCAL-SETUP.md)** - ⭐ **START HERE** - Set up your laptop for development
 - **[SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)** - Feature branch workflow and commands
 - **[ROADMAP.md](./ROADMAP.md)** - What to build next, priorities, feature backlog
+
+### For AI Assistants
+- **[.claude/AI-CONTEXT.md](./.claude/AI-CONTEXT.md)** - Complete context and instructions for AI collaboration
+- **[.claude/QUICK-START.md](./.claude/QUICK-START.md)** - Quick reference for new sessions
 
 ---
 

@@ -2,6 +2,8 @@
 
 **Your Control**: You request features → Claude builds on branches → You test locally → You approve merges to production.
 
+> **For AI Assistants:** Read [.claude/AI-CONTEXT.md](./.claude/AI-CONTEXT.md) for complete workflow rules and technical context.
+
 ---
 
 ## 🎯 How It Works
