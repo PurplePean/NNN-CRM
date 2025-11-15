@@ -2,6 +2,8 @@
 
 This document tracks planned iterations, feature backlog, and priorities.
 
+> **For AI Assistants:** This roadmap guides feature priorities. Read [.claude/AI-CONTEXT.md](./.claude/AI-CONTEXT.md) for workflow rules before implementing features.
+
 ## Current Status
 
 **Version**: 1.0

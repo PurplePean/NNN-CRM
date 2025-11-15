@@ -2,74 +2,14 @@
 
 Professional CRM and underwriting tool for NNN (Triple Net) industrial properties.
 
-## 🚀 GETTING STARTED (Read This First!)
-
-### Where is my project?
-
-Your project is in a folder called `NNN-CRM`. To find it:
-
-**Option 1 - If you remember where you saved it:**
-```bash
-cd ~/Desktop/NNN-CRM          # If on Desktop
-cd ~/Documents/NNN-CRM        # If in Documents
-cd ~/Projects/NNN-CRM         # If in Projects folder
-```
-
-**Option 2 - Search for it:**
-```bash
-find ~ -name "NNN-CRM" -type d 2>/dev/null
-```
-
-**Option 3 - Use your file browser:**
-- Open Finder (Mac) or File Explorer (Windows)
-- Search for "NNN-CRM"
-- Right-click folder → "Open in Terminal"
-
-### Starting the app
-
-Once you're in the NNN-CRM folder:
-
-```bash
-# Start the development server
-npm run dev
-```
-
-A URL will appear (like `http://localhost:5173`) - open it in your browser!
-
-### Stopping the app
-
-Press `Ctrl + C` in the terminal
-
----
-
-## 📖 DAILY WORKFLOW
-
-### Morning Start
-```bash
-cd NNN-CRM              # Navigate to project
-git pull                # Get latest changes
-npm run dev             # Start server
-```
-
-### When Claude adds features
-```bash
-git pull                # Pull new changes (that's it!)
-# Refresh browser to see changes
-```
-
-### End of day
-```bash
-Ctrl + C                # Stop server
-```
-
----
+> **For AI Assistants (Claude Code, etc.):** Read [.claude/AI-CONTEXT.md](./.claude/AI-CONTEXT.md) first for complete context, workflow rules, and instructions.
 
 ## ⚡ Quick Start (5 Minutes)
 
-**First time setup:**
+**Local development with feature branch workflow:**
 
 ```bash
-# Clone the repo
+# Clone the repo to your laptop
 git clone https://github.com/PurplePean/NNN-CRM.git
 cd NNN-CRM
 
@@ -80,7 +20,7 @@ npm run dev
 
 Browser opens to `localhost:5173` - you're ready!
 
-**Tell Claude what to build** → Claude edits & pushes → **Run `git pull`** → See changes in 5 seconds!
+**Tell Claude what to build** → Claude creates feature branch → **You test locally** → **You approve and merge** → Production updated!
 
 ---
 
@@ -128,39 +68,49 @@ Browser opens to `localhost:5173` - you're ready!
 
 ### Your Setup
 
-**You have 3 windows:**
-1. **VS Code** - Viewing your local clone
-2. **Browser (localhost:3000)** - Your running app
-3. **Claude chat** - Where you tell Claude what to build
+**You have 2 windows on your laptop:**
+1. **Terminal** - Running `npm start` and git commands
+2. **Browser (localhost:3000)** - Your running app (live preview)
 
 **Your workflow:**
 ```
-You: "Add a purple background"
-→ Claude edits files and pushes to GitHub
-→ Claude: "Done! Run: git pull"
+You: "I want to add CSV export"
+→ Claude creates branch: claude/add-csv-export
+→ Claude develops and pushes to GitHub
 
-You: Run git pull in terminal (5 seconds)
-→ Browser auto-refreshes
-→ You see purple background
+You: In terminal:
+    git fetch origin
+    git checkout claude/add-csv-export
+→ Browser auto-refreshes with new feature
+→ You test the feature
 
-You: "Make it darker"
-→ Claude edits and pushes
-→ You: git pull
-→ Browser updates
-→ You see darker purple
+You: "Make the button green"
+→ Claude updates same branch
+→ You: git pull origin claude/add-csv-export
+→ Browser updates, you test again
 
-You: "Perfect! Save my work"
-→ Claude: "Already saved and pushed! ✅"
+You: "Perfect! Create a PR"
+→ Claude creates Pull Request
+→ You review on GitHub
+→ You: "Merge it to main"
+→ Claude merges to production ✅
 ```
 
-**Fast updates (5 seconds). Claude handles all git complexity.**
+**You control what goes to production. Claude never touches main without your approval.**
 
 ---
 
 ## Documentation
 
-- **[SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)** - ⭐ **START HERE** - Simple commands for working with Claude
+### For Developers
+- **[GETTING-STARTED.md](./GETTING-STARTED.md)** - ⭐ **START HERE** - Find your repo and start live environment
+- **[LOCAL-SETUP.md](./LOCAL-SETUP.md)** - Detailed setup guide with troubleshooting
+- **[SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)** - Feature branch workflow and commands
 - **[ROADMAP.md](./ROADMAP.md)** - What to build next, priorities, feature backlog
+
+### For AI Assistants
+- **[.claude/AI-CONTEXT.md](./.claude/AI-CONTEXT.md)** - ⭐ **READ THIS FIRST** - Complete context and workflow rules
+- **[.claude/QUICK-START.md](./.claude/QUICK-START.md)** - Quick reference for new sessions
 
 ---
 
@@ -169,17 +119,16 @@ You: "Perfect! Save my work"
 Just use plain English commands:
 
 ```
-"I want to work on CSV export"
-"Add a button to export properties"
-"Change the header color to blue"
-"Make the cards bigger"
-"Save my work"
-"What should I work on next?"
+"I want to add CSV export"           → Claude creates feature branch
+"Make the button green"               → Claude updates the branch
+"Looks good, create a PR"             → Claude creates Pull Request
+"Merge it to main"                    → Claude merges to production
+"What should I work on next?"         → Claude suggests from roadmap
 ```
 
-Claude handles all the technical details!
+**You test locally before approving. You control production.**
 
-See [SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md) for all available commands.
+See [SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md) for complete workflow guide.
 
 ---
 
@@ -187,32 +136,33 @@ See [SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md) for all available commands.
 
 ### Daily Workflow
 
-**Morning (1 minute):**
-- Open VS Code in your project folder
-- Run `npm start` in terminal
+**Morning (30 seconds):**
+- Open terminal in your NNN-CRM folder
+- Run `git checkout main && git pull origin main`
+- Run `npm start`
 - Browser opens to localhost:3000
 
 **During the day:**
-- Tell Claude what you want (in chat)
-- Claude edits and pushes to GitHub
-- Run `git pull` (5 seconds)
-- Browser auto-refreshes
-- Iterate fast (20 changes → 1 commit)
-- Tell Claude to save when ready
+- Tell Claude what feature you want
+- Claude creates feature branch and develops
+- You test locally: `git checkout claude/feature-name`
+- Iterate until perfect
+- You approve: "Create a PR"
+- You merge to production
 
 **End of day:**
-- "Save my work"
 - Stop npm start (Ctrl+C)
 
-### Iteration Approach
+### Feature Branch Workflow
 
-1. **Describe what you want** - "I want to add CSV export"
-2. **Claude builds it** - Makes changes and pushes to GitHub
-3. **You pull changes** - Run `git pull` (5 seconds)
-4. **Iterate quickly** - "Make it green", "Add this field", etc.
-5. **Save once** - When you're happy: "Save my work"
+1. **Request feature** - "I want to add CSV export"
+2. **Claude develops** - Creates branch, writes code, pushes to GitHub
+3. **You test locally** - `git checkout claude/add-csv-export && npm start`
+4. **Iterate** - Request changes, Claude updates same branch
+5. **Approve** - "Looks good, create a PR"
+6. **You merge** - Review PR, tell Claude to merge to main
 
-**Minimal git knowledge needed. Claude handles commits/pushes. You just pull!**
+**You control production. Claude never merges to main without approval.**
 
 ---
 
@@ -237,7 +187,7 @@ See [ROADMAP.md](./ROADMAP.md) for full feature roadmap.
 ## Questions?
 
 **"How do I get started?"**
-→ Read [CODESPACES-SETUP.md](./CODESPACES-SETUP.md)
+→ Read [LOCAL-SETUP.md](./LOCAL-SETUP.md)
 
 **"How do I work with Claude?"**
 → Read [SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)
@@ -246,7 +196,7 @@ See [ROADMAP.md](./ROADMAP.md) for full feature roadmap.
 → Check [ROADMAP.md](./ROADMAP.md)
 
 **"Can I code myself too?"**
-→ Yes! Edit in Codespaces, save, browser updates. Claude helps when you need it.
+→ Yes! Edit files locally, save, browser auto-refreshes. Claude helps when you need it.
 
 ---
 
