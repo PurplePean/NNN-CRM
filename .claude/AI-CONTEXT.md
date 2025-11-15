@@ -160,6 +160,34 @@ git checkout -b ${branchName}
 
 ## 🎯 Common Tasks
 
+### "Help me set up the workflow" / "How do I get started?"
+
+**Response:**
+
+"I'll help you set up the development workflow. First, let's find your repository:
+
+```bash
+# On Mac/Linux
+find ~ -name "NNN-CRM" -type d 2>/dev/null
+
+# On Windows (PowerShell)
+Get-ChildItem -Path $HOME -Filter "NNN-CRM" -Recurse -Directory -ErrorAction SilentlyContinue
+```
+
+Once you have the path, run:
+
+```bash
+cd "/path/to/NNN-CRM"  # Your path from above
+npm install            # Install dependencies
+npm start              # Start live environment
+```
+
+Browser opens to `localhost:3000` - you're ready!
+
+See [GETTING-STARTED.md](../GETTING-STARTED.md) for detailed instructions."
+
+---
+
 ### "I want to add [feature]"
 
 ```bash

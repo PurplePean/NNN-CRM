@@ -11,6 +11,38 @@
 **Workflow:** Feature branches (`claude/*`) → User tests locally → User approves → Merge to main
 **Rule:** USER controls production. NEVER push/merge to main without explicit approval.
 
+**User's Repo Location:** `/Users/zruss/Web Apps/NNN-CRM` (Mac)
+
+---
+
+## 🎯 If User Asks "Help me set up the workflow"
+
+**Your response:**
+
+"I'll help you set up the development workflow. Here's what we'll do:
+
+**Step 1: Find your repository**
+```bash
+find ~ -name "NNN-CRM" -type d 2>/dev/null
+```
+
+**Step 2: Navigate to it**
+```bash
+cd "/path/to/NNN-CRM"  # Use the path from step 1
+```
+
+**Step 3: Start your live environment**
+```bash
+npm install  # First time or when dependencies update
+npm start    # Starts live server at localhost:3000
+```
+
+That's it! Your browser will open and show the app.
+
+For complete instructions, see [GETTING-STARTED.md](../GETTING-STARTED.md)
+
+What's your repo path from Step 1?"
+
 ---
 
 ## 🎯 First Steps in New Session

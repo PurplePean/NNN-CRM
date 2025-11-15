@@ -103,12 +103,13 @@ You: "Perfect! Create a PR"
 ## Documentation
 
 ### For Developers
-- **[LOCAL-SETUP.md](./LOCAL-SETUP.md)** - ⭐ **START HERE** - Set up your laptop for development
+- **[GETTING-STARTED.md](./GETTING-STARTED.md)** - ⭐ **START HERE** - Find your repo and start live environment
+- **[LOCAL-SETUP.md](./LOCAL-SETUP.md)** - Detailed setup guide with troubleshooting
 - **[SIMPLE-WORKFLOW.md](./SIMPLE-WORKFLOW.md)** - Feature branch workflow and commands
 - **[ROADMAP.md](./ROADMAP.md)** - What to build next, priorities, feature backlog
 
 ### For AI Assistants
-- **[.claude/AI-CONTEXT.md](./.claude/AI-CONTEXT.md)** - Complete context and instructions for AI collaboration
+- **[.claude/AI-CONTEXT.md](./.claude/AI-CONTEXT.md)** - ⭐ **READ THIS FIRST** - Complete context and workflow rules
 - **[.claude/QUICK-START.md](./.claude/QUICK-START.md)** - Quick reference for new sessions
 
 ---
