@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle } from 'lucide-react';
+import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target } from 'lucide-react';
 
 export default function IndustrialCRM() {
   const [properties, setProperties] = useState([]);
   const [brokers, setBrokers] = useState([]);
   const [partners, setPartners] = useState([]);
   const [gatekeepers, setGatekeepers] = useState([]);
-  const [activeTab, setActiveTab] = useState('assets');
+  const [events, setEvents] = useState([]);
+  const [followUps, setFollowUps] = useState([]);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [showBrokerForm, setShowBrokerForm] = useState(false);
   const [showPartnerForm, setShowPartnerForm] = useState(false);
   const [showGatekeeperForm, setShowGatekeeperForm] = useState(false);
   const [showInlineBrokerForm, setShowInlineBrokerForm] = useState(false);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
@@ -46,11 +50,15 @@ export default function IndustrialCRM() {
     const savedBrokers = localStorage.getItem('brokers');
     const savedPartners = localStorage.getItem('partners');
     const savedGatekeepers = localStorage.getItem('gatekeepers');
+    const savedEvents = localStorage.getItem('events');
+    const savedFollowUps = localStorage.getItem('followUps');
     const savedDarkMode = localStorage.getItem('darkMode');
     if (savedProperties) setProperties(JSON.parse(savedProperties));
     if (savedBrokers) setBrokers(JSON.parse(savedBrokers));
     if (savedPartners) setPartners(JSON.parse(savedPartners));
     if (savedGatekeepers) setGatekeepers(JSON.parse(savedGatekeepers));
+    if (savedEvents) setEvents(JSON.parse(savedEvents));
+    if (savedFollowUps) setFollowUps(JSON.parse(savedFollowUps));
     if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
   }, []);
 
@@ -70,6 +78,14 @@ export default function IndustrialCRM() {
   useEffect(() => {
     localStorage.setItem('gatekeepers', JSON.stringify(gatekeepers));
   }, [gatekeepers]);
+
+  useEffect(() => {
+    localStorage.setItem('events', JSON.stringify(events));
+  }, [events]);
+
+  useEffect(() => {
+    localStorage.setItem('followUps', JSON.stringify(followUps));
+  }, [followUps]);
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
@@ -108,6 +124,64 @@ export default function IndustrialCRM() {
   // Strip commas for storage
   const stripCommas = (value) => {
     return value ? value.replace(/,/g, '') : '';
+  };
+
+  // Date formatting utilities
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
+
+  const getDaysAgo = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const today = new Date();
+    const diffTime = today - date;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const isOverdue = (dateString) => {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
+  const isDueToday = (dateString) => {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  // Google Calendar export
+  const exportToGoogleCalendar = (event) => {
+    const title = encodeURIComponent(event.title);
+    const details = encodeURIComponent(event.description || '');
+    const location = encodeURIComponent(event.location || '');
+
+    // Format dates for Google Calendar (YYYYMMDDTHHmmss)
+    const startDate = new Date(event.date);
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour later
+
+    const formatGoogleDate = (date) => {
+      return date.toISOString().replace(/-|:|\.\d+/g, '');
+    };
+
+    const dates = `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`;
+
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+    window.open(url, '_blank');
   };
 
   // Calculate amortization payment
@@ -823,16 +897,109 @@ export default function IndustrialCRM() {
       }
     ];
 
+    const testFollowUps = [
+      {
+        id: 5001,
+        contactName: 'Sarah Mitchell (CBRE)',
+        type: 'Call',
+        dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days ago (overdue)
+        priority: 'High',
+        notes: 'Follow up on Phoenix property - buyer is very interested',
+        status: 'pending',
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: 5002,
+        contactName: 'James Chen (JLL)',
+        type: 'Meeting',
+        dueDate: new Date().toISOString().split('T')[0], // Today
+        priority: 'Medium',
+        notes: 'Quarterly portfolio review meeting',
+        status: 'pending',
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: 5003,
+        contactName: 'Jennifer Walsh (Redwood Capital)',
+        type: 'Email',
+        dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
+        priority: 'Medium',
+        notes: 'Send updated investment deck for Dallas property',
+        status: 'pending',
+        createdAt: now
+      },
+      {
+        id: 5004,
+        contactName: 'Maria Rodriguez (C&W)',
+        type: 'Property Tour',
+        dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 5 days from now
+        priority: 'High',
+        notes: 'Schedule tour of Atlanta property with potential buyer',
+        status: 'pending',
+        createdAt: now
+      }
+    ];
+
+    const testEvents = [
+      {
+        id: 6001,
+        title: 'Phoenix Property Tour - Amazon Facility',
+        type: 'Property Tour',
+        date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // Tomorrow 2pm
+        location: '2450 Industrial Parkway, Phoenix, AZ',
+        description: 'Showing property to potential institutional buyer',
+        createdAt: now
+      },
+      {
+        id: 6002,
+        title: 'Due Diligence Deadline - Dallas Property',
+        type: 'Due Diligence Deadline',
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 1 week from now
+        location: '7800 Distribution Center Dr, Dallas, TX',
+        description: 'Final day to complete environmental and structural inspections',
+        createdAt: now
+      },
+      {
+        id: 6003,
+        title: 'Redwood Capital Investor Presentation',
+        type: 'Partner Presentation',
+        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 3 days from now
+        location: 'Redwood Capital Offices',
+        description: 'Q4 portfolio performance review and 2024 pipeline discussion',
+        createdAt: now
+      },
+      {
+        id: 6004,
+        title: 'Closing - Atlanta Property',
+        type: 'Closing Date',
+        date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 2 weeks from now
+        location: '1250 Commerce Blvd, Atlanta, GA',
+        description: 'Final closing and transfer of ownership',
+        createdAt: now
+      },
+      {
+        id: 6005,
+        title: 'Broker Meeting - JLL Team',
+        type: 'Broker Meeting',
+        date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 4 days from now
+        location: 'JLL Offices - Downtown',
+        description: 'Review new listings in industrial corridor',
+        createdAt: now
+      }
+    ];
+
     setBrokers(testBrokers);
     setPartners(testPartners);
     setGatekeepers(testGatekeepers);
     setProperties(testProperties);
+    setFollowUps(testFollowUps);
+    setEvents(testEvents);
 
-    alert('Test data loaded! You now have 5 properties, 4 brokers, 4 partners, and 3 gatekeepers.');
+    alert('Test data loaded! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, 4 follow-ups, and 5 events.');
   };
 
   const clearAllData = () => {
-    if (!window.confirm('⚠️ WARNING: This will permanently delete ALL data (properties, brokers, partners, gatekeepers). This cannot be undone. Continue?')) return;
+    if (!window.confirm('⚠️ WARNING: This will permanently delete ALL data (properties, brokers, partners, gatekeepers, events, follow-ups). This cannot be undone. Continue?')) return;
 
     if (!window.confirm('Are you absolutely sure? This is your last chance to cancel.')) return;
 
@@ -840,6 +1007,8 @@ export default function IndustrialCRM() {
     setBrokers([]);
     setPartners([]);
     setGatekeepers([]);
+    setEvents([]);
+    setFollowUps([]);
     setSensitivityTable(null);
     setSensitivityPropertyId(null);
 
@@ -1138,6 +1307,39 @@ export default function IndustrialCRM() {
         {/* Tabs */}
         <div className={`flex gap-4 mb-8 border-b ${borderClass} overflow-x-auto`}>
           <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center gap-2 px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+              activeTab === 'dashboard'
+                ? 'border-blue-600 text-blue-600'
+                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+            }`}
+          >
+            <TrendingUp size={18} />
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('followups')}
+            className={`flex items-center gap-2 px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+              activeTab === 'followups'
+                ? 'border-blue-600 text-blue-600'
+                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+            }`}
+          >
+            <Bell size={18} />
+            Follow-ups ({followUps.filter(f => f.status !== 'completed').length})
+          </button>
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={`flex items-center gap-2 px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+              activeTab === 'calendar'
+                ? 'border-blue-600 text-blue-600'
+                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+            }`}
+          >
+            <Calendar size={18} />
+            Calendar ({events.length})
+          </button>
+          <button
             onClick={() => setActiveTab('assets')}
             className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
               activeTab === 'assets'
@@ -1188,6 +1390,204 @@ export default function IndustrialCRM() {
             Total Contacts ({brokers.length + gatekeepers.length})
           </button>
         </div>
+
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            {/* Portfolio Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Total Properties</div>
+                  <Building2 size={24} className="text-blue-500" />
+                </div>
+                <div className={`text-3xl font-bold ${textClass}`}>{properties.length}</div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                  Portfolio Value: {formatCurrency(properties.reduce((sum, p) => sum + (parseFloat(stripCommas(p.purchasePrice || 0))), 0))}
+                </div>
+              </div>
+
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Avg IRR</div>
+                  <Target size={24} className="text-green-500" />
+                </div>
+                <div className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                  {properties.length > 0
+                    ? `${(properties.reduce((sum, p) => {
+                        const metrics = calculateMetrics(p);
+                        return sum + (metrics.irr || 0);
+                      }, 0) / properties.length).toFixed(1)}%`
+                    : 'N/A'}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>Average across portfolio</div>
+              </div>
+
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Total NOI</div>
+                  <DollarSign size={24} className="text-purple-500" />
+                </div>
+                <div className={`text-3xl font-bold ${textClass}`}>
+                  {formatCurrency(properties.reduce((sum, p) => {
+                    const metrics = calculateMetrics(p);
+                    return sum + (metrics.noi || 0);
+                  }, 0))}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>Net Operating Income</div>
+              </div>
+
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
+                  <Bell size={24} className="text-orange-500" />
+                </div>
+                <div className={`text-3xl font-bold ${textClass}`}>
+                  {followUps.filter(f => f.status !== 'completed').length}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                  {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Follow-ups */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
+                  <Bell size={24} />
+                  Upcoming Follow-ups
+                </h3>
+                <button
+                  onClick={() => setActiveTab('followups')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
+                >
+                  View All →
+                </button>
+              </div>
+
+              {followUps.filter(f => f.status !== 'completed').length === 0 ? (
+                <div className={`text-center py-8 ${textSecondaryClass}`}>
+                  <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
+                  <p>No pending follow-ups. You're all caught up!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {followUps
+                    .filter(f => f.status !== 'completed')
+                    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+                    .slice(0, 5)
+                    .map(followUp => {
+                      const overdue = isOverdue(followUp.dueDate);
+                      const dueToday = isDueToday(followUp.dueDate);
+                      const statusColor = overdue ? 'red' : dueToday ? 'yellow' : 'green';
+
+                      return (
+                        <div key={followUp.id} className={`p-4 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                {overdue && <AlertCircle size={16} className="text-red-500" />}
+                                {dueToday && <Clock size={16} className="text-yellow-500" />}
+                                {!overdue && !dueToday && <Clock size={16} className="text-green-500" />}
+                                <span className={`text-sm font-semibold ${textClass}`}>{followUp.contactName}</span>
+                                <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                  {followUp.type}
+                                </span>
+                              </div>
+                              <p className={`text-sm ${textSecondaryClass} ml-6`}>{followUp.notes || 'No notes'}</p>
+                              <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} ml-6 mt-1`}>
+                                {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+            {/* Upcoming Calendar Events */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
+                  <Calendar size={24} />
+                  Upcoming Events
+                </h3>
+                <button
+                  onClick={() => setActiveTab('calendar')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
+                >
+                  View All →
+                </button>
+              </div>
+
+              {events.filter(e => new Date(e.date) >= new Date()).length === 0 ? (
+                <div className={`text-center py-8 ${textSecondaryClass}`}>
+                  <Calendar size={48} className="mx-auto mb-2 opacity-50" />
+                  <p>No upcoming events scheduled.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {events
+                    .filter(e => new Date(e.date) >= new Date())
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .slice(0, 5)
+                    .map(event => (
+                      <div key={event.id} className={`p-4 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Calendar size={16} className="text-blue-500" />
+                              <span className={`text-sm font-semibold ${textClass}`}>{event.title}</span>
+                              <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                {event.type}
+                              </span>
+                            </div>
+                            {event.location && (
+                              <p className={`text-sm ${textSecondaryClass} ml-6`}>📍 {event.location}</p>
+                            )}
+                            <p className={`text-xs ${textSecondaryClass} ml-6 mt-1`}>
+                              {formatDateTime(event.date)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                onClick={() => setActiveTab('assets')}
+                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
+              >
+                <Building2 size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
+                <div className={`font-semibold ${textClass}`}>View Properties</div>
+                <div className={`text-sm ${textSecondaryClass}`}>{properties.length} assets</div>
+              </button>
+              <button
+                onClick={() => setActiveTab('followups')}
+                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
+              >
+                <Bell size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
+                <div className={`font-semibold ${textClass}`}>Manage Follow-ups</div>
+                <div className={`text-sm ${textSecondaryClass}`}>{followUps.filter(f => f.status !== 'completed').length} active</div>
+              </button>
+              <button
+                onClick={() => setActiveTab('calendar')}
+                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
+              >
+                <Calendar size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
+                <div className={`font-semibold ${textClass}`}>View Calendar</div>
+                <div className={`text-sm ${textSecondaryClass}`}>{events.length} events</div>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Assets Tab */}
         {activeTab === 'assets' && (
@@ -3205,6 +3605,406 @@ export default function IndustrialCRM() {
                 <p className={`${textSecondaryClass} text-lg`}>No contacts yet. Add brokers and gatekeepers to get started!</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Follow-ups Tab */}
+        {activeTab === 'followups' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className={`text-2xl font-bold ${textClass}`}>Follow-ups</h2>
+                <p className={textSecondaryClass}>Track and manage contact follow-ups</p>
+              </div>
+              <button
+                onClick={() => {
+                  setFormData({});
+                  setEditingId(null);
+                  setShowFollowUpForm(true);
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                <Plus size={20} />
+                Add Follow-up
+              </button>
+            </div>
+
+            {/* Follow-up Form */}
+            {showFollowUpForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
+                <h3 className={`text-xl font-bold ${textClass} mb-6`}>
+                  {editingId ? 'Edit Follow-up' : 'New Follow-up'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Contact Name"
+                    value={formData.contactName || ''}
+                    onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  />
+                  <select
+                    value={formData.type || 'Call'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  >
+                    <option value="Call">Call</option>
+                    <option value="Email">Email</option>
+                    <option value="Meeting">Meeting</option>
+                    <option value="Property Tour">Property Tour</option>
+                    <option value="Check-in">Check-in</option>
+                  </select>
+                  <input
+                    type="date"
+                    value={formData.dueDate || ''}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  />
+                  <select
+                    value={formData.priority || 'Medium'}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  >
+                    <option value="High">High Priority</option>
+                    <option value="Medium">Medium Priority</option>
+                    <option value="Low">Low Priority</option>
+                  </select>
+                  <textarea
+                    placeholder="Notes (optional)"
+                    value={formData.notes || ''}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-4 mt-6">
+                  <button
+                    onClick={() => {
+                      if (!formData.contactName || !formData.dueDate) {
+                        alert('Please fill in contact name and due date');
+                        return;
+                      }
+                      if (editingId) {
+                        setFollowUps(followUps.map(f => f.id === editingId ? { ...formData, id: editingId, status: formData.status || 'pending' } : f));
+                      } else {
+                        setFollowUps([...followUps, { ...formData, id: Date.now(), status: 'pending', createdAt: new Date().toISOString() }]);
+                      }
+                      setShowFollowUpForm(false);
+                      setFormData({});
+                      setEditingId(null);
+                    }}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
+                  >
+                    {editingId ? 'Update' : 'Save'} Follow-up
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowFollowUpForm(false);
+                      setFormData({});
+                      setEditingId(null);
+                    }}
+                    className={`px-6 py-2 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'}`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Follow-ups List */}
+            <div className="space-y-4">
+              {followUps.filter(f => f.status !== 'completed').length === 0 && !showFollowUpForm && (
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                  <CheckCircle size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
+                  <p className={`${textSecondaryClass} text-lg`}>No pending follow-ups. You're all caught up!</p>
+                </div>
+              )}
+
+              {followUps
+                .filter(f => f.status !== 'completed')
+                .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+                .map(followUp => {
+                  const overdue = isOverdue(followUp.dueDate);
+                  const dueToday = isDueToday(followUp.dueDate);
+
+                  return (
+                    <div key={followUp.id} className={`${cardBgClass} rounded-xl shadow-lg p-6 border-l-4 ${
+                      overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'
+                    } ${borderClass}`}>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            {overdue && <AlertCircle size={20} className="text-red-500" />}
+                            {dueToday && <Clock size={20} className="text-yellow-500" />}
+                            {!overdue && !dueToday && <CheckCircle size={20} className="text-green-500" />}
+                            <h3 className={`text-lg font-bold ${textClass}`}>{followUp.contactName}</h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              darkMode ? 'bg-slate-700' : 'bg-slate-100'
+                            }`}>
+                              {followUp.type}
+                            </span>
+                            {followUp.priority === 'High' && (
+                              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">HIGH</span>
+                            )}
+                          </div>
+                          <p className={`${textSecondaryClass} mb-2`}>{followUp.notes || 'No notes'}</p>
+                          <p className={`text-sm font-semibold ${
+                            overdue ? 'text-red-500' : dueToday ? 'text-yellow-600' : 'text-green-600'
+                          }`}>
+                            {overdue ? `⚠️ Overdue by ${getDaysAgo(followUp.dueDate)} days` :
+                             dueToday ? '⏰ Due today' :
+                             `📅 Due ${formatDate(followUp.dueDate)}`}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
+                            }}
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition flex items-center gap-2"
+                            title="Mark as completed"
+                          >
+                            <CheckCircle size={18} />
+                            Complete
+                          </button>
+                          <button
+                            onClick={() => {
+                              setFormData(followUp);
+                              setEditingId(followUp.id);
+                              setShowFollowUpForm(true);
+                            }}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                            title="Edit"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Delete this follow-up?')) {
+                                setFollowUps(followUps.filter(f => f.id !== followUp.id));
+                              }
+                            }}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition text-red-500`}
+                            title="Delete"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            {/* Completed Follow-ups */}
+            {followUps.filter(f => f.status === 'completed').length > 0 && (
+              <div className="mt-8">
+                <h3 className={`text-lg font-bold ${textClass} mb-4`}>Completed Follow-ups</h3>
+                <div className="space-y-3">
+                  {followUps
+                    .filter(f => f.status === 'completed')
+                    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+                    .map(followUp => (
+                      <div key={followUp.id} className={`${cardBgClass} rounded-lg p-4 border ${borderClass} opacity-60`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle size={18} className="text-green-500" />
+                            <span className={`font-semibold ${textClass}`}>{followUp.contactName}</span>
+                            <span className={`text-xs ${textSecondaryClass}`}>({followUp.type})</span>
+                          </div>
+                          <span className={`text-xs ${textSecondaryClass}`}>
+                            Completed {formatDate(followUp.completedAt)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Calendar Tab */}
+        {activeTab === 'calendar' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className={`text-2xl font-bold ${textClass}`}>Calendar & Events</h2>
+                <p className={textSecondaryClass}>Schedule property tours, meetings, and deadlines</p>
+              </div>
+              <button
+                onClick={() => {
+                  setFormData({});
+                  setEditingId(null);
+                  setShowEventForm(true);
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                <Plus size={20} />
+                Add Event
+              </button>
+            </div>
+
+            {/* Event Form */}
+            {showEventForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
+                <h3 className={`text-xl font-bold ${textClass} mb-6`}>
+                  {editingId ? 'Edit Event' : 'New Event'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Event Title"
+                    value={formData.title || ''}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  />
+                  <select
+                    value={formData.type || 'Property Tour'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  >
+                    <option value="Property Tour">Property Tour</option>
+                    <option value="Broker Meeting">Broker Meeting</option>
+                    <option value="Partner Presentation">Partner Presentation</option>
+                    <option value="Due Diligence Deadline">Due Diligence Deadline</option>
+                    <option value="Closing Date">Closing Date</option>
+                    <option value="Follow-up Call">Follow-up Call</option>
+                    <option value="General">General</option>
+                  </select>
+                  <input
+                    type="datetime-local"
+                    value={formData.date || ''}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Location (optional)"
+                    value={formData.location || ''}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  />
+                  <textarea
+                    placeholder="Description (optional)"
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-4 mt-6">
+                  <button
+                    onClick={() => {
+                      if (!formData.title || !formData.date) {
+                        alert('Please fill in event title and date');
+                        return;
+                      }
+                      if (editingId) {
+                        setEvents(events.map(e => e.id === editingId ? { ...formData, id: editingId } : e));
+                      } else {
+                        setEvents([...events, { ...formData, id: Date.now(), createdAt: new Date().toISOString() }]);
+                      }
+                      setShowEventForm(false);
+                      setFormData({});
+                      setEditingId(null);
+                    }}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
+                  >
+                    {editingId ? 'Update' : 'Save'} Event
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowEventForm(false);
+                      setFormData({});
+                      setEditingId(null);
+                    }}
+                    className={`px-6 py-2 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'}`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Events List */}
+            <div className="space-y-4">
+              {events.length === 0 && !showEventForm && (
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                  <Calendar size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
+                  <p className={`${textSecondaryClass} text-lg`}>No events scheduled. Add your first event!</p>
+                </div>
+              )}
+
+              {events
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .map(event => {
+                  const eventDate = new Date(event.date);
+                  const isPast = eventDate < new Date();
+
+                  return (
+                    <div key={event.id} className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass} ${isPast ? 'opacity-50' : ''}`}>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Calendar size={20} className="text-blue-500" />
+                            <h3 className={`text-lg font-bold ${textClass}`}>{event.title}</h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              darkMode ? 'bg-slate-700' : 'bg-slate-100'
+                            }`}>
+                              {event.type}
+                            </span>
+                            {isPast && <span className="text-xs text-gray-500">(Past)</span>}
+                          </div>
+                          <p className={`${textSecondaryClass} mb-2`}>
+                            📅 {formatDateTime(event.date)}
+                          </p>
+                          {event.location && (
+                            <p className={`${textSecondaryClass} mb-2`}>
+                              📍 {event.location}
+                            </p>
+                          )}
+                          {event.description && (
+                            <p className={`${textSecondaryClass} text-sm`}>{event.description}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => exportToGoogleCalendar(event)}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
+                            title="Add to Google Calendar"
+                          >
+                            <Calendar size={18} />
+                            Google Cal
+                          </button>
+                          <button
+                            onClick={() => {
+                              setFormData(event);
+                              setEditingId(event.id);
+                              setShowEventForm(true);
+                            }}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                            title="Edit"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Delete this event?')) {
+                                setEvents(events.filter(e => e.id !== event.id));
+                              }
+                            }}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition text-red-500`}
+                            title="Delete"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         )}
       </div>

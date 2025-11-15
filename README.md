@@ -2,9 +2,71 @@
 
 Professional CRM and underwriting tool for NNN (Triple Net) industrial properties.
 
+## 🚀 GETTING STARTED (Read This First!)
+
+### Where is my project?
+
+Your project is in a folder called `NNN-CRM`. To find it:
+
+**Option 1 - If you remember where you saved it:**
+```bash
+cd ~/Desktop/NNN-CRM          # If on Desktop
+cd ~/Documents/NNN-CRM        # If in Documents
+cd ~/Projects/NNN-CRM         # If in Projects folder
+```
+
+**Option 2 - Search for it:**
+```bash
+find ~ -name "NNN-CRM" -type d 2>/dev/null
+```
+
+**Option 3 - Use your file browser:**
+- Open Finder (Mac) or File Explorer (Windows)
+- Search for "NNN-CRM"
+- Right-click folder → "Open in Terminal"
+
+### Starting the app
+
+Once you're in the NNN-CRM folder:
+
+```bash
+# Start the development server
+npm run dev
+```
+
+A URL will appear (like `http://localhost:5173`) - open it in your browser!
+
+### Stopping the app
+
+Press `Ctrl + C` in the terminal
+
+---
+
+## 📖 DAILY WORKFLOW
+
+### Morning Start
+```bash
+cd NNN-CRM              # Navigate to project
+git pull                # Get latest changes
+npm run dev             # Start server
+```
+
+### When Claude adds features
+```bash
+git pull                # Pull new changes (that's it!)
+# Refresh browser to see changes
+```
+
+### End of day
+```bash
+Ctrl + C                # Stop server
+```
+
+---
+
 ## ⚡ Quick Start (5 Minutes)
 
-**Simple local development with Claude:**
+**First time setup:**
 
 ```bash
 # Clone the repo
@@ -13,10 +75,10 @@ cd NNN-CRM
 
 # Install and start
 npm install
-npm start
+npm run dev
 ```
 
-Browser opens to `localhost:3000` - you're ready!
+Browser opens to `localhost:5173` - you're ready!
 
 **Tell Claude what to build** → Claude edits & pushes → **Run `git pull`** → See changes in 5 seconds!
 
