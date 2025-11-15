@@ -2558,7 +2558,16 @@ export default function IndustrialCRM() {
         {activeTab === 'brokers' && (
           <div className="space-y-6">
             <div className="flex gap-4">
-              <div className="flex-1"></div>
+              <div className="flex-1 relative">
+                <Search className={`absolute left-3 top-2.5 ${textSecondaryClass}`} size={20} />
+                <input
+                  type="text"
+                  placeholder="Search brokers by name, firm, email, or phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+              </div>
               <button
                 onClick={handleAddBroker}
                 className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
@@ -2645,7 +2654,12 @@ export default function IndustrialCRM() {
 
             {/* Brokers List */}
             <div className="grid gap-6">
-              {brokers.map(broker => (
+              {brokers.filter(broker =>
+                broker.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                broker.firmName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                broker.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                broker.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map(broker => (
                 <div key={broker.id} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -3337,7 +3351,16 @@ export default function IndustrialCRM() {
         {activeTab === 'gatekeepers' && (
           <div className="space-y-6">
             <div className="flex gap-4">
-              <div className="flex-1"></div>
+              <div className="flex-1 relative">
+                <Search className={`absolute left-3 top-2.5 ${textSecondaryClass}`} size={20} />
+                <input
+                  type="text"
+                  placeholder="Search gatekeepers by name, company, title, or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+              </div>
               <button
                 onClick={handleAddGatekeeper}
                 className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
@@ -3417,7 +3440,12 @@ export default function IndustrialCRM() {
 
             {/* Gatekeepers List */}
             <div className="grid gap-6">
-              {gatekeepers.map(gatekeeper => (
+              {gatekeepers.filter(gatekeeper =>
+                gatekeeper.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                gatekeeper.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                gatekeeper.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                gatekeeper.email?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map(gatekeeper => (
                 <div key={gatekeeper.id} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
                   <div className="flex justify-between items-start mb-4">
                     <div>
