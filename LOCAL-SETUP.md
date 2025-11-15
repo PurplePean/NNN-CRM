@@ -22,9 +22,84 @@ Make sure you have these installed:
 
 ---
 
+## 📍 Finding Your Repository on Your Computer
+
+**Already cloned the repo but forgot where it is?**
+
+### Quick Find Methods
+
+**Option 1: Search by folder name**
+```bash
+# On Mac/Linux
+find ~ -name "NNN-CRM" -type d 2>/dev/null
+
+# On Windows (PowerShell)
+Get-ChildItem -Path $HOME -Filter "NNN-CRM" -Recurse -Directory -ErrorAction SilentlyContinue
+```
+
+**Option 2: Common locations**
+
+Most repos are cloned to one of these places:
+```bash
+# Mac/Linux
+~/NNN-CRM                    # Home directory
+~/Projects/NNN-CRM           # Projects folder
+~/Documents/NNN-CRM          # Documents folder
+~/Developer/NNN-CRM          # Developer folder
+~/code/NNN-CRM              # Code folder
+
+# Windows
+C:\Users\YourName\NNN-CRM
+C:\Users\YourName\Projects\NNN-CRM
+C:\Users\YourName\Documents\NNN-CRM
+```
+
+**Option 3: Check recent terminal commands**
+```bash
+# On Mac/Linux
+history | grep "git clone"
+history | grep "cd NNN-CRM"
+
+# On Windows (PowerShell)
+Get-History | Select-String "git clone"
+```
+
+### Navigating to Your Repo
+
+Once you find it:
+```bash
+# Replace /path/to/ with your actual path
+cd /path/to/NNN-CRM
+
+# Verify you're in the right place
+ls -la
+# You should see: src/, public/, package.json, README.md, etc.
+
+# Double-check it's a git repo
+git status
+# Should show your current branch
+```
+
+### Bookmark for Easy Access
+
+**Mac/Linux:** Create an alias
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+echo 'alias nnn="cd /path/to/NNN-CRM && npm start"' >> ~/.zshrc
+source ~/.zshrc
+
+# Now just type: nnn
+```
+
+**Windows:** Create a shortcut
+- Right-click on the NNN-CRM folder → Create Shortcut
+- Move shortcut to Desktop or Pin to Quick Access
+
+---
+
 ## 🚀 Quick Start (First Time Setup)
 
-### Step 1: Clone the Repository
+### Step 1: Clone the Repository (If Not Already Done)
 
 Open your terminal and run:
 
@@ -180,6 +255,29 @@ git pull origin <branch-name>
 ---
 
 ## 🆘 Troubleshooting
+
+### Problem: "I can't find where I cloned the repo"
+
+**Solution:**
+
+See the [📍 Finding Your Repository](#-finding-your-repository-on-your-computer) section above for detailed instructions.
+
+**Quick fix:**
+```bash
+# Search for it
+find ~ -name "NNN-CRM" -type d 2>/dev/null
+
+# Or check common locations:
+ls ~/NNN-CRM
+ls ~/Projects/NNN-CRM
+ls ~/Documents/NNN-CRM
+
+# Still can't find it? Clone it again:
+cd ~/Projects  # or wherever you want it
+git clone https://github.com/PurplePean/NNN-CRM.git
+```
+
+---
 
 ### Problem: `npm install` fails
 
