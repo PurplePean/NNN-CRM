@@ -16,7 +16,7 @@ export default function IndustrialCRM() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
 
   // Photo lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
