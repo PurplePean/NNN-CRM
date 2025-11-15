@@ -897,12 +897,105 @@ export default function IndustrialCRM() {
       }
     ];
 
+    const testFollowUps = [
+      {
+        id: 5001,
+        contactName: 'Sarah Mitchell (CBRE)',
+        type: 'Call',
+        dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days ago (overdue)
+        priority: 'High',
+        notes: 'Follow up on Phoenix property - buyer is very interested',
+        status: 'pending',
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: 5002,
+        contactName: 'James Chen (JLL)',
+        type: 'Meeting',
+        dueDate: new Date().toISOString().split('T')[0], // Today
+        priority: 'Medium',
+        notes: 'Quarterly portfolio review meeting',
+        status: 'pending',
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: 5003,
+        contactName: 'Jennifer Walsh (Redwood Capital)',
+        type: 'Email',
+        dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
+        priority: 'Medium',
+        notes: 'Send updated investment deck for Dallas property',
+        status: 'pending',
+        createdAt: now
+      },
+      {
+        id: 5004,
+        contactName: 'Maria Rodriguez (C&W)',
+        type: 'Property Tour',
+        dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 5 days from now
+        priority: 'High',
+        notes: 'Schedule tour of Atlanta property with potential buyer',
+        status: 'pending',
+        createdAt: now
+      }
+    ];
+
+    const testEvents = [
+      {
+        id: 6001,
+        title: 'Phoenix Property Tour - Amazon Facility',
+        type: 'Property Tour',
+        date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // Tomorrow 2pm
+        location: '2450 Industrial Parkway, Phoenix, AZ',
+        description: 'Showing property to potential institutional buyer',
+        createdAt: now
+      },
+      {
+        id: 6002,
+        title: 'Due Diligence Deadline - Dallas Property',
+        type: 'Due Diligence Deadline',
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 1 week from now
+        location: '7800 Distribution Center Dr, Dallas, TX',
+        description: 'Final day to complete environmental and structural inspections',
+        createdAt: now
+      },
+      {
+        id: 6003,
+        title: 'Redwood Capital Investor Presentation',
+        type: 'Partner Presentation',
+        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 3 days from now
+        location: 'Redwood Capital Offices',
+        description: 'Q4 portfolio performance review and 2024 pipeline discussion',
+        createdAt: now
+      },
+      {
+        id: 6004,
+        title: 'Closing - Atlanta Property',
+        type: 'Closing Date',
+        date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 2 weeks from now
+        location: '1250 Commerce Blvd, Atlanta, GA',
+        description: 'Final closing and transfer of ownership',
+        createdAt: now
+      },
+      {
+        id: 6005,
+        title: 'Broker Meeting - JLL Team',
+        type: 'Broker Meeting',
+        date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 4 days from now
+        location: 'JLL Offices - Downtown',
+        description: 'Review new listings in industrial corridor',
+        createdAt: now
+      }
+    ];
+
     setBrokers(testBrokers);
     setPartners(testPartners);
     setGatekeepers(testGatekeepers);
     setProperties(testProperties);
+    setFollowUps(testFollowUps);
+    setEvents(testEvents);
 
-    alert('Test data loaded! You now have 5 properties, 4 brokers, 4 partners, and 3 gatekeepers.');
+    alert('Test data loaded! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, 4 follow-ups, and 5 events.');
   };
 
   const clearAllData = () => {
@@ -3512,6 +3605,406 @@ export default function IndustrialCRM() {
                 <p className={`${textSecondaryClass} text-lg`}>No contacts yet. Add brokers and gatekeepers to get started!</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Follow-ups Tab */}
+        {activeTab === 'followups' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className={`text-2xl font-bold ${textClass}`}>Follow-ups</h2>
+                <p className={textSecondaryClass}>Track and manage contact follow-ups</p>
+              </div>
+              <button
+                onClick={() => {
+                  setFormData({});
+                  setEditingId(null);
+                  setShowFollowUpForm(true);
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                <Plus size={20} />
+                Add Follow-up
+              </button>
+            </div>
+
+            {/* Follow-up Form */}
+            {showFollowUpForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
+                <h3 className={`text-xl font-bold ${textClass} mb-6`}>
+                  {editingId ? 'Edit Follow-up' : 'New Follow-up'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Contact Name"
+                    value={formData.contactName || ''}
+                    onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  />
+                  <select
+                    value={formData.type || 'Call'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  >
+                    <option value="Call">Call</option>
+                    <option value="Email">Email</option>
+                    <option value="Meeting">Meeting</option>
+                    <option value="Property Tour">Property Tour</option>
+                    <option value="Check-in">Check-in</option>
+                  </select>
+                  <input
+                    type="date"
+                    value={formData.dueDate || ''}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  />
+                  <select
+                    value={formData.priority || 'Medium'}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  >
+                    <option value="High">High Priority</option>
+                    <option value="Medium">Medium Priority</option>
+                    <option value="Low">Low Priority</option>
+                  </select>
+                  <textarea
+                    placeholder="Notes (optional)"
+                    value={formData.notes || ''}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-4 mt-6">
+                  <button
+                    onClick={() => {
+                      if (!formData.contactName || !formData.dueDate) {
+                        alert('Please fill in contact name and due date');
+                        return;
+                      }
+                      if (editingId) {
+                        setFollowUps(followUps.map(f => f.id === editingId ? { ...formData, id: editingId, status: formData.status || 'pending' } : f));
+                      } else {
+                        setFollowUps([...followUps, { ...formData, id: Date.now(), status: 'pending', createdAt: new Date().toISOString() }]);
+                      }
+                      setShowFollowUpForm(false);
+                      setFormData({});
+                      setEditingId(null);
+                    }}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
+                  >
+                    {editingId ? 'Update' : 'Save'} Follow-up
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowFollowUpForm(false);
+                      setFormData({});
+                      setEditingId(null);
+                    }}
+                    className={`px-6 py-2 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'}`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Follow-ups List */}
+            <div className="space-y-4">
+              {followUps.filter(f => f.status !== 'completed').length === 0 && !showFollowUpForm && (
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                  <CheckCircle size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
+                  <p className={`${textSecondaryClass} text-lg`}>No pending follow-ups. You're all caught up!</p>
+                </div>
+              )}
+
+              {followUps
+                .filter(f => f.status !== 'completed')
+                .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+                .map(followUp => {
+                  const overdue = isOverdue(followUp.dueDate);
+                  const dueToday = isDueToday(followUp.dueDate);
+
+                  return (
+                    <div key={followUp.id} className={`${cardBgClass} rounded-xl shadow-lg p-6 border-l-4 ${
+                      overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'
+                    } ${borderClass}`}>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            {overdue && <AlertCircle size={20} className="text-red-500" />}
+                            {dueToday && <Clock size={20} className="text-yellow-500" />}
+                            {!overdue && !dueToday && <CheckCircle size={20} className="text-green-500" />}
+                            <h3 className={`text-lg font-bold ${textClass}`}>{followUp.contactName}</h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              darkMode ? 'bg-slate-700' : 'bg-slate-100'
+                            }`}>
+                              {followUp.type}
+                            </span>
+                            {followUp.priority === 'High' && (
+                              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">HIGH</span>
+                            )}
+                          </div>
+                          <p className={`${textSecondaryClass} mb-2`}>{followUp.notes || 'No notes'}</p>
+                          <p className={`text-sm font-semibold ${
+                            overdue ? 'text-red-500' : dueToday ? 'text-yellow-600' : 'text-green-600'
+                          }`}>
+                            {overdue ? `⚠️ Overdue by ${getDaysAgo(followUp.dueDate)} days` :
+                             dueToday ? '⏰ Due today' :
+                             `📅 Due ${formatDate(followUp.dueDate)}`}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
+                            }}
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition flex items-center gap-2"
+                            title="Mark as completed"
+                          >
+                            <CheckCircle size={18} />
+                            Complete
+                          </button>
+                          <button
+                            onClick={() => {
+                              setFormData(followUp);
+                              setEditingId(followUp.id);
+                              setShowFollowUpForm(true);
+                            }}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                            title="Edit"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Delete this follow-up?')) {
+                                setFollowUps(followUps.filter(f => f.id !== followUp.id));
+                              }
+                            }}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition text-red-500`}
+                            title="Delete"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            {/* Completed Follow-ups */}
+            {followUps.filter(f => f.status === 'completed').length > 0 && (
+              <div className="mt-8">
+                <h3 className={`text-lg font-bold ${textClass} mb-4`}>Completed Follow-ups</h3>
+                <div className="space-y-3">
+                  {followUps
+                    .filter(f => f.status === 'completed')
+                    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+                    .map(followUp => (
+                      <div key={followUp.id} className={`${cardBgClass} rounded-lg p-4 border ${borderClass} opacity-60`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle size={18} className="text-green-500" />
+                            <span className={`font-semibold ${textClass}`}>{followUp.contactName}</span>
+                            <span className={`text-xs ${textSecondaryClass}`}>({followUp.type})</span>
+                          </div>
+                          <span className={`text-xs ${textSecondaryClass}`}>
+                            Completed {formatDate(followUp.completedAt)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Calendar Tab */}
+        {activeTab === 'calendar' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className={`text-2xl font-bold ${textClass}`}>Calendar & Events</h2>
+                <p className={textSecondaryClass}>Schedule property tours, meetings, and deadlines</p>
+              </div>
+              <button
+                onClick={() => {
+                  setFormData({});
+                  setEditingId(null);
+                  setShowEventForm(true);
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                <Plus size={20} />
+                Add Event
+              </button>
+            </div>
+
+            {/* Event Form */}
+            {showEventForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
+                <h3 className={`text-xl font-bold ${textClass} mb-6`}>
+                  {editingId ? 'Edit Event' : 'New Event'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Event Title"
+                    value={formData.title || ''}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  />
+                  <select
+                    value={formData.type || 'Property Tour'}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  >
+                    <option value="Property Tour">Property Tour</option>
+                    <option value="Broker Meeting">Broker Meeting</option>
+                    <option value="Partner Presentation">Partner Presentation</option>
+                    <option value="Due Diligence Deadline">Due Diligence Deadline</option>
+                    <option value="Closing Date">Closing Date</option>
+                    <option value="Follow-up Call">Follow-up Call</option>
+                    <option value="General">General</option>
+                  </select>
+                  <input
+                    type="datetime-local"
+                    value={formData.date || ''}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Location (optional)"
+                    value={formData.location || ''}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  />
+                  <textarea
+                    placeholder="Description (optional)"
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-4 mt-6">
+                  <button
+                    onClick={() => {
+                      if (!formData.title || !formData.date) {
+                        alert('Please fill in event title and date');
+                        return;
+                      }
+                      if (editingId) {
+                        setEvents(events.map(e => e.id === editingId ? { ...formData, id: editingId } : e));
+                      } else {
+                        setEvents([...events, { ...formData, id: Date.now(), createdAt: new Date().toISOString() }]);
+                      }
+                      setShowEventForm(false);
+                      setFormData({});
+                      setEditingId(null);
+                    }}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
+                  >
+                    {editingId ? 'Update' : 'Save'} Event
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowEventForm(false);
+                      setFormData({});
+                      setEditingId(null);
+                    }}
+                    className={`px-6 py-2 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'}`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Events List */}
+            <div className="space-y-4">
+              {events.length === 0 && !showEventForm && (
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                  <Calendar size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
+                  <p className={`${textSecondaryClass} text-lg`}>No events scheduled. Add your first event!</p>
+                </div>
+              )}
+
+              {events
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .map(event => {
+                  const eventDate = new Date(event.date);
+                  const isPast = eventDate < new Date();
+
+                  return (
+                    <div key={event.id} className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass} ${isPast ? 'opacity-50' : ''}`}>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Calendar size={20} className="text-blue-500" />
+                            <h3 className={`text-lg font-bold ${textClass}`}>{event.title}</h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              darkMode ? 'bg-slate-700' : 'bg-slate-100'
+                            }`}>
+                              {event.type}
+                            </span>
+                            {isPast && <span className="text-xs text-gray-500">(Past)</span>}
+                          </div>
+                          <p className={`${textSecondaryClass} mb-2`}>
+                            📅 {formatDateTime(event.date)}
+                          </p>
+                          {event.location && (
+                            <p className={`${textSecondaryClass} mb-2`}>
+                              📍 {event.location}
+                            </p>
+                          )}
+                          {event.description && (
+                            <p className={`${textSecondaryClass} text-sm`}>{event.description}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => exportToGoogleCalendar(event)}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
+                            title="Add to Google Calendar"
+                          >
+                            <Calendar size={18} />
+                            Google Cal
+                          </button>
+                          <button
+                            onClick={() => {
+                              setFormData(event);
+                              setEditingId(event.id);
+                              setShowEventForm(true);
+                            }}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                            title="Edit"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Delete this event?')) {
+                                setEvents(events.filter(e => e.id !== event.id));
+                              }
+                            }}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition text-red-500`}
+                            title="Delete"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         )}
       </div>
