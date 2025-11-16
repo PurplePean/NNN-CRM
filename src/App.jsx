@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target } from 'lucide-react';
+import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare } from 'lucide-react';
 
 export default function IndustrialCRM() {
   const [properties, setProperties] = useState([]);
@@ -21,6 +21,9 @@ export default function IndustrialCRM() {
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
   const [darkMode, setDarkMode] = useState(true);
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
 
   // Photo lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -164,6 +167,15 @@ export default function IndustrialCRM() {
     return date.toDateString() === today.toDateString();
   };
 
+  // Toast notification system
+  const showToast = useCallback((message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  }, []);
+
   // Google Calendar export
   const exportToGoogleCalendar = (event) => {
     const title = encodeURIComponent(event.title);
@@ -243,7 +255,7 @@ export default function IndustrialCRM() {
 
   const handleSaveProperty = () => {
     if (!formData.address) {
-      alert('Please enter an address');
+      showToast('Please enter an address', 'error');
       return;
     }
 
@@ -390,20 +402,20 @@ export default function IndustrialCRM() {
     // Check if adding these files would exceed a reasonable limit (e.g., 10 photos per property)
     const currentPhotos = formData.photos || [];
     if (currentPhotos.length + files.length > 10) {
-      alert('Maximum 10 photos per property');
+      showToast('Maximum 10 photos per property', 'warning');
       return;
     }
 
     files.forEach(file => {
       // Check file size (limit to 2MB per image to avoid localStorage issues)
       if (file.size > 2 * 1024 * 1024) {
-        alert(`${file.name} is too large. Maximum file size is 2MB.`);
+        showToast(`${file.name} is too large. Maximum file size is 2MB.`, 'error');
         return;
       }
 
       // Check file type
       if (!file.type.startsWith('image/')) {
-        alert(`${file.name} is not an image file.`);
+        showToast(`${file.name} is not an image file.`, 'error');
         return;
       }
 
@@ -432,7 +444,7 @@ export default function IndustrialCRM() {
 
     const currentPhotos = formData.photos || [];
     if (currentPhotos.length >= 10) {
-      alert('Maximum 10 photos per property');
+      showToast('Maximum 10 photos per property', 'warning');
       return;
     }
 
@@ -453,7 +465,7 @@ export default function IndustrialCRM() {
 
         // Check approximate size (base64 is ~33% larger than binary)
         if (base64String.length > 2.7 * 1024 * 1024) { // ~2MB
-          alert('Image from URL is too large. Try a smaller image.');
+          showToast('Image from URL is too large. Try a smaller image.', 'error');
           return;
         }
 
@@ -466,12 +478,12 @@ export default function IndustrialCRM() {
           }]
         }));
       } catch (error) {
-        alert('Could not load image from URL. Make sure the image URL is publicly accessible.');
+        showToast('Could not load image from URL. Make sure the image URL is publicly accessible.', 'error');
       }
     };
 
     img.onerror = () => {
-      alert('Could not load image from URL. Make sure it\'s a valid image URL and publicly accessible.');
+      showToast('Could not load image from URL. Make sure it\'s a valid image URL and publicly accessible.', 'error');
     };
 
     img.src = url;
@@ -483,7 +495,7 @@ export default function IndustrialCRM() {
 
     const currentPhotos = formData.photos || [];
     if (currentPhotos.length >= 10) {
-      alert('Maximum 10 photos per property');
+      showToast('Maximum 10 photos per property', 'warning');
       e.preventDefault();
       return;
     }
@@ -494,7 +506,7 @@ export default function IndustrialCRM() {
         const blob = items[i].getAsFile();
 
         if (blob.size > 2 * 1024 * 1024) {
-          alert('Pasted image is too large. Maximum size is 2MB.');
+          showToast('Pasted image is too large. Maximum size is 2MB.', 'error');
           return;
         }
 
@@ -579,7 +591,7 @@ export default function IndustrialCRM() {
 
   const handleSaveBroker = () => {
     if (!formData.name) {
-      alert('Please enter broker name');
+      showToast('Please enter broker name', 'error');
       return;
     }
 
@@ -621,7 +633,7 @@ export default function IndustrialCRM() {
 
   const handleSaveGatekeeper = () => {
     if (!formData.name) {
-      alert('Please enter gatekeeper name');
+      showToast('Please enter gatekeeper name', 'error');
       return;
     }
 
@@ -657,7 +669,7 @@ export default function IndustrialCRM() {
 
   const handleSaveInlineBroker = () => {
     if (!inlineBrokerData.name) {
-      alert('Please enter broker name');
+      showToast('Please enter broker name', 'error');
       return;
     }
 
@@ -721,7 +733,7 @@ export default function IndustrialCRM() {
 
   const handleSavePartner = () => {
     if (!formData.name) {
-      alert('Please enter partner name');
+      showToast('Please enter partner name', 'error');
       return;
     }
 
@@ -995,7 +1007,7 @@ export default function IndustrialCRM() {
     setFollowUps(testFollowUps);
     setEvents(testEvents);
 
-    alert('Test data loaded! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, 4 follow-ups, and 5 events.');
+    showToast('Test data loaded! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, 4 follow-ups, and 5 events.', 'success');
   };
 
   const clearAllData = () => {
@@ -1012,7 +1024,7 @@ export default function IndustrialCRM() {
     setSensitivityTable(null);
     setSensitivityPropertyId(null);
 
-    alert('All data has been cleared.');
+    showToast('All data has been cleared.', 'success');
   };
 
   // Calculate IRR (Internal Rate of Return) using Newton-Raphson method
@@ -1477,32 +1489,142 @@ export default function IndustrialCRM() {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            {/* Portfolio Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Total Properties</div>
-                  <Building2 size={24} className="text-blue-500" />
-                </div>
-                <div className={`text-3xl font-bold ${textClass}`}>{properties.length}</div>
-                <div className={`text-xs ${textSecondaryClass} mt-1`}>
-                  Portfolio Value: {formatCurrency(properties.reduce((sum, p) => sum + (parseFloat(stripCommas(p.purchasePrice || 0))), 0))}
+            {/* Quick Actions Bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <button
+                onClick={() => {
+                  setFormData({});
+                  setEditingId(null);
+                  setShowFollowUpForm(true);
+                  setActiveTab('followups');
+                }}
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg"
+              >
+                <Phone size={20} />
+                <span>New Call</span>
+              </button>
+              <button
+                onClick={() => {
+                  setFormData({ type: 'Email' });
+                  setEditingId(null);
+                  setShowFollowUpForm(true);
+                  setActiveTab('followups');
+                }}
+                className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-lg"
+              >
+                <Mail size={20} />
+                <span>New Email</span>
+              </button>
+              <button
+                onClick={() => {
+                  setFormData({ type: 'Meeting' });
+                  setEditingId(null);
+                  setShowEventForm(true);
+                  setActiveTab('calendar');
+                }}
+                className="flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-purple-700 transition shadow-lg"
+              >
+                <Video size={20} />
+                <span>Schedule Meeting</span>
+              </button>
+              <button
+                onClick={() => {
+                  setFormData({});
+                  setEditingId(null);
+                  setShowFollowUpForm(true);
+                  setActiveTab('followups');
+                }}
+                className="flex items-center justify-center gap-2 bg-orange-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg"
+              >
+                <MessageSquare size={20} />
+                <span>Add Note</span>
+              </button>
+            </div>
+
+            {/* Today's Agenda */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border-l-4 border-blue-500 ${borderClass}`}>
+              <div className="flex items-center gap-3 mb-4">
+                <Clock size={28} className="text-blue-500" />
+                <div>
+                  <h3 className={`text-2xl font-bold ${textClass}`}>Today's Agenda</h3>
+                  <p className={`text-sm ${textSecondaryClass}`}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
                 </div>
               </div>
 
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Contacts</div>
-                  <Target size={24} className="text-green-500" />
-                </div>
-                <div className={`text-3xl font-bold ${textClass}`}>
-                  {brokers.length + partners.length + gatekeepers.length}
-                </div>
-                <div className={`text-xs ${textSecondaryClass} mt-1`}>
-                  {brokers.length} Brokers • {partners.length} Partners • {gatekeepers.length} Gatekeepers
-                </div>
-              </div>
+              {(() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
 
+                const todaysFollowUps = followUps.filter(f => {
+                  if (f.status === 'completed') return false;
+                  const dueDate = new Date(f.dueDate);
+                  dueDate.setHours(0, 0, 0, 0);
+                  return dueDate <= today;
+                });
+
+                const todaysEvents = events.filter(e => {
+                  const eventDate = new Date(e.date);
+                  return eventDate >= today && eventDate < tomorrow;
+                });
+
+                const hasItems = todaysFollowUps.length > 0 || todaysEvents.length > 0;
+
+                return hasItems ? (
+                  <div className="space-y-3">
+                    {todaysFollowUps.map(followUp => {
+                      const overdue = isOverdue(followUp.dueDate);
+                      return (
+                        <div key={`today-followup-${followUp.id}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-red-50'} border-l-4 ${overdue ? 'border-red-500' : 'border-yellow-500'}`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                {overdue ? <AlertCircle size={18} className="text-red-500" /> : <Clock size={18} className="text-yellow-500" />}
+                                <span className={`font-semibold ${textClass}`}>{followUp.contactName}</span>
+                                <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-white'}`}>{followUp.type}</span>
+                                {overdue && <span className="text-xs font-semibold text-red-500">OVERDUE</span>}
+                              </div>
+                              <p className={`text-sm ${textSecondaryClass} ml-6 mt-1`}>{followUp.notes || 'No notes'}</p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
+                                showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
+                              }}
+                              className="ml-4 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-green-700 transition flex items-center gap-1"
+                            >
+                              <CheckCircle size={16} />
+                              Done
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {todaysEvents.map(event => (
+                      <div key={`today-event-${event.id}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-l-4 border-blue-500`}>
+                        <div className="flex items-center gap-2">
+                          <Calendar size={18} className="text-blue-500" />
+                          <span className={`font-semibold ${textClass}`}>{event.title}</span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-white'}`}>{event.type}</span>
+                        </div>
+                        {event.location && <p className={`text-sm ${textSecondaryClass} ml-6 mt-1`}>📍 {event.location}</p>}
+                        <p className={`text-xs ${textSecondaryClass} ml-6 mt-1`}>{formatDateTime(event.date)}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={`text-center py-8 ${textSecondaryClass}`}>
+                    <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
+                    <p className="font-medium">All clear for today!</p>
+                    <p className="text-sm mt-1">No follow-ups or events scheduled</p>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Communication Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
@@ -1512,7 +1634,33 @@ export default function IndustrialCRM() {
                   {followUps.filter(f => f.status !== 'completed').length}
                 </div>
                 <div className={`text-xs ${textSecondaryClass} mt-1`}>
-                  {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue
+                  {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue • {followUps.filter(f => isDueToday(f.dueDate) && f.status !== 'completed').length} due today
+                </div>
+              </div>
+
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Upcoming Events</div>
+                  <Calendar size={24} className="text-blue-500" />
+                </div>
+                <div className={`text-3xl font-bold ${textClass}`}>
+                  {events.filter(e => new Date(e.date) >= new Date()).length}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                  Next 7 days
+                </div>
+              </div>
+
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Total Contacts</div>
+                  <Target size={24} className="text-green-500" />
+                </div>
+                <div className={`text-3xl font-bold ${textClass}`}>
+                  {brokers.length + partners.length + gatekeepers.length}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                  {brokers.length} Brokers • {gatekeepers.length} Gatekeepers
                 </div>
               </div>
             </div>
@@ -1566,7 +1714,7 @@ export default function IndustrialCRM() {
                       }
 
                       return (
-                        <div key={followUp.id} className={`p-4 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div key={followUp.id} className={`p-4 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} hover:shadow-md transition-shadow`}>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
@@ -1577,6 +1725,9 @@ export default function IndustrialCRM() {
                                 <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
                                   {followUp.type}
                                 </span>
+                                {followUp.priority === 'High' && (
+                                  <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded">HIGH</span>
+                                )}
                               </div>
                               {relatedContactInfo && (
                                 <div className={`flex items-center gap-1 ml-6 mb-1`}>
@@ -1588,8 +1739,34 @@ export default function IndustrialCRM() {
                               )}
                               <p className={`text-sm ${textSecondaryClass} ml-6`}>{followUp.notes || 'No notes'}</p>
                               <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} ml-6 mt-1`}>
-                                {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
+                                {overdue ? `⚠️ Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? '⏰ Due today' : `📅 Due ${formatDate(followUp.dueDate)}`}
                               </p>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <button
+                                onClick={() => {
+                                  setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
+                                  showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
+                                }}
+                                className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-700 transition flex items-center gap-1"
+                                title="Mark as complete"
+                              >
+                                <CheckCircle size={14} />
+                                Done
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const newDate = new Date(followUp.dueDate);
+                                  newDate.setDate(newDate.getDate() + 1);
+                                  setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, dueDate: newDate.toISOString().split('T')[0] } : f));
+                                  showToast(`Follow-up snoozed to ${newDate.toLocaleDateString()}`, 'info');
+                                }}
+                                className={`${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1`}
+                                title="Snooze until tomorrow"
+                              >
+                                <Clock size={14} />
+                                Snooze
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -3822,7 +3999,7 @@ export default function IndustrialCRM() {
                   <button
                     onClick={() => {
                       if (!formData.contactName || !formData.dueDate) {
-                        alert('Please fill in contact name and due date');
+                        showToast('Please fill in contact name and due date', 'error');
                         return;
                       }
                       if (editingId) {
@@ -4038,7 +4215,7 @@ export default function IndustrialCRM() {
                   <button
                     onClick={() => {
                       if (!formData.title || !formData.date) {
-                        alert('Please fill in event title and date');
+                        showToast('Please fill in event title and date', 'error');
                         return;
                       }
                       if (editingId) {
@@ -4222,6 +4399,33 @@ export default function IndustrialCRM() {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg transform transition-all duration-300 animate-slide-in ${
+              toast.type === 'success'
+                ? 'bg-green-600 text-white'
+                : toast.type === 'error'
+                ? 'bg-red-600 text-white'
+                : toast.type === 'warning'
+                ? 'bg-yellow-600 text-white'
+                : 'bg-blue-600 text-white'
+            }`}
+            style={{
+              animation: 'slideIn 0.3s ease-out'
+            }}
+          >
+            {toast.type === 'success' && <CheckCircle size={20} />}
+            {toast.type === 'error' && <AlertCircle size={20} />}
+            {toast.type === 'warning' && <AlertTriangle size={20} />}
+            {toast.type === 'info' && <Bell size={20} />}
+            <span className="font-medium">{toast.message}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
