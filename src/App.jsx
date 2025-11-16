@@ -38,6 +38,12 @@ export default function IndustrialCRM() {
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
   const [expandedNotes, setExpandedNotes] = useState({});
+  const [collapsedNoteSections, setCollapsedNoteSections] = useState({});
+
+  // Activity feed filters
+  const [activityContactType, setActivityContactType] = useState('all');
+  const [activityCategory, setActivityCategory] = useState('all');
+  const [activityDateFilter, setActivityDateFilter] = useState('all');
 
   // Sensitivity Analysis state
   const [sensitivityPropertyId, setSensitivityPropertyId] = useState(null);
@@ -1313,6 +1319,25 @@ export default function IndustrialCRM() {
                 : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
             }`}>
               {followUps.filter(f => f.status !== 'completed').length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('activity')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
+              activeTab === 'activity'
+                ? 'bg-blue-600 text-white'
+                : `${textSecondaryClass} ${hoverBgClass}`
+            }`}
+          >
+            <MessageSquare size={20} />
+            <div className="flex-1 text-left">All Activity</div>
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'activity'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
+              {[...brokers, ...gatekeepers, ...partners].reduce((total, contact) => total + (contact.noteHistory?.length || 0), 0)}
             </span>
           </button>
 
@@ -3142,13 +3167,21 @@ export default function IndustrialCRM() {
 
                   {/* Notes & Activity Section */}
                   <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-6 rounded-lg`}>
-                    <div className={`text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between`}>
-                      <span>Notes & Activity</span>
+                    <button
+                      onClick={() => setCollapsedNoteSections({ ...collapsedNoteSections, [`broker-${broker.id}`]: !collapsedNoteSections[`broker-${broker.id}`] })}
+                      className={`w-full text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between hover:opacity-80 transition`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{collapsedNoteSections[`broker-${broker.id}`] ? '▶' : '▼'}</span>
+                        <span>Notes & Activity</span>
+                      </div>
                       <span className={`text-xs ${textSecondaryClass} normal-case`}>
                         {(broker.noteHistory || []).length} note{(broker.noteHistory || []).length !== 1 ? 's' : ''}
                       </span>
-                    </div>
+                    </button>
 
+                    {!collapsedNoteSections[`broker-${broker.id}`] && (
+                    <>
                     {/* Add Note Form */}
                     <div className="mb-4">
                       <div className="flex gap-2 mb-2">
@@ -3324,6 +3357,8 @@ export default function IndustrialCRM() {
                           );
                         })}
                     </div>
+                    </>
+                    )}
                   </div>
                   </div>
                 </div>
@@ -3719,13 +3754,21 @@ export default function IndustrialCRM() {
 
                   {/* Notes & Activity Section */}
                   <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-6 rounded-lg`}>
-                    <div className={`text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between`}>
-                      <span>Notes & Activity</span>
+                    <button
+                      onClick={() => setCollapsedNoteSections({ ...collapsedNoteSections, [`partner-${partner.id}`]: !collapsedNoteSections[`partner-${partner.id}`] })}
+                      className={`w-full text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between hover:opacity-80 transition`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{collapsedNoteSections[`partner-${partner.id}`] ? '▶' : '▼'}</span>
+                        <span>Notes & Activity</span>
+                      </div>
                       <span className={`text-xs ${textSecondaryClass} normal-case`}>
                         {(partner.noteHistory || []).length} note{(partner.noteHistory || []).length !== 1 ? 's' : ''}
                       </span>
-                    </div>
+                    </button>
 
+                    {!collapsedNoteSections[`partner-${partner.id}`] && (
+                    <>
                     {/* Add Note Form */}
                     <div className="mb-4">
                       <div className="flex gap-2 mb-2">
@@ -3901,6 +3944,8 @@ export default function IndustrialCRM() {
                           );
                         })}
                     </div>
+                    </>
+                    )}
                   </div>
                   </div>
                 </div>
@@ -4148,6 +4193,272 @@ export default function IndustrialCRM() {
         )}
 
         {/* Total Contacts Tab */}
+        {/* All Activity Tab */}
+        {activeTab === 'activity' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className={`text-2xl font-bold ${textClass}`}>All Activity</h2>
+                <p className={textSecondaryClass}>
+                  Complete activity feed across all contacts
+                </p>
+              </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Contact Type Filter */}
+                <div>
+                  <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>Contact Type</label>
+                  <select
+                    value={activityContactType}
+                    onChange={(e) => setActivityContactType(e.target.value)}
+                    className={`w-full px-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="all">All Contacts</option>
+                    <option value="broker">Brokers</option>
+                    <option value="gatekeeper">Gatekeepers</option>
+                    <option value="partner">Partners</option>
+                  </select>
+                </div>
+
+                {/* Category Filter */}
+                <div>
+                  <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>Activity Type</label>
+                  <select
+                    value={activityCategory}
+                    onChange={(e) => setActivityCategory(e.target.value)}
+                    className={`w-full px-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="all">All Types</option>
+                    <option value="call">📞 Calls</option>
+                    <option value="meeting">🤝 Meetings</option>
+                    <option value="email">📧 Emails</option>
+                    <option value="site-visit">🏢 Site Visits</option>
+                    <option value="due-diligence">🔍 Due Diligence</option>
+                    <option value="follow-up">⏰ Follow-ups</option>
+                    <option value="general">📝 General</option>
+                  </select>
+                </div>
+
+                {/* Date Filter */}
+                <div>
+                  <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>Time Period</label>
+                  <select
+                    value={activityDateFilter}
+                    onChange={(e) => setActivityDateFilter(e.target.value)}
+                    className={`w-full px-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="quarter">This Quarter</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Activity Feed */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+              <div className="space-y-4">
+                {(() => {
+                  // Collect all notes from all contacts
+                  const allNotes = [];
+
+                  brokers.forEach(broker => {
+                    (broker.noteHistory || []).forEach(note => {
+                      allNotes.push({
+                        ...note,
+                        contactType: 'broker',
+                        contactName: broker.name,
+                        contactId: broker.id,
+                        contactCompany: broker.firmName
+                      });
+                    });
+                  });
+
+                  gatekeepers.forEach(gatekeeper => {
+                    (gatekeeper.noteHistory || []).forEach(note => {
+                      allNotes.push({
+                        ...note,
+                        contactType: 'gatekeeper',
+                        contactName: gatekeeper.name,
+                        contactId: gatekeeper.id,
+                        contactCompany: gatekeeper.firmName
+                      });
+                    });
+                  });
+
+                  partners.forEach(partner => {
+                    (partner.noteHistory || []).forEach(note => {
+                      allNotes.push({
+                        ...note,
+                        contactType: 'partner',
+                        contactName: partner.name,
+                        contactId: partner.id,
+                        contactCompany: partner.entityName
+                      });
+                    });
+                  });
+
+                  // Sort by timestamp (newest first)
+                  allNotes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                  // Apply filters
+                  const filteredNotes = allNotes.filter(note => {
+                    // Contact type filter
+                    if (activityContactType !== 'all' && note.contactType !== activityContactType) {
+                      return false;
+                    }
+
+                    // Category filter
+                    if (activityCategory !== 'all' && note.category !== activityCategory) {
+                      return false;
+                    }
+
+                    // Date filter
+                    if (activityDateFilter !== 'all') {
+                      const noteDate = new Date(note.timestamp);
+                      const now = new Date();
+                      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+                      if (activityDateFilter === 'today' && noteDate < today) {
+                        return false;
+                      } else if (activityDateFilter === 'week') {
+                        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        if (noteDate < weekAgo) return false;
+                      } else if (activityDateFilter === 'month') {
+                        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        if (noteDate < monthAgo) return false;
+                      } else if (activityDateFilter === 'quarter') {
+                        const quarterAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+                        if (noteDate < quarterAgo) return false;
+                      }
+                    }
+
+                    return true;
+                  });
+
+                  const categoryColors = {
+                    general: darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800',
+                    call: darkMode ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800',
+                    meeting: darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800',
+                    email: darkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-800',
+                    'site-visit': darkMode ? 'bg-orange-900 text-orange-200' : 'bg-orange-100 text-orange-800',
+                    'due-diligence': darkMode ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800',
+                    'follow-up': darkMode ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                  };
+
+                  const categoryLabels = {
+                    general: '📝 General',
+                    call: '📞 Call',
+                    meeting: '🤝 Meeting',
+                    email: '📧 Email',
+                    'site-visit': '🏢 Site Visit',
+                    'due-diligence': '🔍 Due Diligence',
+                    'follow-up': '⏰ Follow-up'
+                  };
+
+                  const contactTypeColors = {
+                    broker: darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800',
+                    gatekeeper: darkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-800',
+                    partner: darkMode ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'
+                  };
+
+                  const contactTypeLabels = {
+                    broker: 'Broker',
+                    gatekeeper: 'Gatekeeper',
+                    partner: 'Partner'
+                  };
+
+                  // Function to make URLs clickable
+                  const linkifyText = (text) => {
+                    const urlRegex = /(https?:\/\/[^\s]+)/g;
+                    const parts = text.split(urlRegex);
+                    return parts.map((part, i) => {
+                      if (part.match(urlRegex)) {
+                        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 underline">{part}</a>;
+                      }
+                      return part;
+                    });
+                  };
+
+                  if (filteredNotes.length === 0) {
+                    return (
+                      <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-12 text-center border-2 border-dashed ${borderClass}`}>
+                        <MessageSquare size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                        <p className={`text-sm ${textSecondaryClass} font-medium`}>
+                          No activity found
+                        </p>
+                        <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                          Try adjusting your filters or add some notes to your contacts
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return filteredNotes.map((note) => {
+                    const isLongNote = note.content.length > 300;
+                    const isExpanded = expandedNotes[note.id];
+
+                    return (
+                      <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-5 rounded-lg border ${borderClass} shadow-sm hover:shadow-md transition-shadow`}>
+                        {/* Note Header */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${categoryColors[note.category] || categoryColors.general}`}>
+                              {categoryLabels[note.category] || categoryLabels.general}
+                            </span>
+                            <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${contactTypeColors[note.contactType]}`}>
+                              {contactTypeLabels[note.contactType]}
+                            </span>
+                            <button
+                              onClick={() => {
+                                // Navigate to the contact's tab
+                                if (note.contactType === 'broker') setActiveTab('brokers');
+                                else if (note.contactType === 'gatekeeper') setActiveTab('gatekeepers');
+                                else if (note.contactType === 'partner') setActiveTab('partners');
+                              }}
+                              className={`text-xs font-semibold ${textClass} hover:text-blue-500 flex items-center gap-1`}
+                            >
+                              {note.contactName}
+                              {note.contactCompany && <span className={textSecondaryClass}>• {note.contactCompany}</span>}
+                            </button>
+                          </div>
+                          <span className={`text-xs ${textSecondaryClass} font-medium whitespace-nowrap ml-2`}>
+                            {formatRelativeTime(note.timestamp)}
+                            {note.edited && ' • Edited'}
+                          </span>
+                        </div>
+
+                        {/* Note Content */}
+                        <div>
+                          <p className={`text-base ${textClass} whitespace-pre-wrap leading-relaxed`}>
+                            {isLongNote && !isExpanded
+                              ? linkifyText(note.content.substring(0, 300) + '...')
+                              : linkifyText(note.content)
+                            }
+                          </p>
+                          {isLongNote && (
+                            <button
+                              onClick={() => setExpandedNotes({ ...expandedNotes, [note.id]: !isExpanded })}
+                              className="text-blue-500 hover:text-blue-600 text-sm font-semibold mt-2"
+                            >
+                              {isExpanded ? 'Show less' : 'Read more'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'contacts' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center mb-6">
