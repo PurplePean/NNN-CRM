@@ -1,70 +1,154 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Source Sans Pro',
-    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@keyframes slideIn {
-  from {
-    transform: translateX(400px);
-    opacity: 0;
+@layer base {
+  * {
+    @apply m-0 p-0 box-border;
   }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+  body {
+    @apply font-sans antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  code {
+    @apply font-mono;
   }
 }
 
-/* Smooth transitions for all interactive elements */
-button {
-  transition: all 0.2s ease-in-out;
+@layer components {
+  /* Enhanced button styles with smooth interactions */
+  .btn {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .btn:active {
+    @apply scale-98;
+  }
+
+  /* Card components with smooth hover effects */
+  .card {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  .card-hover {
+    @apply hover:shadow-medium hover:-translate-y-0.5;
+  }
+
+  /* Glass morphism effect for modern UI */
+  .glass {
+    @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-md;
+  }
+
+  /* Gradient overlays */
+  .gradient-overlay {
+    @apply bg-gradient-to-br from-primary-500/10 to-industrial-500/10;
+  }
 }
 
-button:active {
-  transform: scale(0.98);
-}
+@layer utilities {
+  /* Smooth page transitions with stagger effect */
+  .stagger-animation > * {
+    animation: fadeIn 0.4s ease-out;
+    animation-fill-mode: both;
+  }
 
-/* Card hover effects */
-.hover\:shadow-md:hover {
-  transition: box-shadow 0.3s ease-in-out;
-}
+  .stagger-animation > *:nth-child(1) { animation-delay: 0.05s; }
+  .stagger-animation > *:nth-child(2) { animation-delay: 0.1s; }
+  .stagger-animation > *:nth-child(3) { animation-delay: 0.15s; }
+  .stagger-animation > *:nth-child(4) { animation-delay: 0.2s; }
+  .stagger-animation > *:nth-child(5) { animation-delay: 0.25s; }
+  .stagger-animation > *:nth-child(6) { animation-delay: 0.3s; }
+  .stagger-animation > *:nth-child(7) { animation-delay: 0.35s; }
+  .stagger-animation > *:nth-child(8) { animation-delay: 0.4s; }
 
-/* Smooth page transitions */
-.space-y-6 > * {
-  animation: fadeIn 0.4s ease-out;
-  animation-fill-mode: both;
-}
+  /* Scroll animations */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
 
-.space-y-6 > *:nth-child(1) { animation-delay: 0.05s; }
-.space-y-6 > *:nth-child(2) { animation-delay: 0.1s; }
-.space-y-6 > *:nth-child(3) { animation-delay: 0.15s; }
-.space-y-6 > *:nth-child(4) { animation-delay: 0.2s; }
-.space-y-6 > *:nth-child(5) { animation-delay: 0.25s; }
+  /* Interactive hover effects */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-1;
+  }
+
+  .hover-glow {
+    @apply transition-shadow duration-300 hover:shadow-large;
+  }
+
+  /* Focus visible for accessibility */
+  .focus-visible-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2;
+  }
+
+  /* Custom scrollbar styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+
+  /* Responsive utilities for mobile optimization */
+  .mobile-nav-item {
+    @apply px-3 py-2 text-sm sm:px-4 sm:py-3 sm:text-base;
+  }
+
+  .mobile-card {
+    @apply p-4 sm:p-6 md:p-8;
+  }
+
+  .mobile-text {
+    @apply text-sm sm:text-base md:text-lg;
+  }
+
+  /* Touch-friendly interactive elements */
+  @media (hover: none) and (pointer: coarse) {
+    .btn {
+      @apply min-h-[44px] min-w-[44px];
+    }
+
+    .card-hover {
+      @apply active:shadow-large active:-translate-y-1;
+    }
+  }
+
+  /* Responsive grid patterns */
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+
+  .grid-responsive-2col {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6;
+  }
+
+  /* Safe area for mobile devices (notches, etc.) */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Mobile-optimized spacing */
+  .section-spacing {
+    @apply py-6 sm:py-8 md:py-12;
+  }
+
+  .container-responsive {
+    @apply px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl;
+  }
+}
