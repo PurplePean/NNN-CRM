@@ -10,6 +10,8 @@ export default function IndustrialCRM() {
   const [followUps, setFollowUps] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
+  const [contactFilter, setContactFilter] = useState('all'); // all, brokers, gatekeepers, partners
+  const [contactSort, setContactSort] = useState('name'); // name, recent
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [showBrokerForm, setShowBrokerForm] = useState(false);
   const [showPartnerForm, setShowPartnerForm] = useState(false);
@@ -3902,126 +3904,280 @@ export default function IndustrialCRM() {
           <div className="space-y-6">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className={`text-2xl font-bold ${textClass}`}>Total Contacts</h2>
-                <p className={textSecondaryClass}>All brokers and gatekeepers in one place</p>
+                <h2 className={`text-2xl font-bold ${textClass}`}>All Contacts</h2>
+                <p className={textSecondaryClass}>
+                  {brokers.length} Brokers • {gatekeepers.length} Gatekeepers • {partners.length} Partners
+                </p>
               </div>
+            </div>
+
+            {/* Search and Filter Bar */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+              {/* Search Bar */}
+              <div className="relative mb-4">
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${textSecondaryClass}`} size={20} />
+                <input
+                  type="text"
+                  placeholder="Search contacts by name, company, email, phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${textSecondaryClass} hover:${textClass}`}
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Buttons */}
+              <div className="flex flex-wrap gap-3 mb-4">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setContactFilter('all')}
+                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                      contactFilter === 'all'
+                        ? 'bg-blue-600 text-white'
+                        : `${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass}`
+                    }`}
+                  >
+                    All ({brokers.length + gatekeepers.length + partners.length})
+                  </button>
+                  <button
+                    onClick={() => setContactFilter('brokers')}
+                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                      contactFilter === 'brokers'
+                        ? 'bg-blue-600 text-white'
+                        : `${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass}`
+                    }`}
+                  >
+                    Brokers ({brokers.length})
+                  </button>
+                  <button
+                    onClick={() => setContactFilter('gatekeepers')}
+                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                      contactFilter === 'gatekeepers'
+                        ? 'bg-blue-600 text-white'
+                        : `${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass}`
+                    }`}
+                  >
+                    Gatekeepers ({gatekeepers.length})
+                  </button>
+                  <button
+                    onClick={() => setContactFilter('partners')}
+                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                      contactFilter === 'partners'
+                        ? 'bg-blue-600 text-white'
+                        : `${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass}`
+                    }`}
+                  >
+                    Partners ({partners.length})
+                  </button>
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="ml-auto">
+                  <select
+                    value={contactSort}
+                    onChange={(e) => setContactSort(e.target.value)}
+                    className={`px-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-sm`}
+                  >
+                    <option value="name">Sort by Name</option>
+                    <option value="recent">Sort by Recent Activity</option>
+                    <option value="type">Sort by Type</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Active Filters Display */}
+              {(searchTerm || contactFilter !== 'all') && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-sm font-medium ${textSecondaryClass}`}>Active filters:</span>
+                  {searchTerm && (
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                      Search: "{searchTerm}"
+                      <button onClick={() => setSearchTerm('')} className="hover:text-blue-900">
+                        <X size={14} />
+                      </button>
+                    </span>
+                  )}
+                  {contactFilter !== 'all' && (
+                    <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                      {contactFilter.charAt(0).toUpperCase() + contactFilter.slice(1)}
+                      <button onClick={() => setContactFilter('all')} className="hover:text-purple-900">
+                        <X size={14} />
+                      </button>
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setContactFilter('all');
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-semibold ml-2"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Combined Contacts List */}
             <div className="grid gap-6">
-              {/* Brokers */}
-              {brokers.map(broker => (
-                <div key={`broker-${broker.id}`} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className={`text-2xl font-bold ${textClass}`}>{broker.name}</h3>
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
-                          BROKER
-                        </span>
+              {(() => {
+                // Combine all contacts with type information
+                const allContacts = [
+                  ...brokers.map(b => ({ ...b, contactType: 'broker', displayName: b.name, company: b.firmName })),
+                  ...gatekeepers.map(g => ({ ...g, contactType: 'gatekeeper', displayName: g.name, company: g.company })),
+                  ...partners.map(p => ({ ...p, contactType: 'partner', displayName: p.name, company: p.entityName }))
+                ];
+
+                // Apply filters
+                let filtered = allContacts.filter(contact => {
+                  // Type filter
+                  if (contactFilter !== 'all' && contact.contactType !== contactFilter.slice(0, -1)) {
+                    return false;
+                  }
+
+                  // Search filter
+                  if (searchTerm) {
+                    const search = searchTerm.toLowerCase();
+                    return (
+                      contact.displayName?.toLowerCase().includes(search) ||
+                      contact.company?.toLowerCase().includes(search) ||
+                      contact.email?.toLowerCase().includes(search) ||
+                      contact.phone?.toLowerCase().includes(search) ||
+                      contact.title?.toLowerCase().includes(search)
+                    );
+                  }
+
+                  return true;
+                });
+
+                // Apply sorting
+                if (contactSort === 'name') {
+                  filtered.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+                } else if (contactSort === 'type') {
+                  filtered.sort((a, b) => a.contactType.localeCompare(b.contactType));
+                } else if (contactSort === 'recent') {
+                  filtered.sort((a, b) => {
+                    const aHistory = a.noteHistory || [];
+                    const bHistory = b.noteHistory || [];
+                    const aLastNote = aHistory.length > 0 ? new Date(aHistory[aHistory.length - 1].timestamp) : new Date(0);
+                    const bLastNote = bHistory.length > 0 ? new Date(bHistory[bHistory.length - 1].timestamp) : new Date(0);
+                    return bLastNote - aLastNote;
+                  });
+                }
+
+                // Show empty state if no results
+                if (filtered.length === 0) {
+                  return (
+                    <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center border ${borderClass}`}>
+                      <Search size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
+                      <p className={`${textClass} text-lg font-semibold mb-2`}>No contacts found</p>
+                      <p className={`${textSecondaryClass}`}>
+                        {searchTerm ? `No contacts match "${searchTerm}"` : 'Try adjusting your filters'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                // Render filtered contacts
+                return filtered.map(contact => {
+                  const typeConfig = {
+                    broker: {
+                      label: 'BROKER',
+                      color: 'bg-blue-100 text-blue-800',
+                      detailsTab: 'brokers'
+                    },
+                    gatekeeper: {
+                      label: 'GATEKEEPER',
+                      color: 'bg-purple-100 text-purple-800',
+                      detailsTab: 'gatekeepers'
+                    },
+                    partner: {
+                      label: 'PARTNER',
+                      color: 'bg-green-100 text-green-800',
+                      detailsTab: 'partners'
+                    }
+                  };
+
+                  const config = typeConfig[contact.contactType];
+
+                  return (
+                    <div key={`${contact.contactType}-${contact.id}`} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className={`text-2xl font-bold ${textClass}`}>{contact.displayName}</h3>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded ${config.color}`}>
+                              {config.label}
+                            </span>
+                          </div>
+                          {contact.title && (
+                            <p className={`${textSecondaryClass} text-sm`}>{contact.title}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setActiveTab(config.detailsTab)}
+                          className={`text-sm ${textSecondaryClass} hover:${textClass} transition`}
+                        >
+                          View Details →
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {contact.company && (
+                          <div className="text-sm">
+                            <span className={`font-medium ${textSecondaryClass}`}>
+                              {contact.contactType === 'broker' ? 'Firm:' : 'Company:'}
+                            </span>
+                            <span className={`${textClass} ml-2`}>{contact.company}</span>
+                          </div>
+                        )}
+                        {contact.email && (
+                          <div className="text-sm">
+                            <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
+                            <a href={`mailto:${contact.email}`} className="text-blue-600 hover:underline ml-2">
+                              {contact.email}
+                            </a>
+                          </div>
+                        )}
+                        {contact.phone && (
+                          <div className="text-sm">
+                            <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
+                            <a href={`tel:${contact.phone}`} className="text-blue-600 hover:underline ml-2">
+                              {contact.phone}
+                            </a>
+                          </div>
+                        )}
+                        {contact.noteHistory && contact.noteHistory.length > 0 && (
+                          <div className="text-sm">
+                            <span className={`font-medium ${textSecondaryClass}`}>Last activity:</span>
+                            <span className={`${textClass} ml-2`}>
+                              {formatRelativeTime(contact.noteHistory[contact.noteHistory.length - 1].timestamp)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => setActiveTab('brokers')}
-                      className={`text-sm ${textSecondaryClass} hover:${textClass} transition`}
-                    >
-                      View Details →
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {broker.firmName && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Firm:</span>
-                        <span className={`${textClass} ml-2`}>{broker.firmName}</span>
-                      </div>
-                    )}
-                    {broker.email && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
-                        <a href={`mailto:${broker.email}`} className="text-blue-600 hover:underline ml-2">
-                          {broker.email}
-                        </a>
-                      </div>
-                    )}
-                    {broker.phone && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
-                        <a href={`tel:${broker.phone}`} className="text-blue-600 hover:underline ml-2">
-                          {broker.phone}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {/* Gatekeepers */}
-              {gatekeepers.map(gatekeeper => (
-                <div key={`gatekeeper-${gatekeeper.id}`} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className={`text-2xl font-bold ${textClass}`}>{gatekeeper.name}</h3>
-                        <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">
-                          GATEKEEPER
-                        </span>
-                      </div>
-                      {gatekeeper.title && (
-                        <p className={`${textSecondaryClass} text-sm mt-1`}>{gatekeeper.title}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('gatekeepers')}
-                      className={`text-sm ${textSecondaryClass} hover:${textClass} transition`}
-                    >
-                      View Details →
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {gatekeeper.company && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Company:</span>
-                        <span className={`${textClass} ml-2`}>{gatekeeper.company}</span>
-                      </div>
-                    )}
-                    {gatekeeper.email && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
-                        <a href={`mailto:${gatekeeper.email}`} className="text-blue-600 hover:underline ml-2">
-                          {gatekeeper.email}
-                        </a>
-                      </div>
-                    )}
-                    {gatekeeper.phone && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
-                        <a href={`tel:${gatekeeper.phone}`} className="text-blue-600 hover:underline ml-2">
-                          {gatekeeper.phone}
-                        </a>
-                      </div>
-                    )}
-                    {gatekeeper.relatedTo && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Related To:</span>
-                        <span className={`${textClass} ml-2`}>{gatekeeper.relatedTo}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                  );
+                });
+              })()}
             </div>
 
-            {brokers.length === 0 && gatekeepers.length === 0 && (
+            {(brokers.length === 0 && gatekeepers.length === 0 && partners.length === 0) && (
               <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
-                <p className={`${textSecondaryClass} text-lg`}>No contacts yet. Add brokers and gatekeepers to get started!</p>
+                <p className={`${textSecondaryClass} text-lg`}>No contacts yet. Add brokers, gatekeepers, and partners to get started!</p>
               </div>
             )}
           </div>
         )}
 
-        {/* Follow-ups Tab */}
+        {/* Follow-ups Tab (keeping old brokers section start) */}
         {activeTab === 'followups' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
