@@ -3541,46 +3541,125 @@ export default function IndustrialCRM() {
                 partner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 partner.entityName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 partner.email?.toLowerCase().includes(searchTerm.toLowerCase())
-              ).map(partner => (
-                <div key={partner.id} className={`${cardBgClass} rounded-xl shadow-lg p-6`}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className={`text-xl font-bold ${textClass}`}>{partner.name}</h3>
-                      {partner.entityName && (
-                        <p className={`${textSecondaryClass} text-sm`}>{partner.entityName}</p>
-                      )}
+              ).map(partner => {
+                const getInitials = (name) => {
+                  if (!name) return '?';
+                  const parts = name.split(' ');
+                  if (parts.length === 1) return parts[0][0].toUpperCase();
+                  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                };
+
+                const lastContact = partner.noteHistory && partner.noteHistory.length > 0
+                  ? formatRelativeTime(partner.noteHistory[partner.noteHistory.length - 1].timestamp)
+                  : null;
+
+                return (
+                <div key={partner.id} className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} hover:shadow-xl transition overflow-hidden`}>
+                  {/* Header */}
+                  <div className={`p-6 ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                    <div className="flex items-start gap-4">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                          {getInitials(partner.name)}
+                        </div>
+                      </div>
+
+                      {/* Name and Entity */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-2xl font-bold ${textClass} mb-1`}>{partner.name}</h3>
+                        {partner.entityName && (
+                          <p className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
+                            <Building2 size={14} />
+                            {partner.entityName}
+                          </p>
+                        )}
+                        {lastContact && (
+                          <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                            Last contact: {lastContact}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Edit/Delete */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditPartner(partner)}
+                          className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                          title="Edit partner"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeletePartner(partner.id)}
+                          className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                          title="Delete partner"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 mt-4">
+                      {partner.phone && (
+                        <a
+                          href={`tel:${partner.phone}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Phone size={16} />
+                          Call
+                        </a>
+                      )}
+                      {partner.email && (
+                        <a
+                          href={`mailto:${partner.email}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Mail size={16} />
+                          Email
+                        </a>
+                      )}
                       <button
-                        onClick={() => handleEditPartner(partner)}
-                        className={`p-2 rounded-lg transition ${darkMode ? 'text-blue-400 hover:bg-slate-700' : 'text-blue-600 hover:bg-blue-50'}`}
+                        onClick={() => {
+                          const noteInput = document.querySelector(`#note-input-partner-${partner.id}`);
+                          if (noteInput) noteInput.focus();
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
                       >
-                        <Edit2 size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleDeletePartner(partner.id)}
-                        className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
-                      >
-                        <Trash2 size={20} />
+                        <MessageSquare size={16} />
+                        Note
                       </button>
                     </div>
                   </div>
 
-                  {/* Contact Info */}
-                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 pb-4 border-b ${borderClass}`}>
-                    {partner.email && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
-                        <span className={`${textClass} ml-2`}>{partner.email}</span>
-                      </div>
-                    )}
-                    {partner.phone && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
-                        <span className={`${textClass} ml-2`}>{partner.phone}</span>
-                      </div>
-                    )}
-                  </div>
+                  {/* Contact & Investment Info */}
+                  <div className="p-6">
+                    {/* Contact Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 pb-4 border-b ${borderClass}">
+                      {partner.email && (
+                        <div className="flex items-center gap-2">
+                          <Mail size={16} className={textSecondaryClass} />
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold mb-0.5`}>Email</div>
+                            <a href={`mailto:${partner.email}`} className="text-sm text-blue-600 hover:text-blue-700 truncate block">
+                              {partner.email}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {partner.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone size={16} className={textSecondaryClass} />
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold mb-0.5`}>Phone</div>
+                            <a href={`tel:${partner.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
+                              {partner.phone}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                   {/* Investment Profile */}
                   <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-4`}>
@@ -3666,6 +3745,7 @@ export default function IndustrialCRM() {
                       </div>
                       <div className="flex gap-2">
                         <textarea
+                          id={`note-input-partner-${partner.id}`}
                           placeholder="Add a note..."
                           value={noteContent[`partner-${partner.id}`] || ''}
                           onChange={(e) => setNoteContent({ ...noteContent, [`partner-${partner.id}`]: e.target.value })}
@@ -3822,8 +3902,10 @@ export default function IndustrialCRM() {
                         })}
                     </div>
                   </div>
+                  </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
 
             {partners.length === 0 && !showPartnerForm && (
