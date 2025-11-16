@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare } from 'lucide-react';
+import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink } from 'lucide-react';
 
 export default function IndustrialCRM() {
   const [properties, setProperties] = useState([]);
@@ -2974,74 +2974,171 @@ export default function IndustrialCRM() {
                 broker.firmName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 broker.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 broker.phone?.toLowerCase().includes(searchTerm.toLowerCase())
-              ).map(broker => (
-                <div key={broker.id} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className={`text-2xl font-bold ${textClass}`}>{broker.name}</h3>
+              ).map(broker => {
+                // Get initials for avatar
+                const getInitials = (name) => {
+                  if (!name) return '?';
+                  const parts = name.split(' ');
+                  if (parts.length === 1) return parts[0][0].toUpperCase();
+                  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                };
+
+                // Get last contact date
+                const lastContact = broker.noteHistory && broker.noteHistory.length > 0
+                  ? formatRelativeTime(broker.noteHistory[broker.noteHistory.length - 1].timestamp)
+                  : null;
+
+                return (
+                <div key={broker.id} className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} hover:shadow-xl transition overflow-hidden`}>
+                  {/* Header with Avatar and Quick Actions */}
+                  <div className={`p-6 ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                    <div className="flex items-start gap-4">
+                      {/* Avatar Circle */}
+                      <div className="flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                          {getInitials(broker.name)}
+                        </div>
+                      </div>
+
+                      {/* Name and Title */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-2xl font-bold ${textClass} mb-1`}>{broker.name}</h3>
+                        {broker.firmName && (
+                          <p className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
+                            <Building2 size={14} />
+                            {broker.firmName}
+                          </p>
+                        )}
+                        {lastContact && (
+                          <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                            Last contact: {lastContact}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Edit/Delete Buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditBroker(broker)}
+                          className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                          title="Edit broker"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBroker(broker.id)}
+                          className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                          title="Delete broker"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+
+                    {/* Quick Action Buttons */}
+                    <div className="flex gap-2 mt-4">
+                      {broker.phone && (
+                        <a
+                          href={`tel:${broker.phone}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Phone size={16} />
+                          Call
+                        </a>
+                      )}
+                      {broker.email && (
+                        <a
+                          href={`mailto:${broker.email}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Mail size={16} />
+                          Email
+                        </a>
+                      )}
                       <button
-                        onClick={() => handleEditBroker(broker)}
-                        className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                        onClick={() => {
+                          const noteInput = document.querySelector(`#note-input-broker-${broker.id}`);
+                          if (noteInput) noteInput.focus();
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
                       >
-                        <Edit2 size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBroker(broker.id)}
-                        className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
-                      >
-                        <Trash2 size={20} />
+                        <MessageSquare size={16} />
+                        Note
                       </button>
                     </div>
                   </div>
 
-                  <div className="space-y-3 mb-6">
-                    {broker.firmName && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Firm:</span>
-                        <span className={`${textClass} ml-2`}>{broker.firmName}</span>
-                      </div>
-                    )}
-                    {broker.email && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
-                        <a href={`mailto:${broker.email}`} className="text-blue-600 hover:underline ml-2">
-                          {broker.email}
-                        </a>
-                      </div>
-                    )}
-                    {broker.phone && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
-                        <a href={`tel:${broker.phone}`} className="text-blue-600 hover:underline ml-2">
-                          {broker.phone}
-                        </a>
-                      </div>
-                    )}
-                    {broker.firmWebsite && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Website:</span>
-                        <a href={broker.firmWebsite} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2">
-                          {broker.firmWebsite}
-                        </a>
-                      </div>
-                    )}
-                    {broker.crexiLink && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Crexi:</span>
-                        <a href={broker.crexiLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2">
-                          View Profile →
-                        </a>
-                      </div>
-                    )}
-                    {broker.licenseNumber && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>License #:</span>
-                        <span className={`${textClass} ml-2`}>{broker.licenseNumber}</span>
-                      </div>
-                    )}
-                  </div>
+                  {/* Contact Information */}
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      {broker.email && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Mail size={18} className="text-blue-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Email</div>
+                            <a href={`mailto:${broker.email}`} className="text-sm text-blue-600 hover:text-blue-700 truncate block">
+                              {broker.email}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {broker.phone && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Phone size={18} className="text-green-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Phone</div>
+                            <a href={`tel:${broker.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
+                              {broker.phone}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {broker.firmWebsite && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Globe size={18} className="text-purple-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Website</div>
+                            <a href={broker.firmWebsite} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 truncate">
+                              {broker.firmWebsite.replace(/^https?:\/\//, '')}
+                              <ExternalLink size={12} />
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {broker.crexiLink && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Building2 size={18} className="text-orange-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Crexi Profile</div>
+                            <a href={broker.crexiLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                              View Profile
+                              <ExternalLink size={12} />
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {broker.licenseNumber && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Target size={18} className="text-cyan-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>License #</div>
+                            <div className={`text-sm ${textClass}`}>
+                              {broker.licenseNumber}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                   {/* Notes & Activity Section */}
                   <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-6 rounded-lg`}>
@@ -3071,6 +3168,7 @@ export default function IndustrialCRM() {
                       </div>
                       <div className="flex gap-2">
                         <textarea
+                          id={`note-input-broker-${broker.id}`}
                           placeholder="Add a note..."
                           value={noteContent[`broker-${broker.id}`] || ''}
                           onChange={(e) => setNoteContent({ ...noteContent, [`broker-${broker.id}`]: e.target.value })}
@@ -3227,8 +3325,10 @@ export default function IndustrialCRM() {
                         })}
                     </div>
                   </div>
+                  </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
 
             {brokers.length === 0 && !showBrokerForm && (
@@ -3441,46 +3541,125 @@ export default function IndustrialCRM() {
                 partner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 partner.entityName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 partner.email?.toLowerCase().includes(searchTerm.toLowerCase())
-              ).map(partner => (
-                <div key={partner.id} className={`${cardBgClass} rounded-xl shadow-lg p-6`}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className={`text-xl font-bold ${textClass}`}>{partner.name}</h3>
-                      {partner.entityName && (
-                        <p className={`${textSecondaryClass} text-sm`}>{partner.entityName}</p>
-                      )}
+              ).map(partner => {
+                const getInitials = (name) => {
+                  if (!name) return '?';
+                  const parts = name.split(' ');
+                  if (parts.length === 1) return parts[0][0].toUpperCase();
+                  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                };
+
+                const lastContact = partner.noteHistory && partner.noteHistory.length > 0
+                  ? formatRelativeTime(partner.noteHistory[partner.noteHistory.length - 1].timestamp)
+                  : null;
+
+                return (
+                <div key={partner.id} className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} hover:shadow-xl transition overflow-hidden`}>
+                  {/* Header */}
+                  <div className={`p-6 ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                    <div className="flex items-start gap-4">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                          {getInitials(partner.name)}
+                        </div>
+                      </div>
+
+                      {/* Name and Entity */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-2xl font-bold ${textClass} mb-1`}>{partner.name}</h3>
+                        {partner.entityName && (
+                          <p className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
+                            <Building2 size={14} />
+                            {partner.entityName}
+                          </p>
+                        )}
+                        {lastContact && (
+                          <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                            Last contact: {lastContact}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Edit/Delete */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditPartner(partner)}
+                          className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                          title="Edit partner"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeletePartner(partner.id)}
+                          className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                          title="Delete partner"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 mt-4">
+                      {partner.phone && (
+                        <a
+                          href={`tel:${partner.phone}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Phone size={16} />
+                          Call
+                        </a>
+                      )}
+                      {partner.email && (
+                        <a
+                          href={`mailto:${partner.email}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Mail size={16} />
+                          Email
+                        </a>
+                      )}
                       <button
-                        onClick={() => handleEditPartner(partner)}
-                        className={`p-2 rounded-lg transition ${darkMode ? 'text-blue-400 hover:bg-slate-700' : 'text-blue-600 hover:bg-blue-50'}`}
+                        onClick={() => {
+                          const noteInput = document.querySelector(`#note-input-partner-${partner.id}`);
+                          if (noteInput) noteInput.focus();
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
                       >
-                        <Edit2 size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleDeletePartner(partner.id)}
-                        className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
-                      >
-                        <Trash2 size={20} />
+                        <MessageSquare size={16} />
+                        Note
                       </button>
                     </div>
                   </div>
 
-                  {/* Contact Info */}
-                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 pb-4 border-b ${borderClass}`}>
-                    {partner.email && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
-                        <span className={`${textClass} ml-2`}>{partner.email}</span>
-                      </div>
-                    )}
-                    {partner.phone && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
-                        <span className={`${textClass} ml-2`}>{partner.phone}</span>
-                      </div>
-                    )}
-                  </div>
+                  {/* Contact & Investment Info */}
+                  <div className="p-6">
+                    {/* Contact Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 pb-4 border-b ${borderClass}">
+                      {partner.email && (
+                        <div className="flex items-center gap-2">
+                          <Mail size={16} className={textSecondaryClass} />
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold mb-0.5`}>Email</div>
+                            <a href={`mailto:${partner.email}`} className="text-sm text-blue-600 hover:text-blue-700 truncate block">
+                              {partner.email}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {partner.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone size={16} className={textSecondaryClass} />
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold mb-0.5`}>Phone</div>
+                            <a href={`tel:${partner.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
+                              {partner.phone}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                   {/* Investment Profile */}
                   <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-4`}>
@@ -3566,6 +3745,7 @@ export default function IndustrialCRM() {
                       </div>
                       <div className="flex gap-2">
                         <textarea
+                          id={`note-input-partner-${partner.id}`}
                           placeholder="Add a note..."
                           value={noteContent[`partner-${partner.id}`] || ''}
                           onChange={(e) => setNoteContent({ ...noteContent, [`partner-${partner.id}`]: e.target.value })}
@@ -3722,8 +3902,10 @@ export default function IndustrialCRM() {
                         })}
                     </div>
                   </div>
+                  </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
 
             {partners.length === 0 && !showPartnerForm && (
@@ -3832,63 +4014,129 @@ export default function IndustrialCRM() {
                 gatekeeper.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 gatekeeper.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 gatekeeper.email?.toLowerCase().includes(searchTerm.toLowerCase())
-              ).map(gatekeeper => (
-                <div key={gatekeeper.id} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className={`text-2xl font-bold ${textClass}`}>{gatekeeper.name}</h3>
-                      {gatekeeper.title && (
-                        <p className={`${textSecondaryClass} text-sm mt-1`}>{gatekeeper.title}</p>
-                      )}
+              ).map(gatekeeper => {
+                const getInitials = (name) => {
+                  if (!name) return '?';
+                  const parts = name.split(' ');
+                  if (parts.length === 1) return parts[0][0].toUpperCase();
+                  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                };
+
+                return (
+                <div key={gatekeeper.id} className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} hover:shadow-xl transition overflow-hidden`}>
+                  {/* Header */}
+                  <div className={`p-6 ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                    <div className="flex items-start gap-4">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                          {getInitials(gatekeeper.name)}
+                        </div>
+                      </div>
+
+                      {/* Name and Title */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-2xl font-bold ${textClass} mb-1`}>{gatekeeper.name}</h3>
+                        {gatekeeper.title && (
+                          <p className={`text-sm ${textSecondaryClass}`}>{gatekeeper.title}</p>
+                        )}
+                        {gatekeeper.company && (
+                          <p className={`text-sm ${textSecondaryClass} flex items-center gap-1 mt-1`}>
+                            <Building2 size={14} />
+                            {gatekeeper.company}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Edit/Delete */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditGatekeeper(gatekeeper)}
+                          className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                          title="Edit gatekeeper"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteGatekeeper(gatekeeper.id)}
+                          className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                          title="Delete gatekeeper"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEditGatekeeper(gatekeeper)}
-                        className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
-                      >
-                        <Edit2 size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteGatekeeper(gatekeeper.id)}
-                        className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
-                      >
-                        <Trash2 size={20} />
-                      </button>
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 mt-4">
+                      {gatekeeper.phone && (
+                        <a
+                          href={`tel:${gatekeeper.phone}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Phone size={16} />
+                          Call
+                        </a>
+                      )}
+                      {gatekeeper.email && (
+                        <a
+                          href={`mailto:${gatekeeper.email}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Mail size={16} />
+                          Email
+                        </a>
+                      )}
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    {gatekeeper.company && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Company:</span>
-                        <span className={`${textClass} ml-2`}>{gatekeeper.company}</span>
-                      </div>
-                    )}
-                    {gatekeeper.email && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
-                        <a href={`mailto:${gatekeeper.email}`} className="text-blue-600 hover:underline ml-2">
-                          {gatekeeper.email}
-                        </a>
-                      </div>
-                    )}
-                    {gatekeeper.phone && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
-                        <a href={`tel:${gatekeeper.phone}`} className="text-blue-600 hover:underline ml-2">
-                          {gatekeeper.phone}
-                        </a>
-                      </div>
-                    )}
-                    {gatekeeper.relatedTo && (
-                      <div className="text-sm">
-                        <span className={`font-medium ${textSecondaryClass}`}>Related To:</span>
-                        <span className={`${textClass} ml-2`}>{gatekeeper.relatedTo}</span>
-                      </div>
-                    )}
+                  {/* Contact Information */}
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {gatekeeper.email && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Mail size={18} className="text-blue-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Email</div>
+                            <a href={`mailto:${gatekeeper.email}`} className="text-sm text-blue-600 hover:text-blue-700 truncate block">
+                              {gatekeeper.email}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {gatekeeper.phone && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Phone size={18} className="text-green-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Phone</div>
+                            <a href={`tel:${gatekeeper.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
+                              {gatekeeper.phone}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {gatekeeper.relatedTo && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Target size={18} className="text-purple-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Related To</div>
+                            <div className={`text-sm ${textClass}`}>
+                              {gatekeeper.relatedTo}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
 
             {gatekeepers.length === 0 && !showGatekeeperForm && (
