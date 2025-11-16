@@ -35,6 +35,7 @@ export default function IndustrialCRM() {
   const [noteCategory, setNoteCategory] = useState({});
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
+  const [expandedNotes, setExpandedNotes] = useState({});
 
   // Sensitivity Analysis state
   const [sensitivityPropertyId, setSensitivityPropertyId] = useState(null);
@@ -1585,7 +1586,11 @@ export default function IndustrialCRM() {
                                 <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-white'}`}>{followUp.type}</span>
                                 {overdue && <span className="text-xs font-semibold text-red-500">OVERDUE</span>}
                               </div>
-                              <p className={`text-sm ${textSecondaryClass} ml-6 mt-1`}>{followUp.notes || 'No notes'}</p>
+                              {followUp.notes && (
+                                <div className={`ml-6 mt-2 p-2 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-100'}`}>
+                                  <p className={`text-sm ${textClass} leading-relaxed whitespace-pre-wrap`}>{followUp.notes}</p>
+                                </div>
+                              )}
                             </div>
                             <button
                               onClick={() => {
@@ -1737,7 +1742,11 @@ export default function IndustrialCRM() {
                                   </span>
                                 </div>
                               )}
-                              <p className={`text-sm ${textSecondaryClass} ml-6`}>{followUp.notes || 'No notes'}</p>
+                              {followUp.notes && (
+                                <div className={`ml-6 mt-2 p-2.5 rounded-lg ${darkMode ? 'bg-slate-600' : 'bg-slate-100'}`}>
+                                  <p className={`text-sm ${textClass} leading-relaxed whitespace-pre-wrap`}>{followUp.notes}</p>
+                                </div>
+                              )}
                               <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} ml-6 mt-1`}>
                                 {overdue ? `⚠️ Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? '⏰ Due today' : `📅 Due ${formatDate(followUp.dueDate)}`}
                               </p>
@@ -2710,9 +2719,15 @@ export default function IndustrialCRM() {
                       {/* Note History */}
                       <div className="space-y-3">
                         {(property.noteHistory || []).length === 0 && (
-                          <p className={`text-sm ${textSecondaryClass} italic text-center py-4`}>
-                            No notes yet. Add your first note above.
-                          </p>
+                          <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center border-2 border-dashed ${borderClass}`}>
+                            <MessageSquare size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                            <p className={`text-sm ${textSecondaryClass} font-medium`}>
+                              No notes yet
+                            </p>
+                            <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                              Add your first note above to track interactions and updates
+                            </p>
+                          </div>
                         )}
                         {(property.noteHistory || [])
                           .slice()
@@ -2738,16 +2753,31 @@ export default function IndustrialCRM() {
                               'follow-up': '⏰ Follow-up'
                             };
 
+                            const isLongNote = note.content.length > 300;
+                            const isExpanded = expandedNotes[note.id];
+
+                            // Function to make URLs clickable
+                            const linkifyText = (text) => {
+                              const urlRegex = /(https?:\/\/[^\s]+)/g;
+                              const parts = text.split(urlRegex);
+                              return parts.map((part, i) => {
+                                if (part.match(urlRegex)) {
+                                  return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 underline">{part}</a>;
+                                }
+                                return part;
+                              });
+                            };
+
                             return (
-                              <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-3 rounded-lg border ${borderClass}`}>
-                                <div className="flex items-start justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className={`text-xs px-2 py-1 rounded ${categoryColors[note.category] || categoryColors.general}`}>
+                              <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-4 rounded-lg border ${borderClass} shadow-sm hover:shadow-md transition-shadow`}>
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${categoryColors[note.category] || categoryColors.general}`}>
                                       {categoryLabels[note.category] || categoryLabels.general}
                                     </span>
-                                    <span className={`text-xs ${textSecondaryClass}`}>
+                                    <span className={`text-xs ${textSecondaryClass} font-medium`}>
                                       {formatRelativeTime(note.timestamp)}
-                                      {note.edited && ' (edited)'}
+                                      {note.edited && ' • Edited'}
                                     </span>
                                   </div>
                                   <div className="flex gap-1">
@@ -2798,11 +2828,26 @@ export default function IndustrialCRM() {
                                   <textarea
                                     value={editingNoteContent}
                                     onChange={(e) => setEditingNoteContent(e.target.value)}
-                                    className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                    rows="3"
+                                    className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    rows="4"
                                   />
                                 ) : (
-                                  <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{note.content}</p>
+                                  <div>
+                                    <p className={`text-sm ${textClass} whitespace-pre-wrap leading-relaxed`}>
+                                      {isLongNote && !isExpanded
+                                        ? linkifyText(note.content.substring(0, 300) + '...')
+                                        : linkifyText(note.content)
+                                      }
+                                    </p>
+                                    {isLongNote && (
+                                      <button
+                                        onClick={() => setExpandedNotes({ ...expandedNotes, [note.id]: !isExpanded })}
+                                        className="text-blue-500 hover:text-blue-600 text-xs font-semibold mt-2"
+                                      >
+                                        {isExpanded ? 'Show less' : 'Read more'}
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             );
@@ -3045,9 +3090,15 @@ export default function IndustrialCRM() {
                     {/* Note History */}
                     <div className="space-y-3">
                       {(broker.noteHistory || []).length === 0 && (
-                        <p className={`text-sm ${textSecondaryClass} italic text-center py-4`}>
-                          No notes yet. Add your first note above.
-                        </p>
+                        <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center border-2 border-dashed ${borderClass}`}>
+                          <MessageSquare size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                          <p className={`text-sm ${textSecondaryClass} font-medium`}>
+                            No notes yet
+                          </p>
+                          <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                            Add your first note above to track interactions and updates
+                          </p>
+                        </div>
                       )}
                       {(broker.noteHistory || [])
                         .slice()
@@ -3073,16 +3124,31 @@ export default function IndustrialCRM() {
                             'follow-up': '⏰ Follow-up'
                           };
 
+                          const isLongNote = note.content.length > 300;
+                          const isExpanded = expandedNotes[note.id];
+
+                          // Function to make URLs clickable
+                          const linkifyText = (text) => {
+                            const urlRegex = /(https?:\/\/[^\s]+)/g;
+                            const parts = text.split(urlRegex);
+                            return parts.map((part, i) => {
+                              if (part.match(urlRegex)) {
+                                return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 underline">{part}</a>;
+                              }
+                              return part;
+                            });
+                          };
+
                           return (
-                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-3 rounded-lg border ${borderClass}`}>
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-xs px-2 py-1 rounded ${categoryColors[note.category] || categoryColors.general}`}>
+                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-4 rounded-lg border ${borderClass} shadow-sm hover:shadow-md transition-shadow`}>
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${categoryColors[note.category] || categoryColors.general}`}>
                                     {categoryLabels[note.category] || categoryLabels.general}
                                   </span>
-                                  <span className={`text-xs ${textSecondaryClass}`}>
+                                  <span className={`text-xs ${textSecondaryClass} font-medium`}>
                                     {formatRelativeTime(note.timestamp)}
-                                    {note.edited && ' (edited)'}
+                                    {note.edited && ' • Edited'}
                                   </span>
                                 </div>
                                 <div className="flex gap-1">
@@ -3133,11 +3199,26 @@ export default function IndustrialCRM() {
                                 <textarea
                                   value={editingNoteContent}
                                   onChange={(e) => setEditingNoteContent(e.target.value)}
-                                  className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                  rows="3"
+                                  className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                  rows="4"
                                 />
                               ) : (
-                                <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{note.content}</p>
+                                <div>
+                                  <p className={`text-sm ${textClass} whitespace-pre-wrap leading-relaxed`}>
+                                    {isLongNote && !isExpanded
+                                      ? linkifyText(note.content.substring(0, 300) + '...')
+                                      : linkifyText(note.content)
+                                    }
+                                  </p>
+                                  {isLongNote && (
+                                    <button
+                                      onClick={() => setExpandedNotes({ ...expandedNotes, [note.id]: !isExpanded })}
+                                      className="text-blue-500 hover:text-blue-600 text-xs font-semibold mt-2"
+                                    >
+                                      {isExpanded ? 'Show less' : 'Read more'}
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </div>
                           );
@@ -3504,9 +3585,15 @@ export default function IndustrialCRM() {
                     {/* Note History */}
                     <div className="space-y-3">
                       {(partner.noteHistory || []).length === 0 && (
-                        <p className={`text-sm ${textSecondaryClass} italic text-center py-4`}>
-                          No notes yet. Add your first note above.
-                        </p>
+                        <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center border-2 border-dashed ${borderClass}`}>
+                          <MessageSquare size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                          <p className={`text-sm ${textSecondaryClass} font-medium`}>
+                            No notes yet
+                          </p>
+                          <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                            Add your first note above to track interactions and updates
+                          </p>
+                        </div>
                       )}
                       {(partner.noteHistory || [])
                         .slice()
@@ -3532,16 +3619,31 @@ export default function IndustrialCRM() {
                             'follow-up': '⏰ Follow-up'
                           };
 
+                          const isLongNote = note.content.length > 300;
+                          const isExpanded = expandedNotes[note.id];
+
+                          // Function to make URLs clickable
+                          const linkifyText = (text) => {
+                            const urlRegex = /(https?:\/\/[^\s]+)/g;
+                            const parts = text.split(urlRegex);
+                            return parts.map((part, i) => {
+                              if (part.match(urlRegex)) {
+                                return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 underline">{part}</a>;
+                              }
+                              return part;
+                            });
+                          };
+
                           return (
-                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-3 rounded-lg border ${borderClass}`}>
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-xs px-2 py-1 rounded ${categoryColors[note.category] || categoryColors.general}`}>
+                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-4 rounded-lg border ${borderClass} shadow-sm hover:shadow-md transition-shadow`}>
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${categoryColors[note.category] || categoryColors.general}`}>
                                     {categoryLabels[note.category] || categoryLabels.general}
                                   </span>
-                                  <span className={`text-xs ${textSecondaryClass}`}>
+                                  <span className={`text-xs ${textSecondaryClass} font-medium`}>
                                     {formatRelativeTime(note.timestamp)}
-                                    {note.edited && ' (edited)'}
+                                    {note.edited && ' • Edited'}
                                   </span>
                                 </div>
                                 <div className="flex gap-1">
@@ -3592,11 +3694,26 @@ export default function IndustrialCRM() {
                                 <textarea
                                   value={editingNoteContent}
                                   onChange={(e) => setEditingNoteContent(e.target.value)}
-                                  className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                  rows="3"
+                                  className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                  rows="4"
                                 />
                               ) : (
-                                <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{note.content}</p>
+                                <div>
+                                  <p className={`text-sm ${textClass} whitespace-pre-wrap leading-relaxed`}>
+                                    {isLongNote && !isExpanded
+                                      ? linkifyText(note.content.substring(0, 300) + '...')
+                                      : linkifyText(note.content)
+                                    }
+                                  </p>
+                                  {isLongNote && (
+                                    <button
+                                      onClick={() => setExpandedNotes({ ...expandedNotes, [note.id]: !isExpanded })}
+                                      className="text-blue-500 hover:text-blue-600 text-xs font-semibold mt-2"
+                                    >
+                                      {isExpanded ? 'Show less' : 'Read more'}
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </div>
                           );
@@ -4065,7 +4182,11 @@ export default function IndustrialCRM() {
                               <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">HIGH</span>
                             )}
                           </div>
-                          <p className={`${textSecondaryClass} mb-2`}>{followUp.notes || 'No notes'}</p>
+                          {followUp.notes && (
+                            <div className={`mb-3 p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                              <p className={`text-sm ${textClass} leading-relaxed whitespace-pre-wrap`}>{followUp.notes}</p>
+                            </div>
+                          )}
                           <p className={`text-sm font-semibold ${
                             overdue ? 'text-red-500' : dueToday ? 'text-yellow-600' : 'text-green-600'
                           }`}>
