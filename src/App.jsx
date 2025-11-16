@@ -1292,7 +1292,11 @@ export default function IndustrialCRM() {
           >
             <Bell size={20} />
             <div className="flex-1 text-left">Follow-ups</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'followups'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {followUps.filter(f => f.status !== 'completed').length}
             </span>
           </button>
@@ -1307,7 +1311,11 @@ export default function IndustrialCRM() {
           >
             <Calendar size={20} />
             <div className="flex-1 text-left">Calendar</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'calendar'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {events.length}
             </span>
           </button>
@@ -1322,7 +1330,11 @@ export default function IndustrialCRM() {
           >
             <Building2 size={20} />
             <div className="flex-1 text-left">Assets</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'assets'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {properties.length}
             </span>
           </button>
@@ -1337,7 +1349,11 @@ export default function IndustrialCRM() {
           >
             <Target size={20} />
             <div className="flex-1 text-left">Brokers</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'brokers'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {brokers.length}
             </span>
           </button>
@@ -1352,7 +1368,11 @@ export default function IndustrialCRM() {
           >
             <AlertCircle size={20} />
             <div className="flex-1 text-left">Gatekeepers</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'gatekeepers'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {gatekeepers.length}
             </span>
           </button>
@@ -1367,7 +1387,11 @@ export default function IndustrialCRM() {
           >
             <DollarSign size={20} />
             <div className="flex-1 text-left">Partners</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'partners'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {partners.length}
             </span>
           </button>
@@ -1382,7 +1406,11 @@ export default function IndustrialCRM() {
           >
             <Search size={20} />
             <div className="flex-1 text-left">All Contacts</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'contacts'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {brokers.length + gatekeepers.length}
             </span>
           </button>
