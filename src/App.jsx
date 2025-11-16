@@ -1292,7 +1292,11 @@ export default function IndustrialCRM() {
           >
             <Bell size={20} />
             <div className="flex-1 text-left">Follow-ups</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'followups'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {followUps.filter(f => f.status !== 'completed').length}
             </span>
           </button>
@@ -1307,7 +1311,11 @@ export default function IndustrialCRM() {
           >
             <Calendar size={20} />
             <div className="flex-1 text-left">Calendar</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'calendar'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {events.length}
             </span>
           </button>
@@ -1322,7 +1330,11 @@ export default function IndustrialCRM() {
           >
             <Building2 size={20} />
             <div className="flex-1 text-left">Assets</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'assets'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {properties.length}
             </span>
           </button>
@@ -1337,7 +1349,11 @@ export default function IndustrialCRM() {
           >
             <Target size={20} />
             <div className="flex-1 text-left">Brokers</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'brokers'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {brokers.length}
             </span>
           </button>
@@ -1352,7 +1368,11 @@ export default function IndustrialCRM() {
           >
             <AlertCircle size={20} />
             <div className="flex-1 text-left">Gatekeepers</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'gatekeepers'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {gatekeepers.length}
             </span>
           </button>
@@ -1367,7 +1387,11 @@ export default function IndustrialCRM() {
           >
             <DollarSign size={20} />
             <div className="flex-1 text-left">Partners</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'partners'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {partners.length}
             </span>
           </button>
@@ -1382,7 +1406,11 @@ export default function IndustrialCRM() {
           >
             <Search size={20} />
             <div className="flex-1 text-left">All Contacts</div>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              activeTab === 'contacts'
+                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
+                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
+            }`}>
               {brokers.length + gatekeepers.length}
             </span>
           </button>
@@ -1450,7 +1478,7 @@ export default function IndustrialCRM() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             {/* Portfolio Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Total Properties</div>
@@ -1464,32 +1492,15 @@ export default function IndustrialCRM() {
 
               <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Avg IRR</div>
+                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Contacts</div>
                   <Target size={24} className="text-green-500" />
                 </div>
-                <div className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                  {properties.length > 0
-                    ? `${(properties.reduce((sum, p) => {
-                        const metrics = calculateMetrics(p);
-                        return sum + (metrics.irr || 0);
-                      }, 0) / properties.length).toFixed(1)}%`
-                    : 'N/A'}
-                </div>
-                <div className={`text-xs ${textSecondaryClass} mt-1`}>Average across portfolio</div>
-              </div>
-
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Total NOI</div>
-                  <DollarSign size={24} className="text-purple-500" />
-                </div>
                 <div className={`text-3xl font-bold ${textClass}`}>
-                  {formatCurrency(properties.reduce((sum, p) => {
-                    const metrics = calculateMetrics(p);
-                    return sum + (metrics.noi || 0);
-                  }, 0))}
+                  {brokers.length + partners.length + gatekeepers.length}
                 </div>
-                <div className={`text-xs ${textSecondaryClass} mt-1`}>Net Operating Income</div>
+                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                  {brokers.length} Brokers • {partners.length} Partners • {gatekeepers.length} Gatekeepers
+                </div>
               </div>
 
               <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
@@ -1537,6 +1548,23 @@ export default function IndustrialCRM() {
                       const dueToday = isDueToday(followUp.dueDate);
                       const statusColor = overdue ? 'red' : dueToday ? 'yellow' : 'green';
 
+                      // Get related contact info
+                      let relatedContactInfo = null;
+                      if (followUp.relatedContact) {
+                        const [type, id] = followUp.relatedContact.split('-');
+                        const contactId = parseInt(id);
+                        if (type === 'broker') {
+                          const contact = brokers.find(b => b.id === contactId);
+                          if (contact) relatedContactInfo = { type: 'Broker', name: contact.name, icon: Target };
+                        } else if (type === 'partner') {
+                          const contact = partners.find(p => p.id === contactId);
+                          if (contact) relatedContactInfo = { type: 'Partner', name: contact.name, icon: DollarSign };
+                        } else if (type === 'gatekeeper') {
+                          const contact = gatekeepers.find(g => g.id === contactId);
+                          if (contact) relatedContactInfo = { type: 'Gatekeeper', name: contact.name, icon: AlertCircle };
+                        }
+                      }
+
                       return (
                         <div key={followUp.id} className={`p-4 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                           <div className="flex items-start justify-between">
@@ -1550,6 +1578,14 @@ export default function IndustrialCRM() {
                                   {followUp.type}
                                 </span>
                               </div>
+                              {relatedContactInfo && (
+                                <div className={`flex items-center gap-1 ml-6 mb-1`}>
+                                  <relatedContactInfo.icon size={14} className="text-blue-500" />
+                                  <span className={`text-xs ${textSecondaryClass}`}>
+                                    {relatedContactInfo.type}: {relatedContactInfo.name}
+                                  </span>
+                                </div>
+                              )}
                               <p className={`text-sm ${textSecondaryClass} ml-6`}>{followUp.notes || 'No notes'}</p>
                               <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} ml-6 mt-1`}>
                                 {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
@@ -2729,7 +2765,7 @@ export default function IndustrialCRM() {
                       </button>
                       <button
                         onClick={() => handleDeleteBroker(broker.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
                       >
                         <Trash2 size={20} />
                       </button>
@@ -3157,13 +3193,13 @@ export default function IndustrialCRM() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditPartner(partner)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        className={`p-2 rounded-lg transition ${darkMode ? 'text-blue-400 hover:bg-slate-700' : 'text-blue-600 hover:bg-blue-50'}`}
                       >
                         <Edit2 size={20} />
                       </button>
                       <button
                         onClick={() => handleDeletePartner(partner.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
                       >
                         <Trash2 size={20} />
                       </button>
@@ -3518,7 +3554,7 @@ export default function IndustrialCRM() {
                       </button>
                       <button
                         onClick={() => handleDeleteGatekeeper(gatekeeper.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
                       >
                         <Trash2 size={20} />
                       </button>
@@ -3727,6 +3763,28 @@ export default function IndustrialCRM() {
                     className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
                   />
                   <select
+                    value={formData.relatedContact || ''}
+                    onChange={(e) => setFormData({ ...formData, relatedContact: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                  >
+                    <option value="">Select Contact (Optional)</option>
+                    <optgroup label="Brokers">
+                      {brokers.map(b => (
+                        <option key={`broker-${b.id}`} value={`broker-${b.id}`}>{b.name}{b.firmName ? ` - ${b.firmName}` : ''}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Partners">
+                      {partners.map(p => (
+                        <option key={`partner-${p.id}`} value={`partner-${p.id}`}>{p.name}{p.entityName ? ` - ${p.entityName}` : ''}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Gatekeepers">
+                      {gatekeepers.map(g => (
+                        <option key={`gatekeeper-${g.id}`} value={`gatekeeper-${g.id}`}>{g.name}{g.company ? ` - ${g.company}` : ''}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  <select
                     value={formData.type || 'Call'}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                     className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
@@ -3859,7 +3917,7 @@ export default function IndustrialCRM() {
                             className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Edit"
                           >
-                            <Edit2 size={18} />
+                            <Edit2 size={18} style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} />
                           </button>
                           <button
                             onClick={() => {
@@ -3867,10 +3925,10 @@ export default function IndustrialCRM() {
                                 setFollowUps(followUps.filter(f => f.id !== followUp.id));
                               }
                             }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition text-red-500`}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Delete"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={18} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
                           </button>
                         </div>
                       </div>
@@ -4069,7 +4127,7 @@ export default function IndustrialCRM() {
                             className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Edit"
                           >
-                            <Edit2 size={18} />
+                            <Edit2 size={18} style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} />
                           </button>
                           <button
                             onClick={() => {
@@ -4077,10 +4135,10 @@ export default function IndustrialCRM() {
                                 setEvents(events.filter(e => e.id !== event.id));
                               }
                             }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition text-red-500`}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Delete"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={18} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
                           </button>
                         </div>
                       </div>

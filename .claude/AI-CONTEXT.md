@@ -36,32 +36,61 @@ See [ROADMAP.md](./ROADMAP.md) for refactoring plan (Iterations 3-10).
 
 ## 🔄 Development Workflow (CRITICAL)
 
+### **IMPORTANT: Dual Environment Setup**
+
+⚠️ **AI works in:** `/home/user/NNN-CRM` (server/remote environment)
+⚠️ **User works in:** `/Users/zruss/Web Apps/NNN-CRM` (local Mac)
+
+**This means:** After AI pushes changes, USER must pull them to see in dev server!
+
 ### **Core Rule: Feature Branch Workflow**
 
 ```
 USER requests feature
   ↓
-AI creates: claude/feature-name
+AI creates: claude/feature-name-<session-id>
   ↓
 AI develops on branch, commits, pushes to GitHub
   ↓
-USER tests locally: git checkout claude/feature-name
+**CRITICAL STEP:** USER pulls changes to their Mac
+  │  $ git checkout claude/feature-name-<session-id>
+  │  $ git pull origin claude/feature-name-<session-id>
   ↓
-Iterate: USER requests changes → AI updates same branch
+USER's dev server auto-reloads (2-3 seconds)
   ↓
-USER approves: "Create a PR" or "Looks good, merge it"
+USER tests the feature in browser
+  ↓
+Iterate: USER requests changes → AI updates same branch → USER pulls again
+  ↓
+USER approves: "Create a PR" or "merge it"
   ↓
 AI creates PR (or USER does manually)
   ↓
 USER reviews and merges to main (USER CONTROLS THIS)
+  ↓
+USER pulls main to their Mac
+  │  $ git checkout main
+  │  $ git pull origin main
+  ↓
+Dev server shows production code
 ```
 
 ### **Critical Constraints:**
 1. ✅ **ALWAYS work on feature branches** named `claude/*`
 2. ✅ **NEVER push directly to main** without user approval
 3. ✅ **NEVER merge to main** without explicit user permission
-4. ✅ User controls production (main branch)
-5. ✅ Create PR when user says "Create a PR" or "Looks good, merge it"
+4. ✅ **ALWAYS remind user to pull** after pushing changes
+5. ✅ User controls production (main branch)
+6. ✅ Create PR when user says "Create a PR" or "Looks good, merge it"
+
+### **After Pushing Changes - AI Must Say:**
+
+"✅ Changes pushed to GitHub! **On your Mac, run:**
+```bash
+git checkout claude/feature-name-<session-id>
+git pull origin claude/feature-name-<session-id>
+```
+Your dev server should auto-reload in 2-3 seconds!"
 
 ---
 

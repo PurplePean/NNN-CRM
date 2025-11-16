@@ -64,40 +64,54 @@ cat ROADMAP.md                # What to build next
 
 ## 🔄 Standard Workflow
 
+⚠️ **CRITICAL:** AI works in `/home/user/NNN-CRM`, User works in `/Users/zruss/Web Apps/NNN-CRM`
+📌 **User MUST pull changes to see them in dev server!**
+
 ```
 USER: "I want to add CSV export"
 
 YOU:
-1. Create branch: claude/add-csv-export
+1. Create branch: claude/add-csv-export-<session-id>
 2. Plan with TodoWrite tool
 3. Build feature
 4. Commit & push to GitHub
 5. Tell user:
-   "✅ Done! Branch: claude/add-csv-export
-    To test: git checkout claude/add-csv-export
-    Changes: [list]"
+   "✅ Changes pushed to GitHub!
 
-USER tests locally, requests changes OR approves
+   **On your Mac, run:**
+   ```bash
+   git checkout claude/add-csv-export-<session-id>
+   git pull origin claude/add-csv-export-<session-id>
+   ```
+
+   Your dev server should auto-reload in 2-3 seconds!
+
+   Changes: [list]"
+
+USER pulls changes → dev server reloads → tests feature
 
 If changes needed:
   - Update same branch
   - Push updates
-  - User tests again
+  - **Remind user to pull again!**
 
 If approved:
   USER: "Create a PR" or "Merge it"
   YOU: Create PR or merge (with permission only!)
+  USER: Merges on GitHub
+  YOU: Remind user to pull main
 ```
 
 ---
 
 ## ⚠️ Critical Rules
 
-1. ✅ **Feature branches only** - `claude/feature-name`
+1. ✅ **Feature branches only** - `claude/feature-name-<session-id>`
 2. ❌ **NEVER push to main** without user saying "merge it" or "merge to main"
 3. ✅ **User controls merges** - They decide when features go live
-4. ✅ **Clear communication** - Explain what you're doing
-5. ✅ **Use TodoWrite** - Track progress visibly
+4. ✅ **ALWAYS remind user to pull** after pushing changes
+5. ✅ **Clear communication** - Explain what you're doing
+6. ✅ **Use TodoWrite** - Track progress visibly
 
 ---
 
