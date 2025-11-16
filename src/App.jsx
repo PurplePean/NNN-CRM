@@ -2695,13 +2695,13 @@ export default function IndustrialCRM() {
                             onChange={(e) => setNoteCategory({ ...noteCategory, [`property-${property.id}`]: e.target.value })}
                             className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                           >
-                            <option value="general">📝 General</option>
-                            <option value="call">📞 Call</option>
-                            <option value="meeting">🤝 Meeting</option>
-                            <option value="email">📧 Email</option>
-                            <option value="site-visit">🏢 Site Visit</option>
-                            <option value="due-diligence">🔍 Due Diligence</option>
-                            <option value="follow-up">⏰ Follow-up</option>
+                            <option value="general">General</option>
+                            <option value="call">Call</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="email">Email</option>
+                            <option value="site-visit">Site Visit</option>
+                            <option value="due-diligence">Due Diligence</option>
+                            <option value="follow-up">Follow-up</option>
                           </select>
                         </div>
                         <div className="flex gap-2">
@@ -2752,13 +2752,13 @@ export default function IndustrialCRM() {
                             };
 
                             const categoryLabels = {
-                              general: '📝 General',
-                              call: '📞 Call',
-                              meeting: '🤝 Meeting',
-                              email: '📧 Email',
-                              'site-visit': '🏢 Site Visit',
-                              'due-diligence': '🔍 Due Diligence',
-                              'follow-up': '⏰ Follow-up'
+                              general: 'General',
+                              call: 'Call',
+                              meeting: 'Meeting',
+                              email: 'Email',
+                              'site-visit': 'Site Visit',
+                              'due-diligence': 'Due Diligence',
+                              'follow-up': 'Follow-up'
                             };
 
                             const isLongNote = note.content.length > 300;
@@ -3163,13 +3163,13 @@ export default function IndustrialCRM() {
                           onChange={(e) => setNoteCategory({ ...noteCategory, [`broker-${broker.id}`]: e.target.value })}
                           className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         >
-                          <option value="general">📝 General</option>
-                          <option value="call">📞 Call</option>
-                          <option value="meeting">🤝 Meeting</option>
-                          <option value="email">📧 Email</option>
-                          <option value="site-visit">🏢 Site Visit</option>
-                          <option value="due-diligence">🔍 Due Diligence</option>
-                          <option value="follow-up">⏰ Follow-up</option>
+                          <option value="general">General</option>
+                          <option value="call">Call</option>
+                          <option value="meeting">Meeting</option>
+                          <option value="email">Email</option>
+                          <option value="site-visit">Site Visit</option>
+                          <option value="due-diligence">Due Diligence</option>
+                          <option value="follow-up">Follow-up</option>
                         </select>
                       </div>
                       <div className="flex gap-2">
@@ -3549,10 +3549,10 @@ export default function IndustrialCRM() {
                       onChange={(e) => setFormData({ ...formData, initialNoteCategory: e.target.value })}
                       className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2`}
                     >
-                      <option value="general">📝 General</option>
-                      <option value="call">📞 Call</option>
-                      <option value="meeting">🤝 Meeting</option>
-                      <option value="email">📧 Email</option>
+                      <option value="general">General</option>
+                      <option value="call">Call</option>
+                      <option value="meeting">Meeting</option>
+                      <option value="email">Email</option>
                     </select>
                     <textarea
                       placeholder="Add notes about this partner (optional)..."
@@ -3782,13 +3782,13 @@ export default function IndustrialCRM() {
                           onChange={(e) => setNoteCategory({ ...noteCategory, [`partner-${partner.id}`]: e.target.value })}
                           className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         >
-                          <option value="general">📝 General</option>
-                          <option value="call">📞 Call</option>
-                          <option value="meeting">🤝 Meeting</option>
-                          <option value="email">📧 Email</option>
-                          <option value="site-visit">🏢 Site Visit</option>
-                          <option value="due-diligence">🔍 Due Diligence</option>
-                          <option value="follow-up">⏰ Follow-up</option>
+                          <option value="general">General</option>
+                          <option value="call">Call</option>
+                          <option value="meeting">Meeting</option>
+                          <option value="email">Email</option>
+                          <option value="site-visit">Site Visit</option>
+                          <option value="due-diligence">Due Diligence</option>
+                          <option value="follow-up">Follow-up</option>
                         </select>
                       </div>
                       <div className="flex gap-2">
