@@ -3221,13 +3221,43 @@ export default function IndustrialCRM() {
                           };
 
                           const categoryLabels = {
-                            general: '📝 General',
-                            call: '📞 Call',
-                            meeting: '🤝 Meeting',
-                            email: '📧 Email',
-                            'site-visit': '🏢 Site Visit',
-                            'due-diligence': '🔍 Due Diligence',
-                            'follow-up': '⏰ Follow-up'
+                            general: 'General',
+                            call: 'Call',
+                            meeting: 'Meeting',
+                            email: 'Email',
+                            'site-visit': 'Site Visit',
+                            'due-diligence': 'Due Diligence',
+                            'follow-up': 'Follow-up'
+                          };
+
+                          const categoryLetters = {
+                            general: 'G',
+                            call: 'C',
+                            meeting: 'M',
+                            email: 'E',
+                            'site-visit': 'S',
+                            'due-diligence': 'D',
+                            'follow-up': 'F'
+                          };
+
+                          const categoryBorderColors = {
+                            general: 'border-l-gray-500',
+                            call: 'border-l-green-500',
+                            meeting: 'border-l-blue-500',
+                            email: 'border-l-purple-500',
+                            'site-visit': 'border-l-orange-500',
+                            'due-diligence': 'border-l-red-500',
+                            'follow-up': 'border-l-yellow-500'
+                          };
+
+                          const categoryBadgeColors = {
+                            general: darkMode ? 'bg-gray-600 text-white' : 'bg-gray-500 text-white',
+                            call: darkMode ? 'bg-green-600 text-white' : 'bg-green-500 text-white',
+                            meeting: darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white',
+                            email: darkMode ? 'bg-purple-600 text-white' : 'bg-purple-500 text-white',
+                            'site-visit': darkMode ? 'bg-orange-600 text-white' : 'bg-orange-500 text-white',
+                            'due-diligence': darkMode ? 'bg-red-600 text-white' : 'bg-red-500 text-white',
+                            'follow-up': darkMode ? 'bg-yellow-600 text-white' : 'bg-yellow-500 text-white'
                           };
 
                           const isLongNote = note.content.length > 300;
@@ -3246,62 +3276,72 @@ export default function IndustrialCRM() {
                           };
 
                           return (
-                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-4 rounded-lg border ${borderClass} shadow-sm hover:shadow-md transition-shadow`}>
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${categoryColors[note.category] || categoryColors.general}`}>
-                                    {categoryLabels[note.category] || categoryLabels.general}
-                                  </span>
-                                  <span className={`text-xs ${textSecondaryClass} font-medium`}>
-                                    {formatRelativeTime(note.timestamp)}
-                                    {note.edited && ' • Edited'}
-                                  </span>
+                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-4 rounded-lg border-l-4 ${categoryBorderColors[note.category] || categoryBorderColors.general} border-r ${borderClass} border-t ${borderClass} border-b ${borderClass} shadow-sm hover:shadow-md transition-shadow`}>
+                              <div className="flex items-start gap-3 mb-3">
+                                {/* Letter Badge */}
+                                <div className={`w-8 h-8 rounded-full ${categoryBadgeColors[note.category] || categoryBadgeColors.general} flex items-center justify-center flex-shrink-0 font-bold text-sm`}>
+                                  {categoryLetters[note.category] || categoryLetters.general}
                                 </div>
-                                <div className="flex gap-1">
+
+                                {/* Note Header */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={`text-sm font-semibold ${textClass}`}>
+                                        {categoryLabels[note.category] || categoryLabels.general}
+                                      </span>
+                                      <span className={`text-xs ${textSecondaryClass} font-medium`}>
+                                        • {formatRelativeTime(note.timestamp)}
+                                        {note.edited && ' • Edited'}
+                                      </span>
+                                    </div>
+                                    <div className="flex gap-1">
+                                      {editingNoteId === note.id ? (
+                                        <>
+                                          <button
+                                            onClick={() => {
+                                              handleEditNote('broker', broker.id, note.id, editingNoteContent);
+                                              setEditingNoteId(null);
+                                              setEditingNoteContent('');
+                                            }}
+                                            className="text-green-600 hover:text-green-700 text-xs p-1"
+                                          >
+                                            Save
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setEditingNoteId(null);
+                                              setEditingNoteContent('');
+                                            }}
+                                            className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                          >
+                                            Cancel
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <button
+                                            onClick={() => {
+                                              setEditingNoteId(note.id);
+                                              setEditingNoteContent(note.content);
+                                            }}
+                                            className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                          >
+                                            <Edit2 size={14} />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteNote('broker', broker.id, note.id)}
+                                            className="text-red-600 hover:text-red-700 text-xs p-1"
+                                          >
+                                            <Trash2 size={14} />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Note Content */}
                                   {editingNoteId === note.id ? (
-                                    <>
-                                      <button
-                                        onClick={() => {
-                                          handleEditNote('broker', broker.id, note.id, editingNoteContent);
-                                          setEditingNoteId(null);
-                                          setEditingNoteContent('');
-                                        }}
-                                        className="text-green-600 hover:text-green-700 text-xs p-1"
-                                      >
-                                        Save
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setEditingNoteId(null);
-                                          setEditingNoteContent('');
-                                        }}
-                                        className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
-                                      >
-                                        Cancel
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button
-                                        onClick={() => {
-                                          setEditingNoteId(note.id);
-                                          setEditingNoteContent(note.content);
-                                        }}
-                                        className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
-                                      >
-                                        <Edit2 size={14} />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteNote('broker', broker.id, note.id)}
-                                        className="text-red-600 hover:text-red-700 text-xs p-1"
-                                      >
-                                        <Trash2 size={14} />
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                              {editingNoteId === note.id ? (
                                 <textarea
                                   value={editingNoteContent}
                                   onChange={(e) => setEditingNoteContent(e.target.value)}
@@ -3326,6 +3366,8 @@ export default function IndustrialCRM() {
                                   )}
                                 </div>
                               )}
+                                </div>
+                              </div>
                             </div>
                           );
                         })}
@@ -3798,13 +3840,43 @@ export default function IndustrialCRM() {
                           };
 
                           const categoryLabels = {
-                            general: '📝 General',
-                            call: '📞 Call',
-                            meeting: '🤝 Meeting',
-                            email: '📧 Email',
-                            'site-visit': '🏢 Site Visit',
-                            'due-diligence': '🔍 Due Diligence',
-                            'follow-up': '⏰ Follow-up'
+                            general: 'General',
+                            call: 'Call',
+                            meeting: 'Meeting',
+                            email: 'Email',
+                            'site-visit': 'Site Visit',
+                            'due-diligence': 'Due Diligence',
+                            'follow-up': 'Follow-up'
+                          };
+
+                          const categoryLetters = {
+                            general: 'G',
+                            call: 'C',
+                            meeting: 'M',
+                            email: 'E',
+                            'site-visit': 'S',
+                            'due-diligence': 'D',
+                            'follow-up': 'F'
+                          };
+
+                          const categoryBorderColors = {
+                            general: 'border-l-gray-500',
+                            call: 'border-l-green-500',
+                            meeting: 'border-l-blue-500',
+                            email: 'border-l-purple-500',
+                            'site-visit': 'border-l-orange-500',
+                            'due-diligence': 'border-l-red-500',
+                            'follow-up': 'border-l-yellow-500'
+                          };
+
+                          const categoryBadgeColors = {
+                            general: darkMode ? 'bg-gray-600 text-white' : 'bg-gray-500 text-white',
+                            call: darkMode ? 'bg-green-600 text-white' : 'bg-green-500 text-white',
+                            meeting: darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white',
+                            email: darkMode ? 'bg-purple-600 text-white' : 'bg-purple-500 text-white',
+                            'site-visit': darkMode ? 'bg-orange-600 text-white' : 'bg-orange-500 text-white',
+                            'due-diligence': darkMode ? 'bg-red-600 text-white' : 'bg-red-500 text-white',
+                            'follow-up': darkMode ? 'bg-yellow-600 text-white' : 'bg-yellow-500 text-white'
                           };
 
                           const isLongNote = note.content.length > 300;
@@ -3823,17 +3895,25 @@ export default function IndustrialCRM() {
                           };
 
                           return (
-                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-4 rounded-lg border ${borderClass} shadow-sm hover:shadow-md transition-shadow`}>
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${categoryColors[note.category] || categoryColors.general}`}>
-                                    {categoryLabels[note.category] || categoryLabels.general}
-                                  </span>
-                                  <span className={`text-xs ${textSecondaryClass} font-medium`}>
-                                    {formatRelativeTime(note.timestamp)}
-                                    {note.edited && ' • Edited'}
-                                  </span>
+                            <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-4 rounded-lg border-l-4 ${categoryBorderColors[note.category] || categoryBorderColors.general} border-r ${borderClass} border-t ${borderClass} border-b ${borderClass} shadow-sm hover:shadow-md transition-shadow`}>
+                              <div className="flex items-start gap-3 mb-3">
+                                {/* Letter Badge */}
+                                <div className={`w-8 h-8 rounded-full ${categoryBadgeColors[note.category] || categoryBadgeColors.general} flex items-center justify-center flex-shrink-0 font-bold text-sm`}>
+                                  {categoryLetters[note.category] || categoryLetters.general}
                                 </div>
+
+                                {/* Note Header */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={`text-sm font-semibold ${textClass}`}>
+                                        {categoryLabels[note.category] || categoryLabels.general}
+                                      </span>
+                                      <span className={`text-xs ${textSecondaryClass} font-medium`}>
+                                        • {formatRelativeTime(note.timestamp)}
+                                        {note.edited && ' • Edited'}
+                                      </span>
+                                    </div>
                                 <div className="flex gap-1">
                                   {editingNoteId === note.id ? (
                                     <>
@@ -3903,6 +3983,8 @@ export default function IndustrialCRM() {
                                   )}
                                 </div>
                               )}
+                                </div>
+                              </div>
                             </div>
                           );
                         })}
