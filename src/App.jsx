@@ -3887,7 +3887,7 @@ export default function IndustrialCRM() {
                             className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Edit"
                           >
-                            <Edit2 size={18} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
+                            <Edit2 size={18} style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} />
                           </button>
                           <button
                             onClick={() => {
@@ -3898,7 +3898,7 @@ export default function IndustrialCRM() {
                             className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Delete"
                           >
-                            <Trash2 size={18} className={darkMode ? 'text-red-400' : 'text-red-600'} />
+                            <Trash2 size={18} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
                           </button>
                         </div>
                       </div>
@@ -4097,7 +4097,7 @@ export default function IndustrialCRM() {
                             className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Edit"
                           >
-                            <Edit2 size={18} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
+                            <Edit2 size={18} style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} />
                           </button>
                           <button
                             onClick={() => {
@@ -4108,7 +4108,7 @@ export default function IndustrialCRM() {
                             className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Delete"
                           >
-                            <Trash2 size={18} className={darkMode ? 'text-red-400' : 'text-red-600'} />
+                            <Trash2 size={18} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
                           </button>
                         </div>
                       </div>
