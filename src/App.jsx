@@ -3884,10 +3884,10 @@ export default function IndustrialCRM() {
                               setEditingId(followUp.id);
                               setShowFollowUpForm(true);
                             }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Edit"
                           >
-                            <Edit2 size={18} />
+                            <Edit2 size={18} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
                           </button>
                           <button
                             onClick={() => {
@@ -3895,10 +3895,10 @@ export default function IndustrialCRM() {
                                 setFollowUps(followUps.filter(f => f.id !== followUp.id));
                               }
                             }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition ${darkMode ? 'text-red-400' : 'text-red-600'}`}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Delete"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={18} className={darkMode ? 'text-red-400' : 'text-red-600'} />
                           </button>
                         </div>
                       </div>
@@ -4094,10 +4094,10 @@ export default function IndustrialCRM() {
                               setEditingId(event.id);
                               setShowEventForm(true);
                             }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Edit"
                           >
-                            <Edit2 size={18} />
+                            <Edit2 size={18} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
                           </button>
                           <button
                             onClick={() => {
@@ -4105,10 +4105,10 @@ export default function IndustrialCRM() {
                                 setEvents(events.filter(e => e.id !== event.id));
                               }
                             }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition ${darkMode ? 'text-red-400' : 'text-red-600'}`}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Delete"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={18} className={darkMode ? 'text-red-400' : 'text-red-600'} />
                           </button>
                         </div>
                       </div>
