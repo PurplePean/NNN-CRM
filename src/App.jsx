@@ -2757,7 +2757,7 @@ export default function IndustrialCRM() {
                       </button>
                       <button
                         onClick={() => handleDeleteBroker(broker.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
                       >
                         <Trash2 size={20} />
                       </button>
@@ -3185,13 +3185,13 @@ export default function IndustrialCRM() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditPartner(partner)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        className={`p-2 rounded-lg transition ${darkMode ? 'text-blue-400 hover:bg-slate-700' : 'text-blue-600 hover:bg-blue-50'}`}
                       >
                         <Edit2 size={20} />
                       </button>
                       <button
                         onClick={() => handleDeletePartner(partner.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
                       >
                         <Trash2 size={20} />
                       </button>
@@ -3546,7 +3546,7 @@ export default function IndustrialCRM() {
                       </button>
                       <button
                         onClick={() => handleDeleteGatekeeper(gatekeeper.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
                       >
                         <Trash2 size={20} />
                       </button>
@@ -3884,7 +3884,7 @@ export default function IndustrialCRM() {
                               setEditingId(followUp.id);
                               setShowFollowUpForm(true);
                             }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}
                             title="Edit"
                           >
                             <Edit2 size={18} />
@@ -3895,7 +3895,7 @@ export default function IndustrialCRM() {
                                 setFollowUps(followUps.filter(f => f.id !== followUp.id));
                               }
                             }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition text-red-500`}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition ${darkMode ? 'text-red-400' : 'text-red-600'}`}
                             title="Delete"
                           >
                             <Trash2 size={18} />
@@ -4094,7 +4094,7 @@ export default function IndustrialCRM() {
                               setEditingId(event.id);
                               setShowEventForm(true);
                             }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}
                             title="Edit"
                           >
                             <Edit2 size={18} />
@@ -4105,7 +4105,7 @@ export default function IndustrialCRM() {
                                 setEvents(events.filter(e => e.id !== event.id));
                               }
                             }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition text-red-500`}
+                            className={`p-2 rounded-lg ${hoverBgClass} transition ${darkMode ? 'text-red-400' : 'text-red-600'}`}
                             title="Delete"
                           >
                             <Trash2 size={18} />
