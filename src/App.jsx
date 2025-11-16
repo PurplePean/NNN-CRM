@@ -1259,137 +1259,192 @@ export default function IndustrialCRM() {
   const metricsBgClass = darkMode ? 'bg-slate-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50';
 
   return (
-    <div className={`min-h-screen ${bgClass}`}>
-      {/* Header */}
-      <div className={`${cardBgClass} border-b ${borderClass} sticky top-0 z-10 shadow-sm`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div>
-            <h1 className={`text-3xl font-bold ${textClass}`}>Industrial Asset CRM</h1>
-            <p className={`${textSecondaryClass} text-sm mt-1`}>NNN Property Management & Underwriting</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={loadTestData}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
-                darkMode
-                  ? 'bg-blue-900 hover:bg-blue-800 text-blue-200'
-                  : 'bg-blue-100 hover:bg-blue-200 text-blue-900'
-              }`}
-              title="Load sample data for testing"
-            >
-              <Database size={18} />
-              Load Test Data
-            </button>
-            <button
-              onClick={clearAllData}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
-                darkMode
-                  ? 'bg-red-900 hover:bg-red-800 text-red-200'
-                  : 'bg-red-100 hover:bg-red-200 text-red-900'
-              }`}
-              title="Clear all data permanently"
-            >
-              <AlertTriangle size={18} />
-              Clear All
-            </button>
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-lg ${hoverBgClass} transition`}
-              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {darkMode ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-slate-600" />}
-            </button>
-          </div>
+    <div className="flex min-h-screen">
+      {/* Sidebar */}
+      <aside className={`fixed left-0 top-0 h-screen w-64 ${darkMode ? 'bg-slate-800' : 'bg-white'} border-r ${borderClass} overflow-y-auto z-20`}>
+        {/* Logo/Title */}
+        <div className={`p-6 border-b ${borderClass}`}>
+          <h1 className={`text-xl font-bold ${textClass}`}>Industrial CRM</h1>
+          <p className={`${textSecondaryClass} text-xs mt-1`}>NNN Property Management</p>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Tabs */}
-        <div className={`flex gap-4 mb-8 border-b ${borderClass} overflow-x-auto`}>
+        {/* Navigation */}
+        <nav className="p-4 space-y-1">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center gap-2 px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
               activeTab === 'dashboard'
-                ? 'border-blue-600 text-blue-600'
-                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+                ? 'bg-blue-600 text-white'
+                : `${textSecondaryClass} ${hoverBgClass}`
             }`}
           >
-            <TrendingUp size={18} />
-            Dashboard
+            <TrendingUp size={20} />
+            <span>Dashboard</span>
           </button>
+
           <button
             onClick={() => setActiveTab('followups')}
-            className={`flex items-center gap-2 px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
               activeTab === 'followups'
-                ? 'border-blue-600 text-blue-600'
-                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+                ? 'bg-blue-600 text-white'
+                : `${textSecondaryClass} ${hoverBgClass}`
             }`}
           >
-            <Bell size={18} />
-            Follow-ups ({followUps.filter(f => f.status !== 'completed').length})
+            <Bell size={20} />
+            <div className="flex-1 text-left">Follow-ups</div>
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              {followUps.filter(f => f.status !== 'completed').length}
+            </span>
           </button>
+
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`flex items-center gap-2 px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
               activeTab === 'calendar'
-                ? 'border-blue-600 text-blue-600'
-                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+                ? 'bg-blue-600 text-white'
+                : `${textSecondaryClass} ${hoverBgClass}`
             }`}
           >
-            <Calendar size={18} />
-            Calendar ({events.length})
+            <Calendar size={20} />
+            <div className="flex-1 text-left">Calendar</div>
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              {events.length}
+            </span>
           </button>
+
           <button
             onClick={() => setActiveTab('assets')}
-            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
               activeTab === 'assets'
-                ? 'border-blue-600 text-blue-600'
-                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+                ? 'bg-blue-600 text-white'
+                : `${textSecondaryClass} ${hoverBgClass}`
             }`}
           >
-            Assets ({properties.length})
+            <Building2 size={20} />
+            <div className="flex-1 text-left">Assets</div>
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              {properties.length}
+            </span>
           </button>
+
           <button
             onClick={() => setActiveTab('brokers')}
-            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
               activeTab === 'brokers'
-                ? 'border-blue-600 text-blue-600'
-                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+                ? 'bg-blue-600 text-white'
+                : `${textSecondaryClass} ${hoverBgClass}`
             }`}
           >
-            Brokers ({brokers.length})
+            <Target size={20} />
+            <div className="flex-1 text-left">Brokers</div>
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              {brokers.length}
+            </span>
           </button>
+
           <button
             onClick={() => setActiveTab('gatekeepers')}
-            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
               activeTab === 'gatekeepers'
-                ? 'border-blue-600 text-blue-600'
-                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+                ? 'bg-blue-600 text-white'
+                : `${textSecondaryClass} ${hoverBgClass}`
             }`}
           >
-            Gatekeepers ({gatekeepers.length})
+            <AlertCircle size={20} />
+            <div className="flex-1 text-left">Gatekeepers</div>
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              {gatekeepers.length}
+            </span>
           </button>
+
           <button
             onClick={() => setActiveTab('partners')}
-            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
               activeTab === 'partners'
-                ? 'border-blue-600 text-blue-600'
-                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+                ? 'bg-blue-600 text-white'
+                : `${textSecondaryClass} ${hoverBgClass}`
             }`}
           >
-            Partners ({partners.length})
+            <DollarSign size={20} />
+            <div className="flex-1 text-left">Partners</div>
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              {partners.length}
+            </span>
           </button>
+
           <button
             onClick={() => setActiveTab('contacts')}
-            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
               activeTab === 'contacts'
-                ? 'border-blue-600 text-blue-600'
-                : `border-transparent ${textSecondaryClass} hover:${textClass}`
+                ? 'bg-blue-600 text-white'
+                : `${textSecondaryClass} ${hoverBgClass}`
             }`}
           >
-            Total Contacts ({brokers.length + gatekeepers.length})
+            <Search size={20} />
+            <div className="flex-1 text-left">All Contacts</div>
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              {brokers.length + gatekeepers.length}
+            </span>
+          </button>
+        </nav>
+
+        {/* Bottom Actions */}
+        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-white'} space-y-2`}>
+          <button
+            onClick={loadTestData}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
+              darkMode
+                ? 'bg-blue-900 hover:bg-blue-800 text-blue-200'
+                : 'bg-blue-100 hover:bg-blue-200 text-blue-900'
+            }`}
+            title="Load sample data for testing"
+          >
+            <Database size={16} />
+            Load Test Data
+          </button>
+          <button
+            onClick={clearAllData}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
+              darkMode
+                ? 'bg-red-900 hover:bg-red-800 text-red-200'
+                : 'bg-red-100 hover:bg-red-200 text-red-900'
+            }`}
+            title="Clear all data permanently"
+          >
+            <AlertTriangle size={16} />
+            Clear All
+          </button>
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${hoverBgClass} transition`}
+            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {darkMode ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} className="text-slate-600" />}
+            {darkMode ? 'Light Mode' : 'Dark Mode'}
           </button>
         </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className={`flex-1 ml-64 min-h-screen ${bgClass}`}>
+        {/* Header */}
+        <div className={`${cardBgClass} border-b ${borderClass} sticky top-0 z-10 shadow-sm`}>
+          <div className="px-6 py-4">
+            <h2 className={`text-2xl font-bold ${textClass}`}>
+              {activeTab === 'dashboard' && 'Dashboard'}
+              {activeTab === 'followups' && 'Follow-ups'}
+              {activeTab === 'calendar' && 'Calendar'}
+              {activeTab === 'assets' && 'Assets'}
+              {activeTab === 'brokers' && 'Brokers'}
+              {activeTab === 'gatekeepers' && 'Gatekeepers'}
+              {activeTab === 'partners' && 'Partners'}
+              {activeTab === 'contacts' && 'All Contacts'}
+            </h2>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="px-6 py-8">
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
@@ -4035,6 +4090,7 @@ export default function IndustrialCRM() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Photo Lightbox Modal */}
