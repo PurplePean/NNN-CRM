@@ -32,6 +32,10 @@ export default function IndustrialCRM() {
   const [lightboxPhotos, setLightboxPhotos] = useState([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  // Contact detail modal state
+  const [contactDetailOpen, setContactDetailOpen] = useState(false);
+  const [selectedContact, setSelectedContact] = useState(null);
+
   // Note-taking state
   const [noteContent, setNoteContent] = useState({});
   const [noteCategory, setNoteCategory] = useState({});
@@ -4403,7 +4407,14 @@ export default function IndustrialCRM() {
                   const config = typeConfig[contact.contactType];
 
                   return (
-                    <div key={`${contact.contactType}-${contact.id}`} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
+                    <div
+                      key={`${contact.contactType}-${contact.id}`}
+                      className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition cursor-pointer`}
+                      onClick={() => {
+                        setSelectedContact(contact);
+                        setContactDetailOpen(true);
+                      }}
+                    >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -4416,12 +4427,10 @@ export default function IndustrialCRM() {
                             <p className={`${textSecondaryClass} text-sm`}>{contact.title}</p>
                           )}
                         </div>
-                        <button
-                          onClick={() => setActiveTab(config.detailsTab)}
-                          className={`text-sm ${textSecondaryClass} hover:${textClass} transition`}
-                        >
-                          View Details →
-                        </button>
+                        <div className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
+                          View Details
+                          <ExternalLink size={14} />
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -4968,6 +4977,449 @@ export default function IndustrialCRM() {
             <p className="opacity-75">
               Use arrow keys to navigate • Press ESC to close • Click outside to close
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Detail Modal */}
+      {contactDetailOpen && selectedContact && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setContactDetailOpen(false)}
+        >
+          <div
+            className={`${darkMode ? 'bg-slate-800' : 'bg-white'} rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setContactDetailOpen(false)}
+              className={`absolute top-4 right-4 ${textSecondaryClass} hover:${textClass} transition`}
+            >
+              <X size={24} />
+            </button>
+
+            {/* Contact Header */}
+            <div className={`p-6 ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} border-b ${borderClass}`}>
+              <div className="flex items-start gap-4">
+                {/* Avatar */}
+                <div className="flex-shrink-0">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg ${
+                    selectedContact.contactType === 'broker' ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
+                    selectedContact.contactType === 'gatekeeper' ? 'bg-gradient-to-br from-purple-500 to-purple-600' :
+                    'bg-gradient-to-br from-green-500 to-green-600'
+                  }`}>
+                    {(() => {
+                      const name = selectedContact.displayName || '';
+                      const parts = name.split(' ');
+                      if (parts.length === 1) return parts[0][0]?.toUpperCase() || '?';
+                      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                    })()}
+                  </div>
+                </div>
+
+                {/* Name and Title */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h2 className={`text-3xl font-bold ${textClass}`}>{selectedContact.displayName}</h2>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                      selectedContact.contactType === 'broker' ? 'bg-blue-100 text-blue-800' :
+                      selectedContact.contactType === 'gatekeeper' ? 'bg-purple-100 text-purple-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {selectedContact.contactType.toUpperCase()}
+                    </span>
+                  </div>
+                  {selectedContact.title && (
+                    <p className={`${textSecondaryClass} mb-1`}>{selectedContact.title}</p>
+                  )}
+                  {selectedContact.company && (
+                    <p className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
+                      <Building2 size={14} />
+                      {selectedContact.company}
+                    </p>
+                  )}
+                  {selectedContact.noteHistory && selectedContact.noteHistory.length > 0 && (
+                    <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                      Last contact: {formatRelativeTime(selectedContact.noteHistory[selectedContact.noteHistory.length - 1].timestamp)}
+                    </p>
+                  )}
+                </div>
+
+                {/* Edit/Delete Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (selectedContact.contactType === 'broker') {
+                        const broker = brokers.find(b => b.id === selectedContact.id);
+                        if (broker) handleEditBroker(broker);
+                      } else if (selectedContact.contactType === 'gatekeeper') {
+                        const gatekeeper = gatekeepers.find(g => g.id === selectedContact.id);
+                        if (gatekeeper) handleEditGatekeeper(gatekeeper);
+                      } else if (selectedContact.contactType === 'partner') {
+                        const partner = partners.find(p => p.id === selectedContact.id);
+                        if (partner) handleEditPartner(partner);
+                      }
+                      setContactDetailOpen(false);
+                      setActiveTab(selectedContact.contactType === 'broker' ? 'brokers' : selectedContact.contactType === 'gatekeeper' ? 'gatekeepers' : 'partners');
+                    }}
+                    className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                    title="Edit contact"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete ${selectedContact.displayName}?`)) {
+                        if (selectedContact.contactType === 'broker') {
+                          handleDeleteBroker(selectedContact.id);
+                        } else if (selectedContact.contactType === 'gatekeeper') {
+                          handleDeleteGatekeeper(selectedContact.id);
+                        } else if (selectedContact.contactType === 'partner') {
+                          handleDeletePartner(selectedContact.id);
+                        }
+                        setContactDetailOpen(false);
+                      }
+                    }}
+                    className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                    title="Delete contact"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Action Buttons */}
+              <div className="flex gap-2 mt-4">
+                {selectedContact.phone && (
+                  <a
+                    href={`tel:${selectedContact.phone}`}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm"
+                  >
+                    <Phone size={16} />
+                    Call
+                  </a>
+                )}
+                {selectedContact.email && (
+                  <a
+                    href={`mailto:${selectedContact.email}`}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                  >
+                    <Mail size={16} />
+                    Email
+                  </a>
+                )}
+                <button
+                  onClick={() => {
+                    const noteInput = document.querySelector(`#note-input-contact-detail-${selectedContact.contactType}-${selectedContact.id}`);
+                    if (noteInput) noteInput.focus();
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 ${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
+                >
+                  <MessageSquare size={16} />
+                  Note
+                </button>
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {selectedContact.email && (
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Mail size={18} className="text-blue-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Email</div>
+                      <a href={`mailto:${selectedContact.email}`} className="text-sm text-blue-600 hover:text-blue-700 truncate block">
+                        {selectedContact.email}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {selectedContact.phone && (
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Phone size={18} className="text-green-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Phone</div>
+                      <a href={`tel:${selectedContact.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
+                        {selectedContact.phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {(selectedContact.firmWebsite || selectedContact.website) && (
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Globe size={18} className="text-purple-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Website</div>
+                      <a href={selectedContact.firmWebsite || selectedContact.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 truncate">
+                        {(selectedContact.firmWebsite || selectedContact.website).replace(/^https?:\/\//, '')}
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {selectedContact.crexiLink && (
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Building2 size={18} className="text-orange-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Crexi Profile</div>
+                      <a href={selectedContact.crexiLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                        View Profile
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {selectedContact.licenseNumber && (
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Target size={18} className="text-cyan-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>License #</div>
+                      <div className={`text-sm ${textClass}`}>
+                        {selectedContact.licenseNumber}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Notes & Activity Section */}
+              <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-6 rounded-lg`}>
+                <div className={`text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between`}>
+                  <span>Notes & Activity</span>
+                  <span className={`text-xs ${textSecondaryClass} normal-case`}>
+                    {(selectedContact.noteHistory || []).length} note{(selectedContact.noteHistory || []).length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                {/* Add Note Form */}
+                <div className="mb-4">
+                  <div className="flex gap-2 mb-2">
+                    <select
+                      value={noteCategory[`${selectedContact.contactType}-${selectedContact.id}`] || 'general'}
+                      onChange={(e) => setNoteCategory({ ...noteCategory, [`${selectedContact.contactType}-${selectedContact.id}`]: e.target.value })}
+                      className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    >
+                      <option value="general">General</option>
+                      <option value="call">Call</option>
+                      <option value="meeting">Meeting</option>
+                      <option value="email">Email</option>
+                      <option value="site-visit">Site Visit</option>
+                      <option value="due-diligence">Due Diligence</option>
+                      <option value="follow-up">Follow-up</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <textarea
+                      id={`note-input-contact-detail-${selectedContact.contactType}-${selectedContact.id}`}
+                      placeholder="Add a note..."
+                      value={noteContent[`${selectedContact.contactType}-${selectedContact.id}`] || ''}
+                      onChange={(e) => setNoteContent({ ...noteContent, [`${selectedContact.contactType}-${selectedContact.id}`]: e.target.value })}
+                      className={`flex-1 px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                      rows="3"
+                    />
+                    <button
+                      onClick={() => {
+                        handleAddNote(selectedContact.contactType, selectedContact.id, noteContent[`${selectedContact.contactType}-${selectedContact.id}`], noteCategory[`${selectedContact.contactType}-${selectedContact.id}`] || 'general');
+                        setNoteContent({ ...noteContent, [`${selectedContact.contactType}-${selectedContact.id}`]: '' });
+                        // Update selected contact to refresh the note history
+                        setTimeout(() => {
+                          const updatedContact =
+                            selectedContact.contactType === 'broker' ? brokers.find(b => b.id === selectedContact.id) :
+                            selectedContact.contactType === 'gatekeeper' ? gatekeepers.find(g => g.id === selectedContact.id) :
+                            partners.find(p => p.id === selectedContact.id);
+                          if (updatedContact) {
+                            setSelectedContact({ ...updatedContact, contactType: selectedContact.contactType, displayName: updatedContact.name, company: selectedContact.company });
+                          }
+                        }, 100);
+                      }}
+                      className="px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* Note History */}
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                  {(selectedContact.noteHistory || []).length === 0 && (
+                    <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center border-2 border-dashed ${borderClass}`}>
+                      <MessageSquare size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                      <p className={`text-sm ${textSecondaryClass} font-medium`}>
+                        No notes yet
+                      </p>
+                      <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                        Add your first note above to track interactions and updates
+                      </p>
+                    </div>
+                  )}
+                  {(selectedContact.noteHistory || [])
+                    .slice()
+                    .reverse()
+                    .map(note => {
+                      const categoryBadgeColors = {
+                        general: darkMode ? 'bg-gray-600 text-white' : 'bg-gray-500 text-white',
+                        call: darkMode ? 'bg-green-600 text-white' : 'bg-green-500 text-white',
+                        meeting: darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white',
+                        email: darkMode ? 'bg-purple-600 text-white' : 'bg-purple-500 text-white',
+                        'site-visit': darkMode ? 'bg-orange-600 text-white' : 'bg-orange-500 text-white',
+                        'due-diligence': darkMode ? 'bg-red-600 text-white' : 'bg-red-500 text-white',
+                        'follow-up': darkMode ? 'bg-yellow-600 text-white' : 'bg-yellow-500 text-white'
+                      };
+
+                      const categoryLabels = {
+                        general: 'G',
+                        call: 'C',
+                        meeting: 'M',
+                        email: 'E',
+                        'site-visit': 'S',
+                        'due-diligence': 'D',
+                        'follow-up': 'F'
+                      };
+
+                      const categoryBorderColors = {
+                        general: 'border-l-gray-500',
+                        call: 'border-l-green-500',
+                        meeting: 'border-l-blue-500',
+                        email: 'border-l-purple-500',
+                        'site-visit': 'border-l-orange-500',
+                        'due-diligence': 'border-l-red-500',
+                        'follow-up': 'border-l-yellow-500'
+                      };
+
+                      const isLongNote = note.content.length > 300;
+                      const isExpanded = expandedNotes[note.id];
+
+                      const linkifyText = (text) => {
+                        const urlRegex = /(https?:\/\/[^\s]+)/g;
+                        const parts = text.split(urlRegex);
+                        return parts.map((part, i) => {
+                          if (part.match(urlRegex)) {
+                            return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 underline">{part}</a>;
+                          }
+                          return part;
+                        });
+                      };
+
+                      return (
+                        <div
+                          key={note.id}
+                          className={`p-3 rounded-lg border-l-4 ${categoryBorderColors[note.category || 'general']} ${darkMode ? 'bg-slate-800' : 'bg-white'} ${borderClass}`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${categoryBadgeColors[note.category || 'general']}`}>
+                                {categoryLabels[note.category || 'general']}
+                              </div>
+                              <span className={`text-xs ${textSecondaryClass}`}>
+                                {formatRelativeTime(note.timestamp)}
+                              </span>
+                            </div>
+                            {editingNoteId !== note.id && (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingNoteId(note.id);
+                                    setEditingNoteContent(note.content);
+                                  }}
+                                  className={`p-1 ${textSecondaryClass} hover:${textClass} transition`}
+                                  title="Edit note"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm('Delete this note?')) {
+                                      handleDeleteNote(selectedContact.contactType, selectedContact.id, note.id);
+                                      setTimeout(() => {
+                                        const updatedContact =
+                                          selectedContact.contactType === 'broker' ? brokers.find(b => b.id === selectedContact.id) :
+                                          selectedContact.contactType === 'gatekeeper' ? gatekeepers.find(g => g.id === selectedContact.id) :
+                                          partners.find(p => p.id === selectedContact.id);
+                                        if (updatedContact) {
+                                          setSelectedContact({ ...updatedContact, contactType: selectedContact.contactType, displayName: updatedContact.name, company: selectedContact.company });
+                                        }
+                                      }, 100);
+                                    }
+                                  }}
+                                  className={`p-1 ${darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition`}
+                                  title="Delete note"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          {editingNoteId === note.id ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={editingNoteContent}
+                                onChange={(e) => setEditingNoteContent(e.target.value)}
+                                className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                                rows="3"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    handleEditNote(selectedContact.contactType, selectedContact.id, note.id, editingNoteContent);
+                                    setEditingNoteId(null);
+                                    setTimeout(() => {
+                                      const updatedContact =
+                                        selectedContact.contactType === 'broker' ? brokers.find(b => b.id === selectedContact.id) :
+                                        selectedContact.contactType === 'gatekeeper' ? gatekeepers.find(g => g.id === selectedContact.id) :
+                                        partners.find(p => p.id === selectedContact.id);
+                                      if (updatedContact) {
+                                        setSelectedContact({ ...updatedContact, contactType: selectedContact.contactType, displayName: updatedContact.name, company: selectedContact.company });
+                                      }
+                                    }, 100);
+                                  }}
+                                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 transition"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingNoteId(null)}
+                                  className={`px-3 py-1 ${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded text-xs font-semibold transition`}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className={`text-sm ${textClass} whitespace-pre-wrap leading-relaxed`}>
+                                {isLongNote && !isExpanded
+                                  ? <>{linkifyText(note.content.slice(0, 300))}...</>
+                                  : linkifyText(note.content)
+                                }
+                              </p>
+                              {isLongNote && (
+                                <button
+                                  onClick={() => setExpandedNotes({ ...expandedNotes, [note.id]: !isExpanded })}
+                                  className="text-xs text-blue-600 hover:text-blue-700 mt-1"
+                                >
+                                  {isExpanded ? 'Show less' : 'Show more'}
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
