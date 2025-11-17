@@ -369,7 +369,6 @@ Phase 1 (Supabase) ───┤
 
 - **Backend & Infrastructure:** [BACKEND-INFRASTRUCTURE.md](./BACKEND-INFRASTRUCTURE.md)
 - **Deployment Setup:** [DEPLOYMENT-SETUP.md](./DEPLOYMENT-SETUP.md)
-- **Deployment Analysis:** [../DEPLOYMENT-BACKEND-PLAN.md](../DEPLOYMENT-BACKEND-PLAN.md)
 
 ---
 
