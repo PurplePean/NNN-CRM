@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink } from 'lucide-react';
+import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
 import EmptyState from './components/EmptyState';
@@ -26,6 +26,13 @@ export default function IndustrialCRM() {
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
   const [darkMode, setDarkMode] = useState(true);
+
+  // Calendar view state
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [calendarView, setCalendarView] = useState('month'); // 'month' or 'list'
+  const [selectedDayDetails, setSelectedDayDetails] = useState(null); // { day, month, year, events }
+  const [contactTagSearch, setContactTagSearch] = useState('');
 
   // Toast notification state
   const [toasts, setToasts] = useState([]);
@@ -222,6 +229,78 @@ export default function IndustrialCRM() {
     const today = new Date();
     return date.toDateString() === today.toDateString();
   };
+
+  // Calendar helper functions
+  const getDaysInMonth = (month, year) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (month, year) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const generateCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+    const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
+    const days = [];
+
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+
+    // Add all days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+
+    return days;
+  };
+
+  const getEventsForDay = (day) => {
+    if (!day) return [];
+    const dateToCheck = new Date(currentYear, currentMonth, day);
+    return events.filter(event => {
+      const eventDate = new Date(event.date);
+      return eventDate.getFullYear() === currentYear &&
+             eventDate.getMonth() === currentMonth &&
+             eventDate.getDate() === day;
+    });
+  };
+
+  const goToPreviousMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentMonth(today.getMonth());
+    setCurrentYear(today.getFullYear());
+  };
+
+  const isToday = (day) => {
+    const today = new Date();
+    return day === today.getDate() &&
+           currentMonth === today.getMonth() &&
+           currentYear === today.getFullYear();
+  };
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
 
   // Toast notification system
   const showToast = useCallback((message, type = 'success') => {
@@ -4894,17 +4973,27 @@ export default function IndustrialCRM() {
                 <h2 className={`text-2xl font-bold ${textClass}`}>Calendar & Events</h2>
                 <p className={textSecondaryClass}>Schedule property tours, meetings, and deadlines</p>
               </div>
-              <button
-                onClick={() => {
-                  setFormData({});
-                  setEditingId(null);
-                  setShowEventForm(true);
-                }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                <Plus size={20} />
-                Add Event
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCalendarView(calendarView === 'month' ? 'list' : 'month')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${
+                    darkMode ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+                  }`}
+                >
+                  {calendarView === 'month' ? 'List View' : 'Month View'}
+                </button>
+                <button
+                  onClick={() => {
+                    setFormData({});
+                    setEditingId(null);
+                    setShowEventForm(true);
+                  }}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                >
+                  <Plus size={20} />
+                  Add Event
+                </button>
+              </div>
             </div>
 
             {/* Event Form */}
@@ -4934,12 +5023,58 @@ export default function IndustrialCRM() {
                     <option value="Follow-up Call">Follow-up Call</option>
                     <option value="General">General</option>
                   </select>
-                  <input
-                    type="datetime-local"
-                    value={formData.date || ''}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                  />
+
+                  {/* Date and Time Inputs */}
+                  <div className="col-span-2 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className={`block text-sm font-medium ${textClass} mb-2`}>Date</label>
+                        <input
+                          type="date"
+                          value={formData.date ? formData.date.split('T')[0] : ''}
+                          onChange={(e) => {
+                            const time = formData.date ? formData.date.split('T')[1] || '12:00' : '12:00';
+                            setFormData({ ...formData, date: `${e.target.value}T${time}` });
+                          }}
+                          className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-sm font-medium ${textClass} mb-2`}>Time</label>
+                        <input
+                          type="time"
+                          value={formData.date ? formData.date.split('T')[1]?.slice(0, 5) || '12:00' : '12:00'}
+                          onChange={(e) => {
+                            const date = formData.date ? formData.date.split('T')[0] : new Date().toISOString().split('T')[0];
+                            setFormData({ ...formData, date: `${date}T${e.target.value}` });
+                          }}
+                          className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Time Presets */}
+                    <div>
+                      <label className={`block text-sm font-medium ${textClass} mb-2`}>Quick Time Presets</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['09:00', '10:00', '12:00', '14:00', '15:00', '16:00', '17:00'].map(time => (
+                          <button
+                            key={time}
+                            type="button"
+                            onClick={() => {
+                              const date = formData.date ? formData.date.split('T')[0] : new Date().toISOString().split('T')[0];
+                              setFormData({ ...formData, date: `${date}T${time}` });
+                            }}
+                            className={`px-3 py-1.5 text-sm rounded-lg border ${borderClass} ${
+                              darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'
+                            } ${textClass} transition`}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                   <input
                     type="text"
                     placeholder="Location (optional)"
@@ -4947,6 +5082,247 @@ export default function IndustrialCRM() {
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
                   />
+
+                  {/* Contact Tagging */}
+                  <div className="col-span-2 space-y-3">
+                    <label className={`block text-sm font-medium ${textClass}`}>Tag Contacts (Optional)</label>
+
+                    {/* Selected Contacts (Chips) */}
+                    {(formData.taggedContacts?.brokers?.length > 0 ||
+                      formData.taggedContacts?.partners?.length > 0 ||
+                      formData.taggedContacts?.gatekeepers?.length > 0) && (
+                      <div className={`flex flex-wrap gap-2 p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                        {formData.taggedContacts?.brokers?.map(brokerId => {
+                          const broker = brokers.find(b => b.id === brokerId);
+                          return broker ? (
+                            <span key={brokerId} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-blue-600 text-white">
+                              {broker.name}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    taggedContacts: {
+                                      ...formData.taggedContacts,
+                                      brokers: formData.taggedContacts.brokers.filter(id => id !== brokerId)
+                                    }
+                                  });
+                                }}
+                                className="hover:bg-blue-700 rounded"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
+                        {formData.taggedContacts?.partners?.map(partnerId => {
+                          const partner = partners.find(p => p.id === partnerId);
+                          return partner ? (
+                            <span key={partnerId} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-green-600 text-white">
+                              {partner.name}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    taggedContacts: {
+                                      ...formData.taggedContacts,
+                                      partners: formData.taggedContacts.partners.filter(id => id !== partnerId)
+                                    }
+                                  });
+                                }}
+                                className="hover:bg-green-700 rounded"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
+                        {formData.taggedContacts?.gatekeepers?.map(gatekeeperId => {
+                          const gatekeeper = gatekeepers.find(g => g.id === gatekeeperId);
+                          return gatekeeper ? (
+                            <span key={gatekeeperId} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-purple-600 text-white">
+                              {gatekeeper.name}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    taggedContacts: {
+                                      ...formData.taggedContacts,
+                                      gatekeepers: formData.taggedContacts.gatekeepers.filter(id => id !== gatekeeperId)
+                                    }
+                                  });
+                                }}
+                                className="hover:bg-purple-700 rounded"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+
+                    {/* Search Input */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search contacts to tag..."
+                        value={contactTagSearch}
+                        onChange={(e) => setContactTagSearch(e.target.value)}
+                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                      <Search size={18} className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${textSecondaryClass}`} />
+                    </div>
+
+                    {/* Filtered Contacts List */}
+                    {contactTagSearch && (
+                      <div className={`max-h-64 overflow-y-auto rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                        {(() => {
+                          const searchLower = contactTagSearch.toLowerCase();
+                          const filteredBrokers = brokers.filter(b => b.name.toLowerCase().includes(searchLower));
+                          const filteredPartners = partners.filter(p => p.name.toLowerCase().includes(searchLower));
+                          const filteredGatekeepers = gatekeepers.filter(g => g.name.toLowerCase().includes(searchLower));
+
+                          const hasResults = filteredBrokers.length > 0 || filteredPartners.length > 0 || filteredGatekeepers.length > 0;
+
+                          if (!hasResults) {
+                            return (
+                              <div className="p-4 text-center">
+                                <p className={`text-sm ${textSecondaryClass}`}>No contacts found</p>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="p-2 space-y-2">
+                              {filteredBrokers.length > 0 && (
+                                <div>
+                                  <div className={`text-xs font-semibold ${textSecondaryClass} px-2 py-1`}>Brokers</div>
+                                  {filteredBrokers.map(broker => {
+                                    const isSelected = formData.taggedContacts?.brokers?.includes(broker.id);
+                                    return (
+                                      <button
+                                        key={broker.id}
+                                        type="button"
+                                        onClick={() => {
+                                          const currentBrokers = formData.taggedContacts?.brokers || [];
+                                          const newBrokers = isSelected
+                                            ? currentBrokers.filter(id => id !== broker.id)
+                                            : [...currentBrokers, broker.id];
+                                          setFormData({
+                                            ...formData,
+                                            taggedContacts: {
+                                              ...formData.taggedContacts,
+                                              brokers: newBrokers
+                                            }
+                                          });
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
+                                          isSelected
+                                            ? 'bg-blue-600 text-white'
+                                            : `${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${textClass}`
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span>{broker.name}</span>
+                                          {isSelected && <span className="text-xs">✓</span>}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {filteredPartners.length > 0 && (
+                                <div>
+                                  <div className={`text-xs font-semibold ${textSecondaryClass} px-2 py-1`}>Partners</div>
+                                  {filteredPartners.map(partner => {
+                                    const isSelected = formData.taggedContacts?.partners?.includes(partner.id);
+                                    return (
+                                      <button
+                                        key={partner.id}
+                                        type="button"
+                                        onClick={() => {
+                                          const currentPartners = formData.taggedContacts?.partners || [];
+                                          const newPartners = isSelected
+                                            ? currentPartners.filter(id => id !== partner.id)
+                                            : [...currentPartners, partner.id];
+                                          setFormData({
+                                            ...formData,
+                                            taggedContacts: {
+                                              ...formData.taggedContacts,
+                                              partners: newPartners
+                                            }
+                                          });
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
+                                          isSelected
+                                            ? 'bg-green-600 text-white'
+                                            : `${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${textClass}`
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span>{partner.name}</span>
+                                          {isSelected && <span className="text-xs">✓</span>}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {filteredGatekeepers.length > 0 && (
+                                <div>
+                                  <div className={`text-xs font-semibold ${textSecondaryClass} px-2 py-1`}>Gatekeepers</div>
+                                  {filteredGatekeepers.map(gatekeeper => {
+                                    const isSelected = formData.taggedContacts?.gatekeepers?.includes(gatekeeper.id);
+                                    return (
+                                      <button
+                                        key={gatekeeper.id}
+                                        type="button"
+                                        onClick={() => {
+                                          const currentGatekeepers = formData.taggedContacts?.gatekeepers || [];
+                                          const newGatekeepers = isSelected
+                                            ? currentGatekeepers.filter(id => id !== gatekeeper.id)
+                                            : [...currentGatekeepers, gatekeeper.id];
+                                          setFormData({
+                                            ...formData,
+                                            taggedContacts: {
+                                              ...formData.taggedContacts,
+                                              gatekeepers: newGatekeepers
+                                            }
+                                          });
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
+                                          isSelected
+                                            ? 'bg-purple-600 text-white'
+                                            : `${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${textClass}`
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span>{gatekeeper.name}</span>
+                                          {isSelected && <span className="text-xs">✓</span>}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {brokers.length === 0 && partners.length === 0 && gatekeepers.length === 0 && (
+                      <p className={`text-sm ${textSecondaryClass} italic`}>
+                        No contacts available. Add brokers, partners, or gatekeepers first.
+                      </p>
+                    )}
+                  </div>
+
                   <textarea
                     placeholder="Description (optional)"
                     value={formData.description || ''}
@@ -4970,6 +5346,7 @@ export default function IndustrialCRM() {
                       setShowEventForm(false);
                       setFormData({});
                       setEditingId(null);
+                      setContactTagSearch('');
                     }}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
                   >
@@ -4980,6 +5357,7 @@ export default function IndustrialCRM() {
                       setShowEventForm(false);
                       setFormData({});
                       setEditingId(null);
+                      setContactTagSearch('');
                     }}
                     className={`px-6 py-2 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'}`}
                   >
@@ -4989,8 +5367,141 @@ export default function IndustrialCRM() {
               </div>
             )}
 
-            {/* Events List */}
-            <div className="space-y-4">
+            {/* Calendar Month View */}
+            {calendarView === 'month' && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} overflow-hidden`}>
+                {/* Calendar Header */}
+                <div className={`p-6 border-b ${borderClass} flex items-center justify-between`}>
+                  <button
+                    onClick={goToPreviousMonth}
+                    className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                    title="Previous Month"
+                  >
+                    <ChevronLeft size={24} className={textClass} />
+                  </button>
+
+                  <div className="text-center">
+                    <h3 className={`text-2xl font-bold ${textClass}`}>
+                      {monthNames[currentMonth]} {currentYear}
+                    </h3>
+                    <button
+                      onClick={goToToday}
+                      className={`mt-1 text-sm ${textSecondaryClass} hover:text-blue-500 transition`}
+                    >
+                      Today
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={goToNextMonth}
+                    className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                    title="Next Month"
+                  >
+                    <ChevronRight size={24} className={textClass} />
+                  </button>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="p-6">
+                  {/* Day Headers */}
+                  <div className="grid grid-cols-7 gap-2 mb-2">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <div key={day} className={`text-center text-sm font-semibold ${textSecondaryClass} py-2`}>
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Calendar Days */}
+                  <div className="grid grid-cols-7 gap-2">
+                    {generateCalendarDays().map((day, index) => {
+                      const dayEvents = day ? getEventsForDay(day) : [];
+                      const isTodayCell = day && isToday(day);
+
+                      return (
+                        <div
+                          key={index}
+                          onClick={() => {
+                            if (day) {
+                              // Show day details modal
+                              setSelectedDayDetails({
+                                day,
+                                month: currentMonth,
+                                year: currentYear,
+                                events: dayEvents
+                              });
+                            }
+                          }}
+                          className={`min-h-[100px] p-2 rounded-lg border ${borderClass} ${
+                            day
+                              ? `${darkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'} cursor-pointer transition`
+                              : darkMode ? 'bg-slate-900' : 'bg-slate-100'
+                          } ${isTodayCell ? 'ring-2 ring-blue-500' : ''}`}
+                        >
+                          {day && (
+                            <>
+                              <div className={`text-sm font-semibold mb-1 ${
+                                isTodayCell ? 'text-blue-500' : textClass
+                              }`}>
+                                {day}
+                              </div>
+                              <div className="space-y-1">
+                                {dayEvents.slice(0, 2).map(event => {
+                                  const eventTime = new Date(event.date);
+                                  const timeStr = eventTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+                                  // Color code by event type
+                                  const eventTypeColors = {
+                                    'Property Tour': darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800',
+                                    'Broker Meeting': darkMode ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800',
+                                    'Partner Presentation': darkMode ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800',
+                                    'Due Diligence Deadline': darkMode ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-800',
+                                    'Closing Date': darkMode ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800',
+                                    'Follow-up Call': darkMode ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-800',
+                                    'General': darkMode ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-800',
+                                  };
+
+                                  return (
+                                    <div
+                                      key={event.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setFormData(event);
+                                        setEditingId(event.id);
+                                        setShowEventForm(true);
+                                      }}
+                                      className={`text-xs px-2 py-1 rounded ${
+                                        eventTypeColors[event.type] || (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800')
+                                      } hover:opacity-80 transition cursor-pointer`}
+                                      title={`${timeStr} - ${event.title}`}
+                                    >
+                                      <div className="font-semibold truncate">{timeStr}</div>
+                                      <div className="truncate">{event.title}</div>
+                                    </div>
+                                  );
+                                })}
+                                {dayEvents.length > 2 && (
+                                  <div
+                                    className={`text-xs ${textSecondaryClass} px-2 py-1 font-semibold hover:text-blue-500 cursor-pointer transition`}
+                                    title="Click day to view all events"
+                                  >
+                                    +{dayEvents.length - 2} more →
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Events List View */}
+            {calendarView === 'list' && (
+              <div className="space-y-4">
               {events.length === 0 && !showEventForm && (
                 <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
                   <Calendar size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
@@ -5028,6 +5539,51 @@ export default function IndustrialCRM() {
                           )}
                           {event.description && (
                             <p className={`${textSecondaryClass} text-sm`}>{event.description}</p>
+                          )}
+
+                          {/* Tagged Contacts */}
+                          {event.taggedContacts && (
+                            <div className="mt-3 space-y-2">
+                              {event.taggedContacts.brokers && event.taggedContacts.brokers.length > 0 && (
+                                <div className="flex flex-wrap gap-1 items-center">
+                                  <span className={`text-xs ${textSecondaryClass}`}>Brokers:</span>
+                                  {event.taggedContacts.brokers.map(brokerId => {
+                                    const broker = brokers.find(b => b.id === brokerId);
+                                    return broker ? (
+                                      <span key={brokerId} className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                        {broker.name}
+                                      </span>
+                                    ) : null;
+                                  })}
+                                </div>
+                              )}
+                              {event.taggedContacts.partners && event.taggedContacts.partners.length > 0 && (
+                                <div className="flex flex-wrap gap-1 items-center">
+                                  <span className={`text-xs ${textSecondaryClass}`}>Partners:</span>
+                                  {event.taggedContacts.partners.map(partnerId => {
+                                    const partner = partners.find(p => p.id === partnerId);
+                                    return partner ? (
+                                      <span key={partnerId} className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                        {partner.name}
+                                      </span>
+                                    ) : null;
+                                  })}
+                                </div>
+                              )}
+                              {event.taggedContacts.gatekeepers && event.taggedContacts.gatekeepers.length > 0 && (
+                                <div className="flex flex-wrap gap-1 items-center">
+                                  <span className={`text-xs ${textSecondaryClass}`}>Gatekeepers:</span>
+                                  {event.taggedContacts.gatekeepers.map(gatekeeperId => {
+                                    const gatekeeper = gatekeepers.find(g => g.id === gatekeeperId);
+                                    return gatekeeper ? (
+                                      <span key={gatekeeperId} className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                        {gatekeeper.name}
+                                      </span>
+                                    ) : null;
+                                  })}
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                         <div className="flex gap-2">
@@ -5070,11 +5626,193 @@ export default function IndustrialCRM() {
                     </div>
                   );
                 })}
-            </div>
+              </div>
+            )}
           </div>
         )}
         </div>
       </div>
+
+      {/* Day Details Modal */}
+      {selectedDayDetails && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          onClick={() => setSelectedDayDetails(null)}
+        >
+          <div
+            className={`${cardBgClass} rounded-xl shadow-xl border ${borderClass} max-w-2xl w-full max-h-[80vh] overflow-y-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className={`p-6 border-b ${borderClass} flex items-center justify-between sticky top-0 ${cardBgClass} z-10`}>
+              <div>
+                <h3 className={`text-2xl font-bold ${textClass}`}>
+                  {monthNames[selectedDayDetails.month]} {selectedDayDetails.day}, {selectedDayDetails.year}
+                </h3>
+                <p className={`text-sm ${textSecondaryClass} mt-1`}>
+                  {selectedDayDetails.events.length} event{selectedDayDetails.events.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedDayDetails(null)}
+                className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                title="Close"
+              >
+                <X size={24} className={textClass} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Create New Event Button */}
+              <button
+                onClick={() => {
+                  const selectedDate = new Date(selectedDayDetails.year, selectedDayDetails.month, selectedDayDetails.day, 12, 0);
+                  const dateTimeString = selectedDate.toISOString().slice(0, 16);
+                  setFormData({ date: dateTimeString });
+                  setEditingId(null);
+                  setShowEventForm(true);
+                  setSelectedDayDetails(null);
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                <Plus size={20} />
+                Create Event on This Day
+              </button>
+
+              {/* Events List */}
+              {selectedDayDetails.events.length === 0 ? (
+                <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center`}>
+                  <Calendar size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                  <p className={`${textSecondaryClass}`}>No events scheduled for this day</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {selectedDayDetails.events
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .map(event => {
+                      const eventDate = new Date(event.date);
+                      const isPast = eventDate < new Date();
+
+                      return (
+                        <div
+                          key={event.id}
+                          className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-4 border ${borderClass} ${
+                            isPast ? 'opacity-60' : ''
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`font-bold ${textClass}`}>{event.title}</span>
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  darkMode ? 'bg-slate-700' : 'bg-slate-200'
+                                } ${textSecondaryClass}`}>
+                                  {event.type}
+                                </span>
+                                {isPast && <span className="text-xs text-gray-500">(Past)</span>}
+                              </div>
+                              <p className={`text-sm ${textSecondaryClass} mb-1`}>
+                                🕐 {formatDateTime(event.date)}
+                              </p>
+                              {event.location && (
+                                <p className={`text-sm ${textSecondaryClass} mb-1`}>
+                                  📍 {event.location}
+                                </p>
+                              )}
+                              {event.description && (
+                                <p className={`text-sm ${textSecondaryClass} mt-2`}>{event.description}</p>
+                              )}
+
+                              {/* Tagged Contacts */}
+                              {event.taggedContacts && (
+                                <div className="mt-3 space-y-2">
+                                  {event.taggedContacts.brokers && event.taggedContacts.brokers.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 items-center">
+                                      <span className={`text-xs ${textSecondaryClass}`}>Brokers:</span>
+                                      {event.taggedContacts.brokers.map(brokerId => {
+                                        const broker = brokers.find(b => b.id === brokerId);
+                                        return broker ? (
+                                          <span key={brokerId} className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                            {broker.name}
+                                          </span>
+                                        ) : null;
+                                      })}
+                                    </div>
+                                  )}
+                                  {event.taggedContacts.partners && event.taggedContacts.partners.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 items-center">
+                                      <span className={`text-xs ${textSecondaryClass}`}>Partners:</span>
+                                      {event.taggedContacts.partners.map(partnerId => {
+                                        const partner = partners.find(p => p.id === partnerId);
+                                        return partner ? (
+                                          <span key={partnerId} className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                            {partner.name}
+                                          </span>
+                                        ) : null;
+                                      })}
+                                    </div>
+                                  )}
+                                  {event.taggedContacts.gatekeepers && event.taggedContacts.gatekeepers.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 items-center">
+                                      <span className={`text-xs ${textSecondaryClass}`}>Gatekeepers:</span>
+                                      {event.taggedContacts.gatekeepers.map(gatekeeperId => {
+                                        const gatekeeper = gatekeepers.find(g => g.id === gatekeeperId);
+                                        return gatekeeper ? (
+                                          <span key={gatekeeperId} className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                            {gatekeeper.name}
+                                          </span>
+                                        ) : null;
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setFormData(event);
+                                  setEditingId(event.id);
+                                  setShowEventForm(true);
+                                  setSelectedDayDetails(null);
+                                }}
+                                className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                                title="Edit"
+                              >
+                                <Edit2 size={16} style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  showConfirmDialog(
+                                    'Delete Event',
+                                    'Are you sure you want to delete this event?',
+                                    () => {
+                                      setEvents(events.filter(e => e.id !== event.id));
+                                      setSelectedDayDetails({
+                                        ...selectedDayDetails,
+                                        events: selectedDayDetails.events.filter(e => e.id !== event.id)
+                                      });
+                                    },
+                                    'danger'
+                                  );
+                                }}
+                                className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                                title="Delete"
+                              >
+                                <Trash2 size={16} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Photo Lightbox Modal */}
       {lightboxOpen && lightboxPhotos.length > 0 && (
@@ -5782,7 +6520,10 @@ export default function IndustrialCRM() {
                   <button
                     onClick={() => {
                       const noteInput = document.querySelector(`#note-input-profile-${profileContact.contactType}-${profileContact.id}`);
-                      if (noteInput) noteInput.focus();
+                      if (noteInput) {
+                        noteInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => noteInput.focus(), 500);
+                      }
                     }}
                     className={`flex items-center justify-center gap-2 px-6 py-3 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-300 hover:bg-slate-400'} ${textClass} rounded-lg font-semibold transition`}
                   >
@@ -6071,7 +6812,23 @@ export default function IndustrialCRM() {
 
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {(() => {
-                      const contactEvents = events.filter(e => e.title?.includes(profileContact.displayName) || e.location?.includes(profileContact.displayName) || e.description?.includes(profileContact.displayName)).sort((a, b) => new Date(a.date) - new Date(b.date));
+                      const contactEvents = events.filter(e => {
+                        // Check if contact name appears in event text
+                        const nameMatch = e.title?.includes(profileContact.displayName) ||
+                                         e.location?.includes(profileContact.displayName) ||
+                                         e.description?.includes(profileContact.displayName);
+
+                        // Check if contact is tagged in the event
+                        const tagMatch = profileContact.contactType === 'broker'
+                          ? e.taggedContacts?.brokers?.includes(profileContact.id)
+                          : profileContact.contactType === 'partner'
+                          ? e.taggedContacts?.partners?.includes(profileContact.id)
+                          : profileContact.contactType === 'gatekeeper'
+                          ? e.taggedContacts?.gatekeepers?.includes(profileContact.id)
+                          : false;
+
+                        return nameMatch || tagMatch;
+                      }).sort((a, b) => new Date(a.date) - new Date(b.date));
                       if (contactEvents.length === 0) {
                         return (
                           <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} rounded-lg p-8 text-center`}>
@@ -6081,7 +6838,17 @@ export default function IndustrialCRM() {
                         );
                       }
                       return contactEvents.map(event => (
-                        <div key={event.id} className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div
+                          key={event.id}
+                          onClick={() => {
+                            setFormData(event);
+                            setEditingId(event.id);
+                            setShowEventForm(true);
+                            setActiveTab('calendar');
+                            setViewingContactProfile(false);
+                          }}
+                          className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-50 hover:bg-slate-100'} cursor-pointer transition`}
+                        >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
