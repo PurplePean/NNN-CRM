@@ -857,6 +857,47 @@ export default function IndustrialCRM() {
     );
   };
 
+  // Contact Profile Helper
+  const openContactProfile = (contactType, contactId) => {
+    let contact = null;
+
+    if (contactType === 'broker') {
+      contact = brokers.find(b => b.id === contactId);
+      if (contact) {
+        setProfileContact({
+          ...contact,
+          contactType: 'broker',
+          displayName: contact.name,
+          company: contact.company || contact.firmName || ''
+        });
+      }
+    } else if (contactType === 'partner') {
+      contact = partners.find(p => p.id === contactId);
+      if (contact) {
+        setProfileContact({
+          ...contact,
+          contactType: 'partner',
+          displayName: contact.name,
+          company: contact.type || ''
+        });
+      }
+    } else if (contactType === 'gatekeeper') {
+      contact = gatekeepers.find(g => g.id === contactId);
+      if (contact) {
+        setProfileContact({
+          ...contact,
+          contactType: 'gatekeeper',
+          displayName: contact.name,
+          company: contact.company || ''
+        });
+      }
+    }
+
+    if (contact) {
+      setViewingContactProfile(true);
+    }
+  };
+
   // Test Data Functions
   const loadTestData = () => {
     const loadData = () => {
@@ -2322,14 +2363,16 @@ export default function IndustrialCRM() {
                         {propertyBrokers.length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-2">
                             {propertyBrokers.map(broker => (
-                              <span
+                              <button
                                 key={broker.id}
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                onClick={() => openContactProfile('broker', broker.id)}
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition ${
                                   darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
                                 }`}
+                                aria-label={`View ${broker.name} profile`}
                               >
                                 {broker.name}{broker.firmName ? ` - ${broker.firmName}` : ''}
-                              </span>
+                              </button>
                             ))}
                           </div>
                         )}
@@ -3059,7 +3102,16 @@ export default function IndustrialCRM() {
 
                       {/* Name and Title */}
                       <div className="flex-1 min-w-0">
-                        <h3 className={`text-2xl font-bold ${textClass} mb-1`}>{broker.name}</h3>
+                        <h3
+                          onClick={() => openContactProfile('broker', broker.id)}
+                          className={`text-2xl font-bold ${textClass} mb-1 cursor-pointer hover:text-blue-500 transition`}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => e.key === 'Enter' && openContactProfile('broker', broker.id)}
+                          aria-label={`View ${broker.name} profile`}
+                        >
+                          {broker.name}
+                        </h3>
                         {broker.firmName && (
                           <p className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
                             <Building2 size={14} />
@@ -3666,7 +3718,16 @@ export default function IndustrialCRM() {
 
                       {/* Name and Entity */}
                       <div className="flex-1 min-w-0">
-                        <h3 className={`text-2xl font-bold ${textClass} mb-1`}>{partner.name}</h3>
+                        <h3
+                          onClick={() => openContactProfile('partner', partner.id)}
+                          className={`text-2xl font-bold ${textClass} mb-1 cursor-pointer hover:text-green-500 transition`}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => e.key === 'Enter' && openContactProfile('partner', partner.id)}
+                          aria-label={`View ${partner.name} profile`}
+                        >
+                          {partner.name}
+                        </h3>
                         {partner.entityName && (
                           <p className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
                             <Building2 size={14} />
@@ -4175,7 +4236,16 @@ export default function IndustrialCRM() {
 
                       {/* Name and Title */}
                       <div className="flex-1 min-w-0">
-                        <h3 className={`text-2xl font-bold ${textClass} mb-1`}>{gatekeeper.name}</h3>
+                        <h3
+                          onClick={() => openContactProfile('gatekeeper', gatekeeper.id)}
+                          className={`text-2xl font-bold ${textClass} mb-1 cursor-pointer hover:text-purple-500 transition`}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => e.key === 'Enter' && openContactProfile('gatekeeper', gatekeeper.id)}
+                          aria-label={`View ${gatekeeper.name} profile`}
+                        >
+                          {gatekeeper.name}
+                        </h3>
                         {gatekeeper.title && (
                           <p className={`text-sm ${textSecondaryClass}`}>{gatekeeper.title}</p>
                         )}
