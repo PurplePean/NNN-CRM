@@ -3600,22 +3600,53 @@ export default function IndustrialCRM() {
                     )}
 
                     {/* Property Details */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Square Feet</div>
-                        <div className={`text-sm font-semibold ${textClass}`}>{formatNumber(property.squareFeet)}</div>
-                      </div>
-                      <div>
-                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Monthly Base Rent/SF</div>
-                        <div className={`text-sm font-semibold ${textClass}`}>${property.monthlyBaseRentPerSqft || 'N/A'}</div>
-                      </div>
-                      <div>
-                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Interest Rate</div>
-                        <div className={`text-sm font-semibold ${textClass}`}>{property.interestRate ? `${property.interestRate}%` : 'N/A'}</div>
-                      </div>
-                      <div>
-                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Loan Term</div>
-                        <div className={`text-sm font-semibold ${textClass}`}>{property.loanTerm ? `${property.loanTerm} yrs` : 'N/A'}</div>
+                    <div className={`p-4 rounded-lg mb-4 ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-sm font-bold ${textSecondaryClass} uppercase mb-3`}>Property Details</div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Square Feet</div>
+                          <div className={`text-sm font-semibold ${textClass}`}>{formatNumber(property.squareFeet)}</div>
+                        </div>
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Monthly Base Rent/SF</div>
+                          <div className={`text-sm font-semibold ${textClass}`}>${property.monthlyBaseRentPerSqft || 'N/A'}</div>
+                        </div>
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Purchase Price</div>
+                          <div className={`text-sm font-semibold ${textClass}`}>{property.purchasePrice ? formatCurrency(stripCommas(property.purchasePrice)) : 'N/A'}</div>
+                        </div>
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Improvements</div>
+                          <div className={`text-sm font-semibold ${textClass}`}>{property.improvements ? formatCurrency(stripCommas(property.improvements)) : 'N/A'}</div>
+                        </div>
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Closing Costs</div>
+                          <div className={`text-sm font-semibold ${textClass}`}>{property.closingCosts ? formatCurrency(stripCommas(property.closingCosts)) : '$0'}</div>
+                        </div>
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>LTV %</div>
+                          <div className={`text-sm font-semibold ${textClass}`}>{property.ltvPercent ? `${property.ltvPercent}%` : 'N/A'}</div>
+                        </div>
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Interest Rate</div>
+                          <div className={`text-sm font-semibold ${textClass}`}>{property.interestRate ? `${property.interestRate}%` : 'N/A'}</div>
+                        </div>
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Loan Term</div>
+                          <div className={`text-sm font-semibold ${textClass}`}>{property.loanTerm ? `${property.loanTerm} yrs` : 'N/A'}</div>
+                        </div>
+                        {property.exitCapRate && (
+                          <div>
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Exit Cap Rate</div>
+                            <div className={`text-sm font-semibold ${textClass}`}>{property.exitCapRate}%</div>
+                          </div>
+                        )}
+                        {property.holdingPeriodMonths && (
+                          <div>
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Holding Period</div>
+                            <div className={`text-sm font-semibold ${textClass}`}>{property.holdingPeriodMonths} months ({(property.holdingPeriodMonths / 12).toFixed(1)} yrs)</div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
