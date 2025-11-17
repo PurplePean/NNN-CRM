@@ -57,6 +57,10 @@ export default function IndustrialCRM() {
   const [inlineFollowUpData, setInlineFollowUpData] = useState({});
   const [inlineEventData, setInlineEventData] = useState({});
 
+  // Full-screen property profile state
+  const [viewingPropertyProfile, setViewingPropertyProfile] = useState(false);
+  const [profileProperty, setProfileProperty] = useState(null);
+
   // Note-taking state
   const [noteContent, setNoteContent] = useState({});
   const [noteCategory, setNoteCategory] = useState({});
@@ -981,6 +985,14 @@ export default function IndustrialCRM() {
 
     if (contact) {
       setViewingContactProfile(true);
+    }
+  };
+
+  const openPropertyProfile = (propertyId) => {
+    const property = properties.find(p => p.id === propertyId);
+    if (property) {
+      setProfileProperty(property);
+      setViewingPropertyProfile(true);
     }
   };
 
@@ -3208,7 +3220,12 @@ export default function IndustrialCRM() {
                   <div key={property.id} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
                     <div className="flex justify-between items-start mb-6">
                       <div>
-                        <h3 className={`text-2xl font-bold ${textClass}`}>{property.address}</h3>
+                        <h3
+                          onClick={() => openPropertyProfile(property.id)}
+                          className={`text-2xl font-bold ${textClass} cursor-pointer hover:text-blue-600 transition`}
+                        >
+                          {property.address}
+                        </h3>
                         {property.crexi && (
                           <a href={property.crexi} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm mt-1 block">
                             View on Crexi →
@@ -7778,6 +7795,495 @@ export default function IndustrialCRM() {
           </div>
         </div>
       )}
+
+      {/* Property Profile Full-Screen View */}
+      {viewingPropertyProfile && profileProperty && (() => {
+        const metrics = calculateMetrics(profileProperty);
+        const propertyBrokers = (profileProperty.brokerIds || []).map(id => brokers.find(b => b.id === id)).filter(Boolean);
+
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-900 overflow-y-auto">
+            <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
+              {/* Sticky Header */}
+              <div className={`sticky top-0 z-10 ${darkMode ? 'bg-slate-800' : 'bg-white'} border-b ${borderClass} shadow-md`}>
+                <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+                  <button
+                    onClick={() => {
+                      setViewingPropertyProfile(false);
+                      setSensitivityPropertyId(null);
+                      setSensitivityTable(null);
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
+                  >
+                    <X size={20} />
+                    Close Property
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        handleEditProperty(profileProperty);
+                        setViewingPropertyProfile(false);
+                        setActiveTab('assets');
+                      }}
+                      className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
+                    >
+                      <Edit2 size={18} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleDeleteProperty(profileProperty.id);
+                        setViewingPropertyProfile(false);
+                      }}
+                      aria-label={`Delete ${profileProperty.address}`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${darkMode ? 'bg-red-900 hover:bg-red-800 text-red-100' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}
+                    >
+                      <Trash2 size={18} />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Content */}
+              <div className="container mx-auto px-6 py-8 space-y-6">
+                {/* Property Header */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
+                  <div className="flex items-start gap-6 mb-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg bg-gradient-to-br from-indigo-500 to-indigo-600">
+                        <Building2 size={48} />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <h1 className={`text-4xl font-bold ${textClass}`}>{profileProperty.address}</h1>
+                        <span className="px-3 py-1 text-sm font-semibold rounded bg-indigo-100 text-indigo-800">
+                          PROPERTY
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <p className={`text-lg ${textSecondaryClass} flex items-center gap-2`}>
+                          <TrendingUp size={18} />
+                          {formatNumber(profileProperty.squareFeet)} SF
+                        </p>
+                        {profileProperty.crexi && (
+                          <a href={profileProperty.crexi} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1">
+                            View on Crexi
+                            <ExternalLink size={16} />
+                          </a>
+                        )}
+                      </div>
+                      {profileProperty.noteHistory && profileProperty.noteHistory.length > 0 && (
+                        <p className={`text-sm ${textSecondaryClass} mt-2`}>
+                          Last update: {formatRelativeTime(profileProperty.noteHistory[profileProperty.noteHistory.length - 1].timestamp)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Associated Brokers */}
+                  {propertyBrokers.length > 0 && (
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-l-4 border-blue-500 mb-6`}>
+                      <h3 className={`text-sm font-bold ${textClass} uppercase flex items-center gap-2 mb-3`}>
+                        <User size={18} />
+                        Associated Brokers
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {propertyBrokers.map(broker => (
+                          <button
+                            key={broker.id}
+                            onClick={() => {
+                              setViewingPropertyProfile(false);
+                              openContactProfile('broker', broker.id);
+                            }}
+                            className={`inline-flex items-center px-3 py-2 rounded-lg font-medium cursor-pointer hover:opacity-80 transition ${
+                              darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {broker.name}{broker.firmName ? ` - ${broker.firmName}` : ''}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Property Photos */}
+                {profileProperty.photos && profileProperty.photos.length > 0 && (
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                    <h2 className={`text-xl font-bold ${textClass} mb-4`}>
+                      Property Photos ({profileProperty.photos.length})
+                    </h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {profileProperty.photos.map((photo, index) => (
+                        <div key={photo.id} className={`relative group rounded-lg overflow-hidden border-2 ${borderClass} ${hoverBgClass} cursor-pointer transition`}>
+                          <img
+                            src={photo.data}
+                            alt={photo.name}
+                            className="w-full h-40 object-cover"
+                            onClick={() => openLightbox(profileProperty.photos, index)}
+                          />
+                          <div className={`absolute bottom-0 left-0 right-0 ${darkMode ? 'bg-black bg-opacity-70' : 'bg-white bg-opacity-90'} p-2 opacity-0 group-hover:opacity-100 transition`}>
+                            <p className={`text-xs ${textClass} truncate`}>{photo.name}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Financial Metrics Overview */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                  <h2 className={`text-xl font-bold ${textClass} mb-4`}>Financial Metrics</h2>
+
+                  {/* All-in Cost & Financing Summary */}
+                  <div className={`p-4 rounded-lg mb-6 ${metricsBgClass}`}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>All-in Cost</div>
+                        <div className={`text-2xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{formatCurrency(metrics.allInCost)}</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Loan Amount ({profileProperty.ltvPercent}% LTV)</div>
+                        <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{formatCurrency(metrics.loanAmount)}</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Equity Required</div>
+                        <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{formatCurrency(metrics.equityRequired)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Operating Metrics */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Monthly Rent</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.monthlyRent)}</div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Annual NOI</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.noi)}</div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Cap Rate</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>{formatPercent(metrics.capRate)}</div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>DSCR</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>{metrics.dscr > 0 ? metrics.dscr.toFixed(2) : 'N/A'}</div>
+                    </div>
+                  </div>
+
+                  {/* Returns Metrics */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Debt Service Type</div>
+                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.debtServiceType === 'interestOnly' ? 'Interest-Only' : 'Standard'}</div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Monthly Debt Service</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.monthlyDebtService)}</div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Annual Cash Flow</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.annualCashFlow)}</div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Cash-on-Cash</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>{formatPercent(metrics.cashOnCash)}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Property Details */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                  <h2 className={`text-xl font-bold ${textClass} mb-4`}>Property Details</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Square Feet</div>
+                      <div className={`text-sm font-semibold ${textClass}`}>{formatNumber(profileProperty.squareFeet)}</div>
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Monthly Base Rent/SF</div>
+                      <div className={`text-sm font-semibold ${textClass}`}>${profileProperty.monthlyBaseRentPerSqft || 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Purchase Price</div>
+                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.purchasePrice ? formatCurrency(stripCommas(profileProperty.purchasePrice)) : 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Improvements</div>
+                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.improvements ? formatCurrency(stripCommas(profileProperty.improvements)) : 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Closing Costs</div>
+                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.closingCosts ? formatCurrency(stripCommas(profileProperty.closingCosts)) : '$0'}</div>
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>LTV %</div>
+                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.ltvPercent ? `${profileProperty.ltvPercent}%` : 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Interest Rate</div>
+                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.interestRate ? `${profileProperty.interestRate}%` : 'N/A'}</div>
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Loan Term</div>
+                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.loanTerm ? `${profileProperty.loanTerm} yrs` : 'N/A'}</div>
+                    </div>
+                    {profileProperty.exitCapRate && (
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Exit Cap Rate</div>
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.exitCapRate}%</div>
+                      </div>
+                    )}
+                    {profileProperty.holdingPeriodMonths && (
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Holding Period</div>
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.holdingPeriodMonths} months ({(profileProperty.holdingPeriodMonths / 12).toFixed(1)} yrs)</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Exit Analysis */}
+                {profileProperty.holdingPeriodMonths && (
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                    <h2 className={`text-xl font-bold ${textClass} mb-4`}>Exit Analysis ({profileProperty.holdingPeriodMonths} months)</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Exit Value</div>
+                        <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.exitValue)}</div>
+                      </div>
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Remaining Loan</div>
+                        <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.remainingLoanBalance)}</div>
+                      </div>
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Net Proceeds</div>
+                        <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.netProceedsAtExit)}</div>
+                      </div>
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Equity Multiple</div>
+                        <div className={`text-lg font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{metrics.equityMultiple > 0 ? `${metrics.equityMultiple.toFixed(2)}x` : 'N/A'}</div>
+                      </div>
+                      <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>IRR</div>
+                        <div className={`text-lg font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{metrics.irr > 0 ? `${metrics.irr.toFixed(2)}%` : 'N/A'}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes & Activity */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                  <div className={`text-xl font-bold ${textClass} mb-4 flex items-center justify-between`}>
+                    <span>Notes & Activity</span>
+                    <span className={`text-sm ${textSecondaryClass} font-normal`}>
+                      {(profileProperty.noteHistory || []).length} note{(profileProperty.noteHistory || []).length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  {/* Add Note Form */}
+                  <div className="mb-6">
+                    <div className="flex gap-2 mb-2">
+                      <select
+                        value={noteCategory[`property-${profileProperty.id}`] || 'general'}
+                        onChange={(e) => setNoteCategory({ ...noteCategory, [`property-${profileProperty.id}`]: e.target.value })}
+                        className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      >
+                        <option value="general">General</option>
+                        <option value="call">Call</option>
+                        <option value="meeting">Meeting</option>
+                        <option value="email">Email</option>
+                        <option value="site-visit">Site Visit</option>
+                        <option value="due-diligence">Due Diligence</option>
+                        <option value="follow-up">Follow-up</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-2">
+                      <textarea
+                        placeholder="Add a note..."
+                        value={noteContent[`property-${profileProperty.id}`] || ''}
+                        onChange={(e) => setNoteContent({ ...noteContent, [`property-${profileProperty.id}`]: e.target.value })}
+                        className={`flex-1 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                        rows="3"
+                      />
+                      <button
+                        onClick={() => {
+                          handleAddNote('property', profileProperty.id, noteContent[`property-${profileProperty.id}`], noteCategory[`property-${profileProperty.id}`] || 'general');
+                          setNoteContent({ ...noteContent, [`property-${profileProperty.id}`]: '' });
+                          setTimeout(() => {
+                            const updatedProperty = properties.find(p => p.id === profileProperty.id);
+                            if (updatedProperty) {
+                              setProfileProperty(updatedProperty);
+                            }
+                          }, 100);
+                        }}
+                        className="px-6 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                      >
+                        Add Note
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Note History */}
+                  <div className="space-y-3">
+                    {(profileProperty.noteHistory || []).length === 0 && (
+                      <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center border-2 border-dashed ${borderClass}`}>
+                        <MessageSquare size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                        <p className={`text-sm ${textSecondaryClass} font-medium`}>
+                          No notes yet
+                        </p>
+                        <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                          Add your first note above to track interactions and updates
+                        </p>
+                      </div>
+                    )}
+                    {(profileProperty.noteHistory || [])
+                      .slice()
+                      .reverse()
+                      .map(note => {
+                        const categoryColors = {
+                          general: darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800',
+                          call: darkMode ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800',
+                          meeting: darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800',
+                          email: darkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-800',
+                          'site-visit': darkMode ? 'bg-orange-900 text-orange-200' : 'bg-orange-100 text-orange-800',
+                          'due-diligence': darkMode ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800',
+                          'follow-up': darkMode ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                        };
+
+                        const categoryLabels = {
+                          general: 'General',
+                          call: 'Call',
+                          meeting: 'Meeting',
+                          email: 'Email',
+                          'site-visit': 'Site Visit',
+                          'due-diligence': 'Due Diligence',
+                          'follow-up': 'Follow-up'
+                        };
+
+                        const isLongNote = note.content.length > 300;
+                        const isExpanded = expandedNotes[note.id];
+
+                        const linkifyText = (text) => {
+                          const urlRegex = /(https?:\/\/[^\s]+)/g;
+                          const parts = text.split(urlRegex);
+                          return parts.map((part, i) => {
+                            if (part.match(urlRegex)) {
+                              return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 underline">{part}</a>;
+                            }
+                            return part;
+                          });
+                        };
+
+                        return (
+                          <div key={note.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} p-4 rounded-lg border ${borderClass} shadow-sm hover:shadow-md transition-shadow`}>
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${categoryColors[note.category] || categoryColors.general}`}>
+                                  {categoryLabels[note.category] || categoryLabels.general}
+                                </span>
+                                <span className={`text-xs ${textSecondaryClass} font-medium`}>
+                                  {formatRelativeTime(note.timestamp)}
+                                  {note.edited && ' • Edited'}
+                                </span>
+                              </div>
+                              <div className="flex gap-1">
+                                {editingNoteId === note.id ? (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        handleEditNote('property', profileProperty.id, note.id, editingNoteContent);
+                                        setEditingNoteId(null);
+                                        setEditingNoteContent('');
+                                        setTimeout(() => {
+                                          const updatedProperty = properties.find(p => p.id === profileProperty.id);
+                                          if (updatedProperty) {
+                                            setProfileProperty(updatedProperty);
+                                          }
+                                        }, 100);
+                                      }}
+                                      className="text-green-600 hover:text-green-700 text-xs p-1"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingNoteId(null);
+                                        setEditingNoteContent('');
+                                      }}
+                                      className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setEditingNoteId(note.id);
+                                        setEditingNoteContent(note.content);
+                                      }}
+                                      className={`${textSecondaryClass} hover:${textClass} text-xs p-1`}
+                                    >
+                                      <Edit2 size={14} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        handleDeleteNote('property', profileProperty.id, note.id);
+                                        setTimeout(() => {
+                                          const updatedProperty = properties.find(p => p.id === profileProperty.id);
+                                          if (updatedProperty) {
+                                            setProfileProperty(updatedProperty);
+                                          }
+                                        }, 100);
+                                      }}
+                                      className="text-red-600 hover:text-red-700 text-xs p-1"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            {editingNoteId === note.id ? (
+                              <textarea
+                                value={editingNoteContent}
+                                onChange={(e) => setEditingNoteContent(e.target.value)}
+                                className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                rows="4"
+                              />
+                            ) : (
+                              <div>
+                                <p className={`text-sm ${textClass} whitespace-pre-wrap leading-relaxed`}>
+                                  {isLongNote && !isExpanded
+                                    ? linkifyText(note.content.substring(0, 300) + '...')
+                                    : linkifyText(note.content)
+                                  }
+                                </p>
+                                {isLongNote && (
+                                  <button
+                                    onClick={() => setExpandedNotes({ ...expandedNotes, [note.id]: !isExpanded })}
+                                    className="text-blue-500 hover:text-blue-600 text-xs font-semibold mt-2"
+                                  >
+                                    {isExpanded ? 'Show less' : 'Read more'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Toast Notifications */}
       <div className="fixed bottom-4 right-4 z-50 space-y-2">
