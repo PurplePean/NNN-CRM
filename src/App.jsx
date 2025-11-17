@@ -32,6 +32,20 @@ export default function IndustrialCRM() {
   const [lightboxPhotos, setLightboxPhotos] = useState([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  // Contact detail modal state
+  const [contactDetailOpen, setContactDetailOpen] = useState(false);
+  const [selectedContact, setSelectedContact] = useState(null);
+
+  // Full-screen contact profile state
+  const [viewingContactProfile, setViewingContactProfile] = useState(false);
+  const [profileContact, setProfileContact] = useState(null);
+  const [editingObjective, setEditingObjective] = useState(false);
+  const [objectiveText, setObjectiveText] = useState('');
+  const [showInlineFollowUpForm, setShowInlineFollowUpForm] = useState(false);
+  const [showInlineEventForm, setShowInlineEventForm] = useState(false);
+  const [inlineFollowUpData, setInlineFollowUpData] = useState({});
+  const [inlineEventData, setInlineEventData] = useState({});
+
   // Note-taking state
   const [noteContent, setNoteContent] = useState({});
   const [noteCategory, setNoteCategory] = useState({});
@@ -1497,9 +1511,9 @@ export default function IndustrialCRM() {
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Quick Actions Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <button
                 onClick={() => {
                   setFormData({});
@@ -1507,7 +1521,7 @@ export default function IndustrialCRM() {
                   setShowFollowUpForm(true);
                   setActiveTab('followups');
                 }}
-                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg"
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow"
               >
                 <Phone size={20} />
                 <span>New Call</span>
@@ -1519,7 +1533,7 @@ export default function IndustrialCRM() {
                   setShowFollowUpForm(true);
                   setActiveTab('followups');
                 }}
-                className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-lg"
+                className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition shadow"
               >
                 <Mail size={20} />
                 <span>New Email</span>
@@ -1531,7 +1545,7 @@ export default function IndustrialCRM() {
                   setShowEventForm(true);
                   setActiveTab('calendar');
                 }}
-                className="flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-purple-700 transition shadow-lg"
+                className="flex items-center justify-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition shadow"
               >
                 <Video size={20} />
                 <span>Schedule Meeting</span>
@@ -1543,7 +1557,7 @@ export default function IndustrialCRM() {
                   setShowFollowUpForm(true);
                   setActiveTab('followups');
                 }}
-                className="flex items-center justify-center gap-2 bg-orange-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg"
+                className="flex items-center justify-center gap-2 bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-orange-700 transition shadow"
               >
                 <MessageSquare size={20} />
                 <span>Add Note</span>
@@ -1551,12 +1565,12 @@ export default function IndustrialCRM() {
             </div>
 
             {/* Today's Agenda */}
-            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border-l-4 border-blue-500 ${borderClass}`}>
-              <div className="flex items-center gap-3 mb-4">
-                <Clock size={28} className="text-blue-500" />
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border-l-4 border-blue-500 ${borderClass}`}>
+              <div className="flex items-center gap-2 mb-3">
+                <Clock size={24} className="text-blue-500" />
                 <div>
-                  <h3 className={`text-2xl font-bold ${textClass}`}>Today's Agenda</h3>
-                  <p className={`text-sm ${textSecondaryClass}`}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                  <h3 className={`text-xl font-bold ${textClass}`}>Today's Agenda</h3>
+                  <p className={`text-xs ${textSecondaryClass}`}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
                 </div>
               </div>
 
@@ -1581,11 +1595,11 @@ export default function IndustrialCRM() {
                 const hasItems = todaysFollowUps.length > 0 || todaysEvents.length > 0;
 
                 return hasItems ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {todaysFollowUps.map(followUp => {
                       const overdue = isOverdue(followUp.dueDate);
                       return (
-                        <div key={`today-followup-${followUp.id}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-red-50'} border-l-4 ${overdue ? 'border-red-500' : 'border-yellow-500'}`}>
+                        <div key={`today-followup-${followUp.id}`} className={`p-2.5 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-red-50'} border-l-4 ${overdue ? 'border-red-500' : 'border-yellow-500'}`}>
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
@@ -1615,7 +1629,7 @@ export default function IndustrialCRM() {
                       );
                     })}
                     {todaysEvents.map(event => (
-                      <div key={`today-event-${event.id}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-l-4 border-blue-500`}>
+                      <div key={`today-event-${event.id}`} className={`p-2.5 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-l-4 border-blue-500`}>
                         <div className="flex items-center gap-2">
                           <Calendar size={18} className="text-blue-500" />
                           <span className={`font-semibold ${textClass}`}>{event.title}</span>
@@ -1637,52 +1651,52 @@ export default function IndustrialCRM() {
             </div>
 
             {/* Communication Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
-                  <Bell size={24} className="text-orange-500" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
+                  <Bell size={18} className="text-orange-500" />
                 </div>
-                <div className={`text-3xl font-bold ${textClass}`}>
+                <div className={`text-2xl font-bold ${textClass}`}>
                   {followUps.filter(f => f.status !== 'completed').length}
                 </div>
-                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
                   {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue • {followUps.filter(f => isDueToday(f.dueDate) && f.status !== 'completed').length} due today
                 </div>
               </div>
 
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Upcoming Events</div>
-                  <Calendar size={24} className="text-blue-500" />
+              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Upcoming Events</div>
+                  <Calendar size={18} className="text-blue-500" />
                 </div>
-                <div className={`text-3xl font-bold ${textClass}`}>
+                <div className={`text-2xl font-bold ${textClass}`}>
                   {events.filter(e => new Date(e.date) >= new Date()).length}
                 </div>
-                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
                   Next 7 days
                 </div>
               </div>
 
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Total Contacts</div>
-                  <Target size={24} className="text-green-500" />
+              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Contacts</div>
+                  <Target size={18} className="text-green-500" />
                 </div>
-                <div className={`text-3xl font-bold ${textClass}`}>
+                <div className={`text-2xl font-bold ${textClass}`}>
                   {brokers.length + partners.length + gatekeepers.length}
                 </div>
-                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
                   {brokers.length} Brokers • {gatekeepers.length} Gatekeepers
                 </div>
               </div>
             </div>
 
             {/* Upcoming Follow-ups */}
-            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
-                  <Bell size={24} />
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
+                  <Bell size={20} />
                   Upcoming Follow-ups
                 </h3>
                 <button
@@ -1699,11 +1713,11 @@ export default function IndustrialCRM() {
                   <p>No pending follow-ups. You're all caught up!</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {followUps
                     .filter(f => f.status !== 'completed')
                     .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
-                    .slice(0, 5)
+                    .slice(0, 3)
                     .map(followUp => {
                       const overdue = isOverdue(followUp.dueDate);
                       const dueToday = isDueToday(followUp.dueDate);
@@ -1727,48 +1741,36 @@ export default function IndustrialCRM() {
                       }
 
                       return (
-                        <div key={followUp.id} className={`p-4 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} hover:shadow-md transition-shadow`}>
+                        <div key={followUp.id} className={`p-3 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                {overdue && <AlertCircle size={16} className="text-red-500" />}
-                                {dueToday && <Clock size={16} className="text-yellow-500" />}
-                                {!overdue && !dueToday && <Clock size={16} className="text-green-500" />}
+                              <div className="flex items-center gap-2">
                                 <span className={`text-sm font-semibold ${textClass}`}>{followUp.contactName}</span>
-                                <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
                                   {followUp.type}
                                 </span>
                                 {followUp.priority === 'High' && (
-                                  <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded">HIGH</span>
+                                  <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">HIGH</span>
                                 )}
                               </div>
-                              {relatedContactInfo && (
-                                <div className={`flex items-center gap-1 ml-6 mb-1`}>
-                                  <relatedContactInfo.icon size={14} className="text-blue-500" />
-                                  <span className={`text-xs ${textSecondaryClass}`}>
-                                    {relatedContactInfo.type}: {relatedContactInfo.name}
-                                  </span>
-                                </div>
-                              )}
                               {followUp.notes && (
-                                <div className={`ml-6 mt-2 p-2.5 rounded-lg ${darkMode ? 'bg-slate-600' : 'bg-slate-100'}`}>
-                                  <p className={`text-sm ${textClass} leading-relaxed whitespace-pre-wrap`}>{followUp.notes}</p>
+                                <div className={`mt-1.5 p-2 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-100'}`}>
+                                  <p className={`text-xs ${textClass} leading-relaxed whitespace-pre-wrap line-clamp-2`}>{followUp.notes}</p>
                                 </div>
                               )}
-                              <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} ml-6 mt-1`}>
-                                {overdue ? `⚠️ Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? '⏰ Due today' : `📅 Due ${formatDate(followUp.dueDate)}`}
+                              <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} mt-1`}>
+                                {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
                               </p>
                             </div>
-                            <div className="flex gap-2 ml-4">
+                            <div className="flex gap-1.5 ml-3">
                               <button
                                 onClick={() => {
                                   setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
                                   showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
                                 }}
-                                className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-700 transition flex items-center gap-1"
+                                className="bg-green-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-green-700 transition"
                                 title="Mark as complete"
                               >
-                                <CheckCircle size={14} />
                                 Done
                               </button>
                               <button
@@ -1778,10 +1780,9 @@ export default function IndustrialCRM() {
                                   setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, dueDate: newDate.toISOString().split('T')[0] } : f));
                                   showToast(`Follow-up snoozed to ${newDate.toLocaleDateString()}`, 'info');
                                 }}
-                                className={`${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1`}
+                                className={`${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} px-2.5 py-1 rounded text-xs font-semibold transition`}
                                 title="Snooze until tomorrow"
                               >
-                                <Clock size={14} />
                                 Snooze
                               </button>
                             </div>
@@ -1794,10 +1795,10 @@ export default function IndustrialCRM() {
             </div>
 
             {/* Upcoming Calendar Events */}
-            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
-                  <Calendar size={24} />
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
+                  <Calendar size={20} />
                   Upcoming Events
                 </h3>
                 <button
@@ -1814,26 +1815,25 @@ export default function IndustrialCRM() {
                   <p>No upcoming events scheduled.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {events
                     .filter(e => new Date(e.date) >= new Date())
                     .sort((a, b) => new Date(a.date) - new Date(b.date))
-                    .slice(0, 5)
+                    .slice(0, 3)
                     .map(event => (
-                      <div key={event.id} className={`p-4 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div key={event.id} className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Calendar size={16} className="text-blue-500" />
+                            <div className="flex items-center gap-2">
                               <span className={`text-sm font-semibold ${textClass}`}>{event.title}</span>
-                              <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
                                 {event.type}
                               </span>
                             </div>
                             {event.location && (
-                              <p className={`text-sm ${textSecondaryClass} ml-6`}>📍 {event.location}</p>
+                              <p className={`text-xs ${textSecondaryClass} mt-1`}>📍 {event.location}</p>
                             )}
-                            <p className={`text-xs ${textSecondaryClass} ml-6 mt-1`}>
+                            <p className={`text-xs ${textSecondaryClass} mt-1`}>
                               {formatDateTime(event.date)}
                             </p>
                           </div>
@@ -1842,34 +1842,6 @@ export default function IndustrialCRM() {
                     ))}
                 </div>
               )}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button
-                onClick={() => setActiveTab('assets')}
-                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
-              >
-                <Building2 size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
-                <div className={`font-semibold ${textClass}`}>View Properties</div>
-                <div className={`text-sm ${textSecondaryClass}`}>{properties.length} assets</div>
-              </button>
-              <button
-                onClick={() => setActiveTab('followups')}
-                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
-              >
-                <Bell size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
-                <div className={`font-semibold ${textClass}`}>Manage Follow-ups</div>
-                <div className={`text-sm ${textSecondaryClass}`}>{followUps.filter(f => f.status !== 'completed').length} active</div>
-              </button>
-              <button
-                onClick={() => setActiveTab('calendar')}
-                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
-              >
-                <Calendar size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
-                <div className={`font-semibold ${textClass}`}>View Calendar</div>
-                <div className={`text-sm ${textSecondaryClass}`}>{events.length} events</div>
-              </button>
             </div>
           </div>
         )}
@@ -4445,7 +4417,14 @@ export default function IndustrialCRM() {
                   const config = typeConfig[contact.contactType];
 
                   return (
-                    <div key={`${contact.contactType}-${contact.id}`} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
+                    <div
+                      key={`${contact.contactType}-${contact.id}`}
+                      className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition cursor-pointer`}
+                      onClick={() => {
+                        setProfileContact(contact);
+                        setViewingContactProfile(true);
+                      }}
+                    >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -4458,12 +4437,10 @@ export default function IndustrialCRM() {
                             <p className={`${textSecondaryClass} text-sm`}>{contact.title}</p>
                           )}
                         </div>
-                        <button
-                          onClick={() => setActiveTab(config.detailsTab)}
-                          className={`text-sm ${textSecondaryClass} hover:${textClass} transition`}
-                        >
-                          View Details →
-                        </button>
+                        <div className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
+                          View Details
+                          <ExternalLink size={14} />
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -5010,6 +4987,1067 @@ export default function IndustrialCRM() {
             <p className="opacity-75">
               Use arrow keys to navigate • Press ESC to close • Click outside to close
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Detail Modal */}
+      {contactDetailOpen && selectedContact && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setContactDetailOpen(false)}
+        >
+          <div
+            className={`${darkMode ? 'bg-slate-800' : 'bg-white'} rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setContactDetailOpen(false)}
+              className={`absolute top-4 right-4 ${textSecondaryClass} hover:${textClass} transition`}
+            >
+              <X size={24} />
+            </button>
+
+            {/* Contact Header */}
+            <div className={`p-6 ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} border-b ${borderClass}`}>
+              <div className="flex items-start gap-4">
+                {/* Avatar */}
+                <div className="flex-shrink-0">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg ${
+                    selectedContact.contactType === 'broker' ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
+                    selectedContact.contactType === 'gatekeeper' ? 'bg-gradient-to-br from-purple-500 to-purple-600' :
+                    'bg-gradient-to-br from-green-500 to-green-600'
+                  }`}>
+                    {(() => {
+                      const name = selectedContact.displayName || '';
+                      const parts = name.split(' ');
+                      if (parts.length === 1) return parts[0][0]?.toUpperCase() || '?';
+                      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                    })()}
+                  </div>
+                </div>
+
+                {/* Name and Title */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h2 className={`text-3xl font-bold ${textClass}`}>{selectedContact.displayName}</h2>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                      selectedContact.contactType === 'broker' ? 'bg-blue-100 text-blue-800' :
+                      selectedContact.contactType === 'gatekeeper' ? 'bg-purple-100 text-purple-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {selectedContact.contactType.toUpperCase()}
+                    </span>
+                  </div>
+                  {selectedContact.title && (
+                    <p className={`${textSecondaryClass} mb-1`}>{selectedContact.title}</p>
+                  )}
+                  {selectedContact.company && (
+                    <p className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
+                      <Building2 size={14} />
+                      {selectedContact.company}
+                    </p>
+                  )}
+                  {selectedContact.noteHistory && selectedContact.noteHistory.length > 0 && (
+                    <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                      Last contact: {formatRelativeTime(selectedContact.noteHistory[selectedContact.noteHistory.length - 1].timestamp)}
+                    </p>
+                  )}
+                </div>
+
+                {/* Edit/Delete Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (selectedContact.contactType === 'broker') {
+                        const broker = brokers.find(b => b.id === selectedContact.id);
+                        if (broker) handleEditBroker(broker);
+                      } else if (selectedContact.contactType === 'gatekeeper') {
+                        const gatekeeper = gatekeepers.find(g => g.id === selectedContact.id);
+                        if (gatekeeper) handleEditGatekeeper(gatekeeper);
+                      } else if (selectedContact.contactType === 'partner') {
+                        const partner = partners.find(p => p.id === selectedContact.id);
+                        if (partner) handleEditPartner(partner);
+                      }
+                      setContactDetailOpen(false);
+                      setActiveTab(selectedContact.contactType === 'broker' ? 'brokers' : selectedContact.contactType === 'gatekeeper' ? 'gatekeepers' : 'partners');
+                    }}
+                    className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                    title="Edit contact"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete ${selectedContact.displayName}?`)) {
+                        if (selectedContact.contactType === 'broker') {
+                          handleDeleteBroker(selectedContact.id);
+                        } else if (selectedContact.contactType === 'gatekeeper') {
+                          handleDeleteGatekeeper(selectedContact.id);
+                        } else if (selectedContact.contactType === 'partner') {
+                          handleDeletePartner(selectedContact.id);
+                        }
+                        setContactDetailOpen(false);
+                      }
+                    }}
+                    className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                    title="Delete contact"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Action Buttons */}
+              <div className="flex gap-2 mt-4">
+                {selectedContact.phone && (
+                  <a
+                    href={`tel:${selectedContact.phone}`}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm"
+                  >
+                    <Phone size={16} />
+                    Call
+                  </a>
+                )}
+                {selectedContact.email && (
+                  <a
+                    href={`mailto:${selectedContact.email}`}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                  >
+                    <Mail size={16} />
+                    Email
+                  </a>
+                )}
+                <button
+                  onClick={() => {
+                    const noteInput = document.querySelector(`#note-input-contact-detail-${selectedContact.contactType}-${selectedContact.id}`);
+                    if (noteInput) noteInput.focus();
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 ${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
+                >
+                  <MessageSquare size={16} />
+                  Note
+                </button>
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {selectedContact.email && (
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Mail size={18} className="text-blue-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Email</div>
+                      <a href={`mailto:${selectedContact.email}`} className="text-sm text-blue-600 hover:text-blue-700 truncate block">
+                        {selectedContact.email}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {selectedContact.phone && (
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Phone size={18} className="text-green-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Phone</div>
+                      <a href={`tel:${selectedContact.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
+                        {selectedContact.phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {(selectedContact.firmWebsite || selectedContact.website) && (
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Globe size={18} className="text-purple-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Website</div>
+                      <a href={selectedContact.firmWebsite || selectedContact.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 truncate">
+                        {(selectedContact.firmWebsite || selectedContact.website).replace(/^https?:\/\//, '')}
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {selectedContact.crexiLink && (
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Building2 size={18} className="text-orange-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Crexi Profile</div>
+                      <a href={selectedContact.crexiLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                        View Profile
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {selectedContact.licenseNumber && (
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Target size={18} className="text-cyan-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>License #</div>
+                      <div className={`text-sm ${textClass}`}>
+                        {selectedContact.licenseNumber}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Notes & Activity Section */}
+              <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} p-6 rounded-lg`}>
+                <div className={`text-sm font-bold ${textClass} uppercase mb-4 flex items-center justify-between`}>
+                  <span>Notes & Activity</span>
+                  <span className={`text-xs ${textSecondaryClass} normal-case`}>
+                    {(selectedContact.noteHistory || []).length} note{(selectedContact.noteHistory || []).length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                {/* Add Note Form */}
+                <div className="mb-4">
+                  <div className="flex gap-2 mb-2">
+                    <select
+                      value={noteCategory[`${selectedContact.contactType}-${selectedContact.id}`] || 'general'}
+                      onChange={(e) => setNoteCategory({ ...noteCategory, [`${selectedContact.contactType}-${selectedContact.id}`]: e.target.value })}
+                      className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    >
+                      <option value="general">General</option>
+                      <option value="call">Call</option>
+                      <option value="meeting">Meeting</option>
+                      <option value="email">Email</option>
+                      <option value="site-visit">Site Visit</option>
+                      <option value="due-diligence">Due Diligence</option>
+                      <option value="follow-up">Follow-up</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <textarea
+                      id={`note-input-contact-detail-${selectedContact.contactType}-${selectedContact.id}`}
+                      placeholder="Add a note..."
+                      value={noteContent[`${selectedContact.contactType}-${selectedContact.id}`] || ''}
+                      onChange={(e) => setNoteContent({ ...noteContent, [`${selectedContact.contactType}-${selectedContact.id}`]: e.target.value })}
+                      className={`flex-1 px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                      rows="3"
+                    />
+                    <button
+                      onClick={() => {
+                        handleAddNote(selectedContact.contactType, selectedContact.id, noteContent[`${selectedContact.contactType}-${selectedContact.id}`], noteCategory[`${selectedContact.contactType}-${selectedContact.id}`] || 'general');
+                        setNoteContent({ ...noteContent, [`${selectedContact.contactType}-${selectedContact.id}`]: '' });
+                        // Update selected contact to refresh the note history
+                        setTimeout(() => {
+                          const updatedContact =
+                            selectedContact.contactType === 'broker' ? brokers.find(b => b.id === selectedContact.id) :
+                            selectedContact.contactType === 'gatekeeper' ? gatekeepers.find(g => g.id === selectedContact.id) :
+                            partners.find(p => p.id === selectedContact.id);
+                          if (updatedContact) {
+                            setSelectedContact({ ...updatedContact, contactType: selectedContact.contactType, displayName: updatedContact.name, company: selectedContact.company });
+                          }
+                        }, 100);
+                      }}
+                      className="px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* Note History */}
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                  {(selectedContact.noteHistory || []).length === 0 && (
+                    <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center border-2 border-dashed ${borderClass}`}>
+                      <MessageSquare size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                      <p className={`text-sm ${textSecondaryClass} font-medium`}>
+                        No notes yet
+                      </p>
+                      <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                        Add your first note above to track interactions and updates
+                      </p>
+                    </div>
+                  )}
+                  {(selectedContact.noteHistory || [])
+                    .slice()
+                    .reverse()
+                    .map(note => {
+                      const categoryBadgeColors = {
+                        general: darkMode ? 'bg-gray-600 text-white' : 'bg-gray-500 text-white',
+                        call: darkMode ? 'bg-green-600 text-white' : 'bg-green-500 text-white',
+                        meeting: darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white',
+                        email: darkMode ? 'bg-purple-600 text-white' : 'bg-purple-500 text-white',
+                        'site-visit': darkMode ? 'bg-orange-600 text-white' : 'bg-orange-500 text-white',
+                        'due-diligence': darkMode ? 'bg-red-600 text-white' : 'bg-red-500 text-white',
+                        'follow-up': darkMode ? 'bg-yellow-600 text-white' : 'bg-yellow-500 text-white'
+                      };
+
+                      const categoryLabels = {
+                        general: 'G',
+                        call: 'C',
+                        meeting: 'M',
+                        email: 'E',
+                        'site-visit': 'S',
+                        'due-diligence': 'D',
+                        'follow-up': 'F'
+                      };
+
+                      const categoryBorderColors = {
+                        general: 'border-l-gray-500',
+                        call: 'border-l-green-500',
+                        meeting: 'border-l-blue-500',
+                        email: 'border-l-purple-500',
+                        'site-visit': 'border-l-orange-500',
+                        'due-diligence': 'border-l-red-500',
+                        'follow-up': 'border-l-yellow-500'
+                      };
+
+                      const isLongNote = note.content.length > 300;
+                      const isExpanded = expandedNotes[note.id];
+
+                      const linkifyText = (text) => {
+                        const urlRegex = /(https?:\/\/[^\s]+)/g;
+                        const parts = text.split(urlRegex);
+                        return parts.map((part, i) => {
+                          if (part.match(urlRegex)) {
+                            return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 underline">{part}</a>;
+                          }
+                          return part;
+                        });
+                      };
+
+                      return (
+                        <div
+                          key={note.id}
+                          className={`p-3 rounded-lg border-l-4 ${categoryBorderColors[note.category || 'general']} ${darkMode ? 'bg-slate-800' : 'bg-white'} ${borderClass}`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${categoryBadgeColors[note.category || 'general']}`}>
+                                {categoryLabels[note.category || 'general']}
+                              </div>
+                              <span className={`text-xs ${textSecondaryClass}`}>
+                                {formatRelativeTime(note.timestamp)}
+                              </span>
+                            </div>
+                            {editingNoteId !== note.id && (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingNoteId(note.id);
+                                    setEditingNoteContent(note.content);
+                                  }}
+                                  className={`p-1 ${textSecondaryClass} hover:${textClass} transition`}
+                                  title="Edit note"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm('Delete this note?')) {
+                                      handleDeleteNote(selectedContact.contactType, selectedContact.id, note.id);
+                                      setTimeout(() => {
+                                        const updatedContact =
+                                          selectedContact.contactType === 'broker' ? brokers.find(b => b.id === selectedContact.id) :
+                                          selectedContact.contactType === 'gatekeeper' ? gatekeepers.find(g => g.id === selectedContact.id) :
+                                          partners.find(p => p.id === selectedContact.id);
+                                        if (updatedContact) {
+                                          setSelectedContact({ ...updatedContact, contactType: selectedContact.contactType, displayName: updatedContact.name, company: selectedContact.company });
+                                        }
+                                      }, 100);
+                                    }
+                                  }}
+                                  className={`p-1 ${darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition`}
+                                  title="Delete note"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          {editingNoteId === note.id ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={editingNoteContent}
+                                onChange={(e) => setEditingNoteContent(e.target.value)}
+                                className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                                rows="3"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    handleEditNote(selectedContact.contactType, selectedContact.id, note.id, editingNoteContent);
+                                    setEditingNoteId(null);
+                                    setTimeout(() => {
+                                      const updatedContact =
+                                        selectedContact.contactType === 'broker' ? brokers.find(b => b.id === selectedContact.id) :
+                                        selectedContact.contactType === 'gatekeeper' ? gatekeepers.find(g => g.id === selectedContact.id) :
+                                        partners.find(p => p.id === selectedContact.id);
+                                      if (updatedContact) {
+                                        setSelectedContact({ ...updatedContact, contactType: selectedContact.contactType, displayName: updatedContact.name, company: selectedContact.company });
+                                      }
+                                    }, 100);
+                                  }}
+                                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 transition"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingNoteId(null)}
+                                  className={`px-3 py-1 ${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded text-xs font-semibold transition`}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className={`text-sm ${textClass} whitespace-pre-wrap leading-relaxed`}>
+                                {isLongNote && !isExpanded
+                                  ? <>{linkifyText(note.content.slice(0, 300))}...</>
+                                  : linkifyText(note.content)
+                                }
+                              </p>
+                              {isLongNote && (
+                                <button
+                                  onClick={() => setExpandedNotes({ ...expandedNotes, [note.id]: !isExpanded })}
+                                  className="text-xs text-blue-600 hover:text-blue-700 mt-1"
+                                >
+                                  {isExpanded ? 'Show less' : 'Show more'}
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-Screen Contact Profile */}
+      {viewingContactProfile && profileContact && (
+        <div className="fixed inset-0 z-50 bg-slate-900 overflow-y-auto">
+          <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
+            {/* Sticky Header */}
+            <div className={`sticky top-0 z-10 ${darkMode ? 'bg-slate-800' : 'bg-white'} border-b ${borderClass} shadow-md`}>
+              <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    setViewingContactProfile(false);
+                    setShowInlineFollowUpForm(false);
+                    setShowInlineEventForm(false);
+                    setEditingObjective(false);
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
+                >
+                  <X size={20} />
+                  Close Profile
+                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      if (profileContact.contactType === 'broker') {
+                        const broker = brokers.find(b => b.id === profileContact.id);
+                        if (broker) handleEditBroker(broker);
+                      } else if (profileContact.contactType === 'gatekeeper') {
+                        const gatekeeper = gatekeepers.find(g => g.id === profileContact.id);
+                        if (gatekeeper) handleEditGatekeeper(gatekeeper);
+                      } else if (profileContact.contactType === 'partner') {
+                        const partner = partners.find(p => p.id === profileContact.id);
+                        if (partner) handleEditPartner(partner);
+                      }
+                      setViewingContactProfile(false);
+                      setActiveTab(profileContact.contactType === 'broker' ? 'brokers' : profileContact.contactType === 'gatekeeper' ? 'gatekeepers' : 'partners');
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
+                  >
+                    <Edit2 size={18} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete ${profileContact.displayName}?`)) {
+                        if (profileContact.contactType === 'broker') {
+                          handleDeleteBroker(profileContact.id);
+                        } else if (profileContact.contactType === 'gatekeeper') {
+                          handleDeleteGatekeeper(profileContact.id);
+                        } else if (profileContact.contactType === 'partner') {
+                          handleDeletePartner(profileContact.id);
+                        }
+                        setViewingContactProfile(false);
+                      }
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${darkMode ? 'bg-red-900 hover:bg-red-800 text-red-100' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}
+                  >
+                    <Trash2 size={18} />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="container mx-auto px-6 py-8 space-y-6">
+              {/* Profile Header */}
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
+                <div className="flex items-start gap-6 mb-6">
+                  <div className="flex-shrink-0">
+                    <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg ${
+                      profileContact.contactType === 'broker' ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
+                      profileContact.contactType === 'gatekeeper' ? 'bg-gradient-to-br from-purple-500 to-purple-600' :
+                      'bg-gradient-to-br from-green-500 to-green-600'
+                    }`}>
+                      {(() => {
+                        const name = profileContact.displayName || '';
+                        const parts = name.split(' ');
+                        if (parts.length === 1) return parts[0][0]?.toUpperCase() || '?';
+                        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                      })()}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <h1 className={`text-4xl font-bold ${textClass}`}>{profileContact.displayName}</h1>
+                      <span className={`px-3 py-1 text-sm font-semibold rounded ${
+                        profileContact.contactType === 'broker' ? 'bg-blue-100 text-blue-800' :
+                        profileContact.contactType === 'gatekeeper' ? 'bg-purple-100 text-purple-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {profileContact.contactType.toUpperCase()}
+                      </span>
+                    </div>
+                    {profileContact.title && (
+                      <p className={`text-lg ${textSecondaryClass} mb-2`}>{profileContact.title}</p>
+                    )}
+                    {profileContact.company && (
+                      <p className={`text-md ${textSecondaryClass} flex items-center gap-2`}>
+                        <Building2 size={18} />
+                        {profileContact.company}
+                      </p>
+                    )}
+                    {profileContact.noteHistory && profileContact.noteHistory.length > 0 && (
+                      <p className={`text-sm ${textSecondaryClass} mt-2`}>
+                        Last contact: {formatRelativeTime(profileContact.noteHistory[profileContact.noteHistory.length - 1].timestamp)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Current Objective */}
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-l-4 border-blue-500 mb-6`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className={`text-sm font-bold ${textClass} uppercase flex items-center gap-2`}>
+                      <Target size={18} />
+                      Current Objective
+                    </h3>
+                    {!editingObjective && (
+                      <button
+                        onClick={() => {
+                          setEditingObjective(true);
+                          setObjectiveText(profileContact.currentObjective || '');
+                        }}
+                        className={`text-xs px-3 py-1 rounded ${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-blue-200 hover:bg-blue-300'} ${textClass} font-semibold transition`}
+                      >
+                        {profileContact.currentObjective ? 'Edit' : 'Set Objective'}
+                      </button>
+                    )}
+                  </div>
+                  {editingObjective ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder="e.g., Send Pitch Deck, Send OnBoarding Agreements, Schedule Site Visit..."
+                        value={objectiveText}
+                        onChange={(e) => setObjectiveText(e.target.value)}
+                        className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            if (profileContact.contactType === 'broker') {
+                              setBrokers(brokers.map(b => b.id === profileContact.id ? { ...b, currentObjective: objectiveText } : b));
+                            } else if (profileContact.contactType === 'gatekeeper') {
+                              setGatekeepers(gatekeepers.map(g => g.id === profileContact.id ? { ...g, currentObjective: objectiveText } : g));
+                            } else if (profileContact.contactType === 'partner') {
+                              setPartners(partners.map(p => p.id === profileContact.id ? { ...p, currentObjective: objectiveText } : p));
+                            }
+                            setProfileContact({ ...profileContact, currentObjective: objectiveText });
+                            setEditingObjective(false);
+                            showToast('Objective updated!', 'success');
+                          }}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingObjective(false)}
+                          className={`px-4 py-2 ${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg text-sm font-semibold transition`}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className={`text-sm ${textClass} ${!profileContact.currentObjective && 'italic opacity-60'}`}>
+                      {profileContact.currentObjective || 'No current objective set'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {profileContact.phone && (
+                    <a
+                      href={`tel:${profileContact.phone}`}
+                      className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition"
+                    >
+                      <Phone size={20} />
+                      Call {profileContact.phone}
+                    </a>
+                  )}
+                  {profileContact.email && (
+                    <a
+                      href={`mailto:${profileContact.email}`}
+                      className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
+                    >
+                      <Mail size={20} />
+                      Send Email
+                    </a>
+                  )}
+                  <button
+                    onClick={() => {
+                      const noteInput = document.querySelector(`#note-input-profile-${profileContact.contactType}-${profileContact.id}`);
+                      if (noteInput) noteInput.focus();
+                    }}
+                    className={`flex items-center justify-center gap-2 px-6 py-3 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-300 hover:bg-slate-400'} ${textClass} rounded-lg font-semibold transition`}
+                  >
+                    <MessageSquare size={20} />
+                    Add Note
+                  </button>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <h2 className={`text-xl font-bold ${textClass} mb-4`}>Contact Information</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {profileContact.email && (
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                        <Mail size={20} className="text-blue-500" />
+                      </div>
+                      <div>
+                        <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Email</div>
+                        <a href={`mailto:${profileContact.email}`} className="text-sm text-blue-600 hover:text-blue-700">
+                          {profileContact.email}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {profileContact.phone && (
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                        <Phone size={20} className="text-green-500" />
+                      </div>
+                      <div>
+                        <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Phone</div>
+                        <a href={`tel:${profileContact.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
+                          {profileContact.phone}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {(profileContact.firmWebsite || profileContact.website) && (
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                        <Globe size={20} className="text-purple-500" />
+                      </div>
+                      <div>
+                        <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Website</div>
+                        <a href={profileContact.firmWebsite || profileContact.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                          {(profileContact.firmWebsite || profileContact.website).replace(/^https?:\/\//, '')}
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {profileContact.crexiLink && (
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                        <Building2 size={20} className="text-orange-500" />
+                      </div>
+                      <div>
+                        <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Crexi Profile</div>
+                        <a href={profileContact.crexiLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                          View Profile
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {profileContact.licenseNumber && (
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                        <Target size={20} className="text-cyan-500" />
+                      </div>
+                      <div>
+                        <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>License #</div>
+                        <div className={`text-sm ${textClass}`}>
+                          {profileContact.licenseNumber}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Follow-ups & Events Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Follow-ups */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
+                      <Bell size={24} />
+                      Follow-ups
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setShowInlineFollowUpForm(!showInlineFollowUpForm);
+                        if (!showInlineFollowUpForm) {
+                          setInlineFollowUpData({ contactName: profileContact.displayName, type: 'Call', dueDate: new Date().toISOString().split('T')[0], priority: 'Medium' });
+                        }
+                      }}
+                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
+                    >
+                      <Plus size={16} />
+                      {showInlineFollowUpForm ? 'Cancel' : 'New'}
+                    </button>
+                  </div>
+
+                  {showInlineFollowUpForm && (
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-2 border-blue-500 mb-4`}>
+                      <h3 className={`text-sm font-bold ${textClass} mb-3`}>Create Follow-up</h3>
+                      <div className="space-y-3">
+                        <select
+                          value={inlineFollowUpData.type || 'Call'}
+                          onChange={(e) => setInlineFollowUpData({ ...inlineFollowUpData, type: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        >
+                          <option>Call</option>
+                          <option>Email</option>
+                          <option>Meeting</option>
+                          <option>Site Visit</option>
+                        </select>
+                        <input
+                          type="date"
+                          value={inlineFollowUpData.dueDate || ''}
+                          onChange={(e) => setInlineFollowUpData({ ...inlineFollowUpData, dueDate: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        />
+                        <select
+                          value={inlineFollowUpData.priority || 'Medium'}
+                          onChange={(e) => setInlineFollowUpData({ ...inlineFollowUpData, priority: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        >
+                          <option>Low</option>
+                          <option>Medium</option>
+                          <option>High</option>
+                        </select>
+                        <textarea
+                          placeholder="Notes..."
+                          value={inlineFollowUpData.notes || ''}
+                          onChange={(e) => setInlineFollowUpData({ ...inlineFollowUpData, notes: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                          rows="2"
+                        />
+                        <button
+                          onClick={() => {
+                            const newFollowUp = {
+                              ...inlineFollowUpData,
+                              id: Date.now(),
+                              contactName: profileContact.displayName,
+                              status: 'pending',
+                              createdAt: new Date().toISOString()
+                            };
+                            setFollowUps([...followUps, newFollowUp]);
+                            setShowInlineFollowUpForm(false);
+                            setInlineFollowUpData({});
+                            showToast('Follow-up created!', 'success');
+                          }}
+                          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                        >
+                          Create Follow-up
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {(() => {
+                      const contactFollowUps = followUps.filter(f => f.contactName === profileContact.displayName).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+                      if (contactFollowUps.length === 0) {
+                        return (
+                          <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} rounded-lg p-8 text-center`}>
+                            <Bell size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                            <p className={`text-sm ${textSecondaryClass}`}>No follow-ups</p>
+                          </div>
+                        );
+                      }
+                      return contactFollowUps.map(followUp => {
+                        const overdue = isOverdue(followUp.dueDate);
+                        const dueToday = isDueToday(followUp.dueDate);
+                        return (
+                          <div key={followUp.id} className={`p-3 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={`text-xs px-2 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>{followUp.type}</span>
+                                  {followUp.status === 'completed' && (<span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">COMPLETED</span>)}
+                                </div>
+                                {followUp.notes && (<p className={`text-sm ${textClass} mb-1`}>{followUp.notes}</p>)}
+                                <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass}`}>
+                                  {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
+                                </p>
+                              </div>
+                              {followUp.status !== 'completed' && (
+                                <button
+                                  onClick={() => {
+                                    setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
+                                    showToast('Follow-up completed!', 'success');
+                                  }}
+                                  className="bg-green-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-green-700 transition"
+                                >
+                                  Done
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* Calendar Events */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
+                      <Calendar size={24} />
+                      Events
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setShowInlineEventForm(!showInlineEventForm);
+                        if (!showInlineEventForm) {
+                          setInlineEventData({ title: `Meeting with ${profileContact.displayName}`, type: 'Meeting', date: new Date().toISOString().slice(0,16) });
+                        }
+                      }}
+                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
+                    >
+                      <Plus size={16} />
+                      {showInlineEventForm ? 'Cancel' : 'New'}
+                    </button>
+                  </div>
+
+                  {showInlineEventForm && (
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-2 border-blue-500 mb-4`}>
+                      <h3 className={`text-sm font-bold ${textClass} mb-3`}>Create Event</h3>
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          placeholder="Event Title"
+                          value={inlineEventData.title || ''}
+                          onChange={(e) => setInlineEventData({ ...inlineEventData, title: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        />
+                        <select
+                          value={inlineEventData.type || 'Meeting'}
+                          onChange={(e) => setInlineEventData({ ...inlineEventData, type: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        >
+                          <option>Meeting</option>
+                          <option>Site Visit</option>
+                          <option>Phone Call</option>
+                          <option>Conference</option>
+                          <option>Other</option>
+                        </select>
+                        <input
+                          type="datetime-local"
+                          value={inlineEventData.date || ''}
+                          onChange={(e) => setInlineEventData({ ...inlineEventData, date: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Location (optional)"
+                          value={inlineEventData.location || ''}
+                          onChange={(e) => setInlineEventData({ ...inlineEventData, location: e.target.value })}
+                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        />
+                        <button
+                          onClick={() => {
+                            const newEvent = {
+                              ...inlineEventData,
+                              id: Date.now(),
+                              createdAt: new Date().toISOString()
+                            };
+                            setEvents([...events, newEvent]);
+                            setShowInlineEventForm(false);
+                            setInlineEventData({});
+                            showToast('Event created!', 'success');
+                          }}
+                          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                        >
+                          Create Event
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {(() => {
+                      const contactEvents = events.filter(e => e.title?.includes(profileContact.displayName) || e.location?.includes(profileContact.displayName) || e.description?.includes(profileContact.displayName)).sort((a, b) => new Date(a.date) - new Date(b.date));
+                      if (contactEvents.length === 0) {
+                        return (
+                          <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} rounded-lg p-8 text-center`}>
+                            <Calendar size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                            <p className={`text-sm ${textSecondaryClass}`}>No events</p>
+                          </div>
+                        );
+                      }
+                      return contactEvents.map(event => (
+                        <div key={event.id} className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`font-semibold ${textClass} text-sm`}>{event.title}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>{event.type}</span>
+                              </div>
+                              {event.location && (<p className={`text-xs ${textSecondaryClass} mb-1`}>📍 {event.location}</p>)}
+                              <p className={`text-xs ${textSecondaryClass}`}>{formatDateTime(event.date)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes Section - Full Width */}
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                <div className={`text-xl font-bold ${textClass} mb-4 flex items-center justify-between`}>
+                  <span className="flex items-center gap-2">
+                    <MessageSquare size={24} />
+                    Notes & Activity
+                  </span>
+                  <span className={`text-sm ${textSecondaryClass} normal-case font-normal`}>
+                    {(profileContact.noteHistory || []).length} note{(profileContact.noteHistory || []).length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex gap-2 mb-2">
+                    <select
+                      value={noteCategory[`${profileContact.contactType}-${profileContact.id}`] || 'general'}
+                      onChange={(e) => setNoteCategory({ ...noteCategory, [`${profileContact.contactType}-${profileContact.id}`]: e.target.value })}
+                      className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    >
+                      <option value="general">General</option>
+                      <option value="call">Call</option>
+                      <option value="meeting">Meeting</option>
+                      <option value="email">Email</option>
+                      <option value="site-visit">Site Visit</option>
+                      <option value="due-diligence">Due Diligence</option>
+                      <option value="follow-up">Follow-up</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <textarea
+                      id={`note-input-profile-${profileContact.contactType}-${profileContact.id}`}
+                      placeholder="Add a note..."
+                      value={noteContent[`${profileContact.contactType}-${profileContact.id}`] || ''}
+                      onChange={(e) => setNoteContent({ ...noteContent, [`${profileContact.contactType}-${profileContact.id}`]: e.target.value })}
+                      className={`flex-1 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                      rows="3"
+                    />
+                    <button
+                      onClick={() => {
+                        handleAddNote(profileContact.contactType, profileContact.id, noteContent[`${profileContact.contactType}-${profileContact.id}`], noteCategory[`${profileContact.contactType}-${profileContact.id}`] || 'general');
+                        setNoteContent({ ...noteContent, [`${profileContact.contactType}-${profileContact.id}`]: '' });
+                        setTimeout(() => {
+                          const updatedContact =
+                            profileContact.contactType === 'broker' ? brokers.find(b => b.id === profileContact.id) :
+                            profileContact.contactType === 'gatekeeper' ? gatekeepers.find(g => g.id === profileContact.id) :
+                            partners.find(p => p.id === profileContact.id);
+                          if (updatedContact) {
+                            setProfileContact({ ...updatedContact, contactType: profileContact.contactType, displayName: updatedContact.name, company: profileContact.company });
+                          }
+                        }, 100);
+                      }}
+                      className="px-6 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                    >
+                      Add Note
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {(profileContact.noteHistory || []).length === 0 && (
+                    <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} rounded-lg p-12 text-center border-2 border-dashed ${borderClass}`}>
+                      <MessageSquare size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
+                      <p className={`text-lg ${textClass} font-semibold mb-2`}>No notes yet</p>
+                      <p className={`text-sm ${textSecondaryClass}`}>Add your first note above</p>
+                    </div>
+                  )}
+                  {(profileContact.noteHistory || []).slice().reverse().map(note => {
+                    const categoryColors = {
+                      general: 'border-l-gray-500',
+                      call: 'border-l-green-500',
+                      meeting: 'border-l-blue-500',
+                      email: 'border-l-purple-500',
+                      'site-visit': 'border-l-orange-500',
+                      'due-diligence': 'border-l-red-500',
+                      'follow-up': 'border-l-yellow-500'
+                    };
+                    const isLongNote = note.content.length > 300;
+                    const isExpanded = expandedNotes[note.id];
+                    return (
+                      <div key={note.id} className={`p-4 rounded-lg border-l-4 ${categoryColors[note.category || 'general']} ${darkMode ? 'bg-slate-700' : 'bg-white'} ${borderClass}`}>
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <span className={`text-sm font-semibold ${textClass}`}>{note.category || 'general'}</span>
+                            <span className={`text-xs ${textSecondaryClass} ml-2`}>{formatRelativeTime(note.timestamp)}</span>
+                          </div>
+                        </div>
+                        <p className={`text-sm ${textClass} whitespace-pre-wrap leading-relaxed`}>
+                          {isLongNote && !isExpanded ? note.content.slice(0, 300) + '...' : note.content}
+                        </p>
+                        {isLongNote && (
+                          <button
+                            onClick={() => setExpandedNotes({ ...expandedNotes, [note.id]: !isExpanded })}
+                            className="text-sm text-blue-600 hover:text-blue-700 mt-2 font-semibold"
+                          >
+                            {isExpanded ? 'Show less' : 'Show more'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
