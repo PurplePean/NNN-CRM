@@ -5081,6 +5081,132 @@ export default function IndustrialCRM() {
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
                   />
+
+                  {/* Contact Tagging */}
+                  <div className="col-span-2 space-y-3">
+                    <label className={`block text-sm font-medium ${textClass}`}>Tag Contacts (Optional)</label>
+
+                    {/* Brokers */}
+                    {brokers.length > 0 && (
+                      <div>
+                        <label className={`block text-xs font-medium ${textSecondaryClass} mb-2`}>Brokers</label>
+                        <div className="flex flex-wrap gap-2">
+                          {brokers.map(broker => {
+                            const isSelected = formData.taggedContacts?.brokers?.includes(broker.id);
+                            return (
+                              <button
+                                key={broker.id}
+                                type="button"
+                                onClick={() => {
+                                  const currentBrokers = formData.taggedContacts?.brokers || [];
+                                  const newBrokers = isSelected
+                                    ? currentBrokers.filter(id => id !== broker.id)
+                                    : [...currentBrokers, broker.id];
+                                  setFormData({
+                                    ...formData,
+                                    taggedContacts: {
+                                      ...formData.taggedContacts,
+                                      brokers: newBrokers
+                                    }
+                                  });
+                                }}
+                                className={`px-3 py-1.5 text-sm rounded-lg border transition ${
+                                  isSelected
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : `${borderClass} ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'} ${textClass}`
+                                }`}
+                              >
+                                {broker.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Partners */}
+                    {partners.length > 0 && (
+                      <div>
+                        <label className={`block text-xs font-medium ${textSecondaryClass} mb-2`}>Partners</label>
+                        <div className="flex flex-wrap gap-2">
+                          {partners.map(partner => {
+                            const isSelected = formData.taggedContacts?.partners?.includes(partner.id);
+                            return (
+                              <button
+                                key={partner.id}
+                                type="button"
+                                onClick={() => {
+                                  const currentPartners = formData.taggedContacts?.partners || [];
+                                  const newPartners = isSelected
+                                    ? currentPartners.filter(id => id !== partner.id)
+                                    : [...currentPartners, partner.id];
+                                  setFormData({
+                                    ...formData,
+                                    taggedContacts: {
+                                      ...formData.taggedContacts,
+                                      partners: newPartners
+                                    }
+                                  });
+                                }}
+                                className={`px-3 py-1.5 text-sm rounded-lg border transition ${
+                                  isSelected
+                                    ? 'bg-green-600 text-white border-green-600'
+                                    : `${borderClass} ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'} ${textClass}`
+                                }`}
+                              >
+                                {partner.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Gatekeepers */}
+                    {gatekeepers.length > 0 && (
+                      <div>
+                        <label className={`block text-xs font-medium ${textSecondaryClass} mb-2`}>Gatekeepers</label>
+                        <div className="flex flex-wrap gap-2">
+                          {gatekeepers.map(gatekeeper => {
+                            const isSelected = formData.taggedContacts?.gatekeepers?.includes(gatekeeper.id);
+                            return (
+                              <button
+                                key={gatekeeper.id}
+                                type="button"
+                                onClick={() => {
+                                  const currentGatekeepers = formData.taggedContacts?.gatekeepers || [];
+                                  const newGatekeepers = isSelected
+                                    ? currentGatekeepers.filter(id => id !== gatekeeper.id)
+                                    : [...currentGatekeepers, gatekeeper.id];
+                                  setFormData({
+                                    ...formData,
+                                    taggedContacts: {
+                                      ...formData.taggedContacts,
+                                      gatekeepers: newGatekeepers
+                                    }
+                                  });
+                                }}
+                                className={`px-3 py-1.5 text-sm rounded-lg border transition ${
+                                  isSelected
+                                    ? 'bg-purple-600 text-white border-purple-600'
+                                    : `${borderClass} ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'} ${textClass}`
+                                }`}
+                              >
+                                {gatekeeper.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {brokers.length === 0 && partners.length === 0 && gatekeepers.length === 0 && (
+                      <p className={`text-sm ${textSecondaryClass} italic`}>
+                        No contacts available. Add brokers, partners, or gatekeepers first.
+                      </p>
+                    )}
+                  </div>
+
                   <textarea
                     placeholder="Description (optional)"
                     value={formData.description || ''}
@@ -5202,26 +5328,46 @@ export default function IndustrialCRM() {
                                 {day}
                               </div>
                               <div className="space-y-1">
-                                {dayEvents.slice(0, 3).map(event => (
+                                {dayEvents.slice(0, 2).map(event => {
+                                  const eventTime = new Date(event.date);
+                                  const timeStr = eventTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+                                  // Color code by event type
+                                  const eventTypeColors = {
+                                    'Property Tour': darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800',
+                                    'Broker Meeting': darkMode ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800',
+                                    'Partner Presentation': darkMode ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800',
+                                    'Due Diligence Deadline': darkMode ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-800',
+                                    'Closing Date': darkMode ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800',
+                                    'Follow-up Call': darkMode ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-800',
+                                    'General': darkMode ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-800',
+                                  };
+
+                                  return (
+                                    <div
+                                      key={event.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setFormData(event);
+                                        setEditingId(event.id);
+                                        setShowEventForm(true);
+                                      }}
+                                      className={`text-xs px-2 py-1 rounded ${
+                                        eventTypeColors[event.type] || (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800')
+                                      } hover:opacity-80 transition cursor-pointer`}
+                                      title={`${timeStr} - ${event.title}`}
+                                    >
+                                      <div className="font-semibold truncate">{timeStr}</div>
+                                      <div className="truncate">{event.title}</div>
+                                    </div>
+                                  );
+                                })}
+                                {dayEvents.length > 2 && (
                                   <div
-                                    key={event.id}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setFormData(event);
-                                      setEditingId(event.id);
-                                      setShowEventForm(true);
-                                    }}
-                                    className={`text-xs px-2 py-1 rounded ${
-                                      darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'
-                                    } truncate hover:opacity-80 transition`}
-                                    title={event.title}
+                                    className={`text-xs ${textSecondaryClass} px-2 py-1 font-semibold hover:text-blue-500 cursor-pointer transition`}
+                                    title="Click day to view all events"
                                   >
-                                    {event.title}
-                                  </div>
-                                ))}
-                                {dayEvents.length > 3 && (
-                                  <div className={`text-xs ${textSecondaryClass} px-2`}>
-                                    +{dayEvents.length - 3} more
+                                    +{dayEvents.length - 2} more →
                                   </div>
                                 )}
                               </div>
@@ -5275,6 +5421,51 @@ export default function IndustrialCRM() {
                           )}
                           {event.description && (
                             <p className={`${textSecondaryClass} text-sm`}>{event.description}</p>
+                          )}
+
+                          {/* Tagged Contacts */}
+                          {event.taggedContacts && (
+                            <div className="mt-3 space-y-2">
+                              {event.taggedContacts.brokers && event.taggedContacts.brokers.length > 0 && (
+                                <div className="flex flex-wrap gap-1 items-center">
+                                  <span className={`text-xs ${textSecondaryClass}`}>Brokers:</span>
+                                  {event.taggedContacts.brokers.map(brokerId => {
+                                    const broker = brokers.find(b => b.id === brokerId);
+                                    return broker ? (
+                                      <span key={brokerId} className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                        {broker.name}
+                                      </span>
+                                    ) : null;
+                                  })}
+                                </div>
+                              )}
+                              {event.taggedContacts.partners && event.taggedContacts.partners.length > 0 && (
+                                <div className="flex flex-wrap gap-1 items-center">
+                                  <span className={`text-xs ${textSecondaryClass}`}>Partners:</span>
+                                  {event.taggedContacts.partners.map(partnerId => {
+                                    const partner = partners.find(p => p.id === partnerId);
+                                    return partner ? (
+                                      <span key={partnerId} className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                        {partner.name}
+                                      </span>
+                                    ) : null;
+                                  })}
+                                </div>
+                              )}
+                              {event.taggedContacts.gatekeepers && event.taggedContacts.gatekeepers.length > 0 && (
+                                <div className="flex flex-wrap gap-1 items-center">
+                                  <span className={`text-xs ${textSecondaryClass}`}>Gatekeepers:</span>
+                                  {event.taggedContacts.gatekeepers.map(gatekeeperId => {
+                                    const gatekeeper = gatekeepers.find(g => g.id === gatekeeperId);
+                                    return gatekeeper ? (
+                                      <span key={gatekeeperId} className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                        {gatekeeper.name}
+                                      </span>
+                                    ) : null;
+                                  })}
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                         <div className="flex gap-2">
@@ -5413,6 +5604,51 @@ export default function IndustrialCRM() {
                               )}
                               {event.description && (
                                 <p className={`text-sm ${textSecondaryClass} mt-2`}>{event.description}</p>
+                              )}
+
+                              {/* Tagged Contacts */}
+                              {event.taggedContacts && (
+                                <div className="mt-3 space-y-2">
+                                  {event.taggedContacts.brokers && event.taggedContacts.brokers.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 items-center">
+                                      <span className={`text-xs ${textSecondaryClass}`}>Brokers:</span>
+                                      {event.taggedContacts.brokers.map(brokerId => {
+                                        const broker = brokers.find(b => b.id === brokerId);
+                                        return broker ? (
+                                          <span key={brokerId} className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                            {broker.name}
+                                          </span>
+                                        ) : null;
+                                      })}
+                                    </div>
+                                  )}
+                                  {event.taggedContacts.partners && event.taggedContacts.partners.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 items-center">
+                                      <span className={`text-xs ${textSecondaryClass}`}>Partners:</span>
+                                      {event.taggedContacts.partners.map(partnerId => {
+                                        const partner = partners.find(p => p.id === partnerId);
+                                        return partner ? (
+                                          <span key={partnerId} className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                            {partner.name}
+                                          </span>
+                                        ) : null;
+                                      })}
+                                    </div>
+                                  )}
+                                  {event.taggedContacts.gatekeepers && event.taggedContacts.gatekeepers.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 items-center">
+                                      <span className={`text-xs ${textSecondaryClass}`}>Gatekeepers:</span>
+                                      {event.taggedContacts.gatekeepers.map(gatekeeperId => {
+                                        const gatekeeper = gatekeepers.find(g => g.id === gatekeeperId);
+                                        return gatekeeper ? (
+                                          <span key={gatekeeperId} className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                            {gatekeeper.name}
+                                          </span>
+                                        ) : null;
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
                             <div className="flex gap-2">
