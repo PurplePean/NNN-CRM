@@ -31,6 +31,7 @@ export default function IndustrialCRM() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [calendarView, setCalendarView] = useState('month'); // 'month' or 'list'
+  const [selectedDayDetails, setSelectedDayDetails] = useState(null); // { day, month, year, events }
 
   // Toast notification state
   const [toasts, setToasts] = useState([]);
@@ -5021,12 +5022,58 @@ export default function IndustrialCRM() {
                     <option value="Follow-up Call">Follow-up Call</option>
                     <option value="General">General</option>
                   </select>
-                  <input
-                    type="datetime-local"
-                    value={formData.date || ''}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                  />
+
+                  {/* Date and Time Inputs */}
+                  <div className="col-span-2 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className={`block text-sm font-medium ${textClass} mb-2`}>Date</label>
+                        <input
+                          type="date"
+                          value={formData.date ? formData.date.split('T')[0] : ''}
+                          onChange={(e) => {
+                            const time = formData.date ? formData.date.split('T')[1] || '12:00' : '12:00';
+                            setFormData({ ...formData, date: `${e.target.value}T${time}` });
+                          }}
+                          className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-sm font-medium ${textClass} mb-2`}>Time</label>
+                        <input
+                          type="time"
+                          value={formData.date ? formData.date.split('T')[1]?.slice(0, 5) || '12:00' : '12:00'}
+                          onChange={(e) => {
+                            const date = formData.date ? formData.date.split('T')[0] : new Date().toISOString().split('T')[0];
+                            setFormData({ ...formData, date: `${date}T${e.target.value}` });
+                          }}
+                          className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Time Presets */}
+                    <div>
+                      <label className={`block text-sm font-medium ${textClass} mb-2`}>Quick Time Presets</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['09:00', '10:00', '12:00', '14:00', '15:00', '16:00', '17:00'].map(time => (
+                          <button
+                            key={time}
+                            type="button"
+                            onClick={() => {
+                              const date = formData.date ? formData.date.split('T')[0] : new Date().toISOString().split('T')[0];
+                              setFormData({ ...formData, date: `${date}T${time}` });
+                            }}
+                            className={`px-3 py-1.5 text-sm rounded-lg border ${borderClass} ${
+                              darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'
+                            } ${textClass} transition`}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                   <input
                     type="text"
                     placeholder="Location (optional)"
@@ -5132,12 +5179,13 @@ export default function IndustrialCRM() {
                           key={index}
                           onClick={() => {
                             if (day) {
-                              // Pre-fill the date when clicking a day
-                              const selectedDate = new Date(currentYear, currentMonth, day, 12, 0); // Default to noon
-                              const dateTimeString = selectedDate.toISOString().slice(0, 16);
-                              setFormData({ date: dateTimeString });
-                              setEditingId(null);
-                              setShowEventForm(true);
+                              // Show day details modal
+                              setSelectedDayDetails({
+                                day,
+                                month: currentMonth,
+                                year: currentYear,
+                                events: dayEvents
+                              });
                             }
                           }}
                           className={`min-h-[100px] p-2 rounded-lg border ${borderClass} ${
@@ -5275,6 +5323,142 @@ export default function IndustrialCRM() {
         )}
         </div>
       </div>
+
+      {/* Day Details Modal */}
+      {selectedDayDetails && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          onClick={() => setSelectedDayDetails(null)}
+        >
+          <div
+            className={`${cardBgClass} rounded-xl shadow-xl border ${borderClass} max-w-2xl w-full max-h-[80vh] overflow-y-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className={`p-6 border-b ${borderClass} flex items-center justify-between sticky top-0 ${cardBgClass} z-10`}>
+              <div>
+                <h3 className={`text-2xl font-bold ${textClass}`}>
+                  {monthNames[selectedDayDetails.month]} {selectedDayDetails.day}, {selectedDayDetails.year}
+                </h3>
+                <p className={`text-sm ${textSecondaryClass} mt-1`}>
+                  {selectedDayDetails.events.length} event{selectedDayDetails.events.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedDayDetails(null)}
+                className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                title="Close"
+              >
+                <X size={24} className={textClass} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Create New Event Button */}
+              <button
+                onClick={() => {
+                  const selectedDate = new Date(selectedDayDetails.year, selectedDayDetails.month, selectedDayDetails.day, 12, 0);
+                  const dateTimeString = selectedDate.toISOString().slice(0, 16);
+                  setFormData({ date: dateTimeString });
+                  setEditingId(null);
+                  setShowEventForm(true);
+                  setSelectedDayDetails(null);
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                <Plus size={20} />
+                Create Event on This Day
+              </button>
+
+              {/* Events List */}
+              {selectedDayDetails.events.length === 0 ? (
+                <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center`}>
+                  <Calendar size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                  <p className={`${textSecondaryClass}`}>No events scheduled for this day</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {selectedDayDetails.events
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .map(event => {
+                      const eventDate = new Date(event.date);
+                      const isPast = eventDate < new Date();
+
+                      return (
+                        <div
+                          key={event.id}
+                          className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-4 border ${borderClass} ${
+                            isPast ? 'opacity-60' : ''
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`font-bold ${textClass}`}>{event.title}</span>
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  darkMode ? 'bg-slate-700' : 'bg-slate-200'
+                                } ${textSecondaryClass}`}>
+                                  {event.type}
+                                </span>
+                                {isPast && <span className="text-xs text-gray-500">(Past)</span>}
+                              </div>
+                              <p className={`text-sm ${textSecondaryClass} mb-1`}>
+                                🕐 {formatDateTime(event.date)}
+                              </p>
+                              {event.location && (
+                                <p className={`text-sm ${textSecondaryClass} mb-1`}>
+                                  📍 {event.location}
+                                </p>
+                              )}
+                              {event.description && (
+                                <p className={`text-sm ${textSecondaryClass} mt-2`}>{event.description}</p>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setFormData(event);
+                                  setEditingId(event.id);
+                                  setShowEventForm(true);
+                                  setSelectedDayDetails(null);
+                                }}
+                                className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                                title="Edit"
+                              >
+                                <Edit2 size={16} style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  showConfirmDialog(
+                                    'Delete Event',
+                                    'Are you sure you want to delete this event?',
+                                    () => {
+                                      setEvents(events.filter(e => e.id !== event.id));
+                                      setSelectedDayDetails({
+                                        ...selectedDayDetails,
+                                        events: selectedDayDetails.events.filter(e => e.id !== event.id)
+                                      });
+                                    },
+                                    'danger'
+                                  );
+                                }}
+                                className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                                title="Delete"
+                              >
+                                <Trash2 size={16} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Photo Lightbox Modal */}
       {lightboxOpen && lightboxPhotos.length > 0 && (
