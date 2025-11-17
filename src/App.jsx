@@ -32,6 +32,7 @@ export default function IndustrialCRM() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [calendarView, setCalendarView] = useState('month'); // 'month' or 'list'
   const [selectedDayDetails, setSelectedDayDetails] = useState(null); // { day, month, year, events }
+  const [contactTagSearch, setContactTagSearch] = useState('');
 
   // Toast notification state
   const [toasts, setToasts] = useState([]);
@@ -5086,117 +5087,232 @@ export default function IndustrialCRM() {
                   <div className="col-span-2 space-y-3">
                     <label className={`block text-sm font-medium ${textClass}`}>Tag Contacts (Optional)</label>
 
-                    {/* Brokers */}
-                    {brokers.length > 0 && (
-                      <div>
-                        <label className={`block text-xs font-medium ${textSecondaryClass} mb-2`}>Brokers</label>
-                        <div className="flex flex-wrap gap-2">
-                          {brokers.map(broker => {
-                            const isSelected = formData.taggedContacts?.brokers?.includes(broker.id);
-                            return (
+                    {/* Selected Contacts (Chips) */}
+                    {(formData.taggedContacts?.brokers?.length > 0 ||
+                      formData.taggedContacts?.partners?.length > 0 ||
+                      formData.taggedContacts?.gatekeepers?.length > 0) && (
+                      <div className={`flex flex-wrap gap-2 p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                        {formData.taggedContacts?.brokers?.map(brokerId => {
+                          const broker = brokers.find(b => b.id === brokerId);
+                          return broker ? (
+                            <span key={brokerId} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-blue-600 text-white">
+                              {broker.name}
                               <button
-                                key={broker.id}
                                 type="button"
                                 onClick={() => {
-                                  const currentBrokers = formData.taggedContacts?.brokers || [];
-                                  const newBrokers = isSelected
-                                    ? currentBrokers.filter(id => id !== broker.id)
-                                    : [...currentBrokers, broker.id];
                                   setFormData({
                                     ...formData,
                                     taggedContacts: {
                                       ...formData.taggedContacts,
-                                      brokers: newBrokers
+                                      brokers: formData.taggedContacts.brokers.filter(id => id !== brokerId)
                                     }
                                   });
                                 }}
-                                className={`px-3 py-1.5 text-sm rounded-lg border transition ${
-                                  isSelected
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : `${borderClass} ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'} ${textClass}`
-                                }`}
+                                className="hover:bg-blue-700 rounded"
                               >
-                                {broker.name}
+                                <X size={12} />
                               </button>
-                            );
-                          })}
-                        </div>
+                            </span>
+                          ) : null;
+                        })}
+                        {formData.taggedContacts?.partners?.map(partnerId => {
+                          const partner = partners.find(p => p.id === partnerId);
+                          return partner ? (
+                            <span key={partnerId} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-green-600 text-white">
+                              {partner.name}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    taggedContacts: {
+                                      ...formData.taggedContacts,
+                                      partners: formData.taggedContacts.partners.filter(id => id !== partnerId)
+                                    }
+                                  });
+                                }}
+                                className="hover:bg-green-700 rounded"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
+                        {formData.taggedContacts?.gatekeepers?.map(gatekeeperId => {
+                          const gatekeeper = gatekeepers.find(g => g.id === gatekeeperId);
+                          return gatekeeper ? (
+                            <span key={gatekeeperId} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-purple-600 text-white">
+                              {gatekeeper.name}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    taggedContacts: {
+                                      ...formData.taggedContacts,
+                                      gatekeepers: formData.taggedContacts.gatekeepers.filter(id => id !== gatekeeperId)
+                                    }
+                                  });
+                                }}
+                                className="hover:bg-purple-700 rounded"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
                       </div>
                     )}
 
-                    {/* Partners */}
-                    {partners.length > 0 && (
-                      <div>
-                        <label className={`block text-xs font-medium ${textSecondaryClass} mb-2`}>Partners</label>
-                        <div className="flex flex-wrap gap-2">
-                          {partners.map(partner => {
-                            const isSelected = formData.taggedContacts?.partners?.includes(partner.id);
-                            return (
-                              <button
-                                key={partner.id}
-                                type="button"
-                                onClick={() => {
-                                  const currentPartners = formData.taggedContacts?.partners || [];
-                                  const newPartners = isSelected
-                                    ? currentPartners.filter(id => id !== partner.id)
-                                    : [...currentPartners, partner.id];
-                                  setFormData({
-                                    ...formData,
-                                    taggedContacts: {
-                                      ...formData.taggedContacts,
-                                      partners: newPartners
-                                    }
-                                  });
-                                }}
-                                className={`px-3 py-1.5 text-sm rounded-lg border transition ${
-                                  isSelected
-                                    ? 'bg-green-600 text-white border-green-600'
-                                    : `${borderClass} ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'} ${textClass}`
-                                }`}
-                              >
-                                {partner.name}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                    {/* Search Input */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search contacts to tag..."
+                        value={contactTagSearch}
+                        onChange={(e) => setContactTagSearch(e.target.value)}
+                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                      <Search size={18} className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${textSecondaryClass}`} />
+                    </div>
 
-                    {/* Gatekeepers */}
-                    {gatekeepers.length > 0 && (
-                      <div>
-                        <label className={`block text-xs font-medium ${textSecondaryClass} mb-2`}>Gatekeepers</label>
-                        <div className="flex flex-wrap gap-2">
-                          {gatekeepers.map(gatekeeper => {
-                            const isSelected = formData.taggedContacts?.gatekeepers?.includes(gatekeeper.id);
+                    {/* Filtered Contacts List */}
+                    {contactTagSearch && (
+                      <div className={`max-h-64 overflow-y-auto rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                        {(() => {
+                          const searchLower = contactTagSearch.toLowerCase();
+                          const filteredBrokers = brokers.filter(b => b.name.toLowerCase().includes(searchLower));
+                          const filteredPartners = partners.filter(p => p.name.toLowerCase().includes(searchLower));
+                          const filteredGatekeepers = gatekeepers.filter(g => g.name.toLowerCase().includes(searchLower));
+
+                          const hasResults = filteredBrokers.length > 0 || filteredPartners.length > 0 || filteredGatekeepers.length > 0;
+
+                          if (!hasResults) {
                             return (
-                              <button
-                                key={gatekeeper.id}
-                                type="button"
-                                onClick={() => {
-                                  const currentGatekeepers = formData.taggedContacts?.gatekeepers || [];
-                                  const newGatekeepers = isSelected
-                                    ? currentGatekeepers.filter(id => id !== gatekeeper.id)
-                                    : [...currentGatekeepers, gatekeeper.id];
-                                  setFormData({
-                                    ...formData,
-                                    taggedContacts: {
-                                      ...formData.taggedContacts,
-                                      gatekeepers: newGatekeepers
-                                    }
-                                  });
-                                }}
-                                className={`px-3 py-1.5 text-sm rounded-lg border transition ${
-                                  isSelected
-                                    ? 'bg-purple-600 text-white border-purple-600'
-                                    : `${borderClass} ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'} ${textClass}`
-                                }`}
-                              >
-                                {gatekeeper.name}
-                              </button>
+                              <div className="p-4 text-center">
+                                <p className={`text-sm ${textSecondaryClass}`}>No contacts found</p>
+                              </div>
                             );
-                          })}
-                        </div>
+                          }
+
+                          return (
+                            <div className="p-2 space-y-2">
+                              {filteredBrokers.length > 0 && (
+                                <div>
+                                  <div className={`text-xs font-semibold ${textSecondaryClass} px-2 py-1`}>Brokers</div>
+                                  {filteredBrokers.map(broker => {
+                                    const isSelected = formData.taggedContacts?.brokers?.includes(broker.id);
+                                    return (
+                                      <button
+                                        key={broker.id}
+                                        type="button"
+                                        onClick={() => {
+                                          const currentBrokers = formData.taggedContacts?.brokers || [];
+                                          const newBrokers = isSelected
+                                            ? currentBrokers.filter(id => id !== broker.id)
+                                            : [...currentBrokers, broker.id];
+                                          setFormData({
+                                            ...formData,
+                                            taggedContacts: {
+                                              ...formData.taggedContacts,
+                                              brokers: newBrokers
+                                            }
+                                          });
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
+                                          isSelected
+                                            ? 'bg-blue-600 text-white'
+                                            : `${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${textClass}`
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span>{broker.name}</span>
+                                          {isSelected && <span className="text-xs">✓</span>}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {filteredPartners.length > 0 && (
+                                <div>
+                                  <div className={`text-xs font-semibold ${textSecondaryClass} px-2 py-1`}>Partners</div>
+                                  {filteredPartners.map(partner => {
+                                    const isSelected = formData.taggedContacts?.partners?.includes(partner.id);
+                                    return (
+                                      <button
+                                        key={partner.id}
+                                        type="button"
+                                        onClick={() => {
+                                          const currentPartners = formData.taggedContacts?.partners || [];
+                                          const newPartners = isSelected
+                                            ? currentPartners.filter(id => id !== partner.id)
+                                            : [...currentPartners, partner.id];
+                                          setFormData({
+                                            ...formData,
+                                            taggedContacts: {
+                                              ...formData.taggedContacts,
+                                              partners: newPartners
+                                            }
+                                          });
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
+                                          isSelected
+                                            ? 'bg-green-600 text-white'
+                                            : `${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${textClass}`
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span>{partner.name}</span>
+                                          {isSelected && <span className="text-xs">✓</span>}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {filteredGatekeepers.length > 0 && (
+                                <div>
+                                  <div className={`text-xs font-semibold ${textSecondaryClass} px-2 py-1`}>Gatekeepers</div>
+                                  {filteredGatekeepers.map(gatekeeper => {
+                                    const isSelected = formData.taggedContacts?.gatekeepers?.includes(gatekeeper.id);
+                                    return (
+                                      <button
+                                        key={gatekeeper.id}
+                                        type="button"
+                                        onClick={() => {
+                                          const currentGatekeepers = formData.taggedContacts?.gatekeepers || [];
+                                          const newGatekeepers = isSelected
+                                            ? currentGatekeepers.filter(id => id !== gatekeeper.id)
+                                            : [...currentGatekeepers, gatekeeper.id];
+                                          setFormData({
+                                            ...formData,
+                                            taggedContacts: {
+                                              ...formData.taggedContacts,
+                                              gatekeepers: newGatekeepers
+                                            }
+                                          });
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
+                                          isSelected
+                                            ? 'bg-purple-600 text-white'
+                                            : `${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${textClass}`
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span>{gatekeeper.name}</span>
+                                          {isSelected && <span className="text-xs">✓</span>}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
 
@@ -5230,6 +5346,7 @@ export default function IndustrialCRM() {
                       setShowEventForm(false);
                       setFormData({});
                       setEditingId(null);
+                      setContactTagSearch('');
                     }}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
                   >
@@ -5240,6 +5357,7 @@ export default function IndustrialCRM() {
                       setShowEventForm(false);
                       setFormData({});
                       setEditingId(null);
+                      setContactTagSearch('');
                     }}
                     className={`px-6 py-2 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'}`}
                   >
