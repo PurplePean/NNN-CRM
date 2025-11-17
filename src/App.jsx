@@ -6402,7 +6402,10 @@ export default function IndustrialCRM() {
                   <button
                     onClick={() => {
                       const noteInput = document.querySelector(`#note-input-profile-${profileContact.contactType}-${profileContact.id}`);
-                      if (noteInput) noteInput.focus();
+                      if (noteInput) {
+                        noteInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => noteInput.focus(), 500);
+                      }
                     }}
                     className={`flex items-center justify-center gap-2 px-6 py-3 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-300 hover:bg-slate-400'} ${textClass} rounded-lg font-semibold transition`}
                   >
@@ -6717,7 +6720,17 @@ export default function IndustrialCRM() {
                         );
                       }
                       return contactEvents.map(event => (
-                        <div key={event.id} className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div
+                          key={event.id}
+                          onClick={() => {
+                            setFormData(event);
+                            setEditingId(event.id);
+                            setShowEventForm(true);
+                            setActiveTab('calendar');
+                            setViewingContactProfile(false);
+                          }}
+                          className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-50 hover:bg-slate-100'} cursor-pointer transition`}
+                        >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
