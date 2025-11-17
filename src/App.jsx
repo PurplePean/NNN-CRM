@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink } from 'lucide-react';
+import ConfirmDialog from './components/ConfirmDialog';
+import LoadingSpinner from './components/LoadingSpinner';
+import EmptyState from './components/EmptyState';
 
 export default function IndustrialCRM() {
   const [properties, setProperties] = useState([]);
@@ -69,6 +72,36 @@ export default function IndustrialCRM() {
   const [sensitivityColMin, setSensitivityColMin] = useState('');
   const [sensitivityColMax, setSensitivityColMax] = useState('');
   const [sensitivityTable, setSensitivityTable] = useState(null);
+
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+    variant: 'danger'
+  });
+
+  // Helper function to show confirmation dialog
+  const showConfirmDialog = (title, message, onConfirm, variant = 'danger') => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      variant
+    });
+  };
+
+  const closeConfirmDialog = () => {
+    setConfirmDialog({
+      isOpen: false,
+      title: '',
+      message: '',
+      onConfirm: null,
+      variant: 'danger'
+    });
+  };
 
   // Load from localStorage
   useEffect(() => {
@@ -303,9 +336,12 @@ export default function IndustrialCRM() {
   };
 
   const handleDeleteProperty = (id) => {
-    if (window.confirm('Are you sure you want to delete this property?')) {
-      setProperties(properties.filter(p => p.id !== id));
-    }
+    showConfirmDialog(
+      'Delete Property',
+      'Are you sure you want to delete this property? This action cannot be undone.',
+      () => setProperties(properties.filter(p => p.id !== id)),
+      'danger'
+    );
   };
 
   // Note handlers
@@ -377,29 +413,36 @@ export default function IndustrialCRM() {
   };
 
   const handleDeleteNote = (entityType, entityId, noteId) => {
-    if (!window.confirm('Delete this note?')) return;
+    const deleteNote = () => {
+      if (entityType === 'property') {
+        setProperties(properties.map(p => {
+          if (p.id === entityId) {
+            return {
+              ...p,
+              noteHistory: (p.noteHistory || []).filter(note => note.id !== noteId)
+            };
+          }
+          return p;
+        }));
+      } else if (entityType === 'broker') {
+        setBrokers(brokers.map(b => {
+          if (b.id === entityId) {
+            return {
+              ...b,
+              noteHistory: (b.noteHistory || []).filter(note => note.id !== noteId)
+            };
+          }
+          return b;
+        }));
+      }
+    };
 
-    if (entityType === 'property') {
-      setProperties(properties.map(p => {
-        if (p.id === entityId) {
-          return {
-            ...p,
-            noteHistory: (p.noteHistory || []).filter(note => note.id !== noteId)
-          };
-        }
-        return p;
-      }));
-    } else if (entityType === 'broker') {
-      setBrokers(brokers.map(b => {
-        if (b.id === entityId) {
-          return {
-            ...b,
-            noteHistory: (b.noteHistory || []).filter(note => note.id !== noteId)
-          };
-        }
-        return b;
-      }));
-    }
+    showConfirmDialog(
+      'Delete Note',
+      'Are you sure you want to delete this note? This action cannot be undone.',
+      deleteNote,
+      'danger'
+    );
   };
 
   // Format relative time
@@ -629,9 +672,12 @@ export default function IndustrialCRM() {
   };
 
   const handleDeleteBroker = (id) => {
-    if (window.confirm('Are you sure you want to delete this broker?')) {
-      setBrokers(brokers.filter(b => b.id !== id));
-    }
+    showConfirmDialog(
+      'Delete Broker',
+      'Are you sure you want to delete this broker? This action cannot be undone.',
+      () => setBrokers(brokers.filter(b => b.id !== id)),
+      'danger'
+    );
   };
 
   // Gatekeeper form handlers
@@ -671,9 +717,12 @@ export default function IndustrialCRM() {
   };
 
   const handleDeleteGatekeeper = (id) => {
-    if (window.confirm('Are you sure you want to delete this gatekeeper?')) {
-      setGatekeepers(gatekeepers.filter(g => g.id !== id));
-    }
+    showConfirmDialog(
+      'Delete Gatekeeper',
+      'Are you sure you want to delete this gatekeeper? This action cannot be undone.',
+      () => setGatekeepers(gatekeepers.filter(g => g.id !== id)),
+      'danger'
+    );
   };
 
   // Inline broker handlers (for quick-add within property form)
@@ -800,17 +849,19 @@ export default function IndustrialCRM() {
   };
 
   const handleDeletePartner = (id) => {
-    if (window.confirm('Are you sure you want to delete this partner?')) {
-      setPartners(partners.filter(p => p.id !== id));
-    }
+    showConfirmDialog(
+      'Delete Partner',
+      'Are you sure you want to delete this partner? This action cannot be undone.',
+      () => setPartners(partners.filter(p => p.id !== id)),
+      'danger'
+    );
   };
 
   // Test Data Functions
   const loadTestData = () => {
-    if (!window.confirm('This will load sample data. Continue?')) return;
-
-    const now = new Date().toISOString();
-    const testBrokers = [
+    const loadData = () => {
+      const now = new Date().toISOString();
+      const testBrokers = [
       { id: 1001, name: 'Sarah Mitchell', company: 'CBRE', email: 'sarah.mitchell@cbre.com', phone: '555-0101', noteHistory: [] },
       { id: 1002, name: 'James Chen', company: 'JLL', email: 'james.chen@jll.com', phone: '555-0102', noteHistory: [] },
       { id: 1003, name: 'Maria Rodriguez', company: 'Cushman & Wakefield', email: 'maria.r@cushwake.com', phone: '555-0103', noteHistory: [] },
@@ -1023,31 +1074,44 @@ export default function IndustrialCRM() {
       }
     ];
 
-    setBrokers(testBrokers);
-    setPartners(testPartners);
-    setGatekeepers(testGatekeepers);
-    setProperties(testProperties);
-    setFollowUps(testFollowUps);
-    setEvents(testEvents);
+      setBrokers(testBrokers);
+      setPartners(testPartners);
+      setGatekeepers(testGatekeepers);
+      setProperties(testProperties);
+      setFollowUps(testFollowUps);
+      setEvents(testEvents);
 
-    showToast('Test data loaded! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, 4 follow-ups, and 5 events.', 'success');
+      showToast('Test data loaded! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, 4 follow-ups, and 5 events.', 'success');
+    };
+
+    showConfirmDialog(
+      'Load Sample Data',
+      'This will load sample data into your CRM. Continue?',
+      loadData,
+      'warning'
+    );
   };
 
   const clearAllData = () => {
-    if (!window.confirm('⚠️ WARNING: This will permanently delete ALL data (properties, brokers, partners, gatekeepers, events, follow-ups). This cannot be undone. Continue?')) return;
+    const performClear = () => {
+      setProperties([]);
+      setBrokers([]);
+      setPartners([]);
+      setGatekeepers([]);
+      setEvents([]);
+      setFollowUps([]);
+      setSensitivityTable(null);
+      setSensitivityPropertyId(null);
 
-    if (!window.confirm('Are you absolutely sure? This is your last chance to cancel.')) return;
+      showToast('All data has been cleared.', 'success');
+    };
 
-    setProperties([]);
-    setBrokers([]);
-    setPartners([]);
-    setGatekeepers([]);
-    setEvents([]);
-    setFollowUps([]);
-    setSensitivityTable(null);
-    setSensitivityPropertyId(null);
-
-    showToast('All data has been cleared.', 'success');
+    showConfirmDialog(
+      '⚠️ Clear All Data',
+      'WARNING: This will permanently delete ALL data including properties, brokers, partners, gatekeepers, events, and follow-ups. This action cannot be undone. Are you absolutely sure?',
+      performClear,
+      'danger'
+    );
   };
 
   // Calculate IRR (Internal Rate of Return) using Newton-Raphson method
@@ -1304,64 +1368,72 @@ export default function IndustrialCRM() {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-1">
+        <nav className="p-4 space-y-1" role="navigation" aria-label="Main navigation">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition min-h-[44px] ${
               activeTab === 'dashboard'
                 ? 'bg-blue-600 text-white'
                 : `${textSecondaryClass} ${hoverBgClass}`
             }`}
+            aria-label="Dashboard"
+            aria-current={activeTab === 'dashboard' ? 'page' : undefined}
           >
-            <TrendingUp size={20} />
+            <TrendingUp size={20} aria-hidden="true" />
             <span>Dashboard</span>
           </button>
 
           <button
             onClick={() => setActiveTab('followups')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition min-h-[44px] ${
               activeTab === 'followups'
                 ? 'bg-blue-600 text-white'
                 : `${textSecondaryClass} ${hoverBgClass}`
             }`}
+            aria-label={`Follow-ups (${followUps.filter(f => f.status !== 'completed').length} pending)`}
+            aria-current={activeTab === 'followups' ? 'page' : undefined}
           >
-            <Bell size={20} />
+            <Bell size={20} aria-hidden="true" />
             <div className="flex-1 text-left">Follow-ups</div>
             <span className={`text-xs px-2 py-1 rounded-full ${
               activeTab === 'followups'
                 ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
                 : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
-            }`}>
+            }`} aria-label={`${followUps.filter(f => f.status !== 'completed').length} pending follow-ups`}>
               {followUps.filter(f => f.status !== 'completed').length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition min-h-[44px] ${
               activeTab === 'calendar'
                 ? 'bg-blue-600 text-white'
                 : `${textSecondaryClass} ${hoverBgClass}`
             }`}
+            aria-label={`Calendar (${events.length} events)`}
+            aria-current={activeTab === 'calendar' ? 'page' : undefined}
           >
-            <Calendar size={20} />
+            <Calendar size={20} aria-hidden="true" />
             <div className="flex-1 text-left">Calendar</div>
             <span className={`text-xs px-2 py-1 rounded-full ${
               activeTab === 'calendar'
                 ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
                 : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
-            }`}>
+            }`} aria-label={`${events.length} events`}>
               {events.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('assets')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition min-h-[44px] ${
               activeTab === 'assets'
                 ? 'bg-blue-600 text-white'
                 : `${textSecondaryClass} ${hoverBgClass}`
             }`}
+            aria-label={`Assets (${properties.length} properties)`}
+            aria-current={activeTab === 'assets' ? 'page' : undefined}
           >
             <Building2 size={20} />
             <div className="flex-1 text-left">Assets</div>
@@ -2840,9 +2912,16 @@ export default function IndustrialCRM() {
             </div>
 
             {filteredProperties.length === 0 && !showPropertyForm && (
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
-                <p className={`${textSecondaryClass} text-lg`}>No properties yet. Click "New Property" to get started!</p>
-              </div>
+              <EmptyState
+                icon={Building2}
+                title="No Properties Yet"
+                message="Click 'New Property' to add your first property and start tracking your industrial real estate portfolio."
+                action={{
+                  label: 'New Property',
+                  onClick: handleAddProperty
+                }}
+                darkMode={darkMode}
+              />
             )}
           </div>
         )}
@@ -4689,12 +4768,16 @@ export default function IndustrialCRM() {
                           </button>
                           <button
                             onClick={() => {
-                              if (window.confirm('Delete this follow-up?')) {
-                                setFollowUps(followUps.filter(f => f.id !== followUp.id));
-                              }
+                              showConfirmDialog(
+                                'Delete Follow-up',
+                                'Are you sure you want to delete this follow-up?',
+                                () => setFollowUps(followUps.filter(f => f.id !== followUp.id)),
+                                'danger'
+                              );
                             }}
                             className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Delete"
+                            aria-label="Delete follow-up"
                           >
                             <Trash2 size={18} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
                           </button>
@@ -4899,12 +4982,16 @@ export default function IndustrialCRM() {
                           </button>
                           <button
                             onClick={() => {
-                              if (window.confirm('Delete this event?')) {
-                                setEvents(events.filter(e => e.id !== event.id));
-                              }
+                              showConfirmDialog(
+                                'Delete Event',
+                                'Are you sure you want to delete this event?',
+                                () => setEvents(events.filter(e => e.id !== event.id)),
+                                'danger'
+                              );
                             }}
                             className={`p-2 rounded-lg ${hoverBgClass} transition`}
                             title="Delete"
+                            aria-label="Delete event"
                           >
                             <Trash2 size={18} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
                           </button>
@@ -5080,17 +5167,16 @@ export default function IndustrialCRM() {
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete ${selectedContact.displayName}?`)) {
-                        if (selectedContact.contactType === 'broker') {
-                          handleDeleteBroker(selectedContact.id);
-                        } else if (selectedContact.contactType === 'gatekeeper') {
-                          handleDeleteGatekeeper(selectedContact.id);
-                        } else if (selectedContact.contactType === 'partner') {
-                          handleDeletePartner(selectedContact.id);
-                        }
-                        setContactDetailOpen(false);
+                      if (selectedContact.contactType === 'broker') {
+                        handleDeleteBroker(selectedContact.id);
+                      } else if (selectedContact.contactType === 'gatekeeper') {
+                        handleDeleteGatekeeper(selectedContact.id);
+                      } else if (selectedContact.contactType === 'partner') {
+                        handleDeletePartner(selectedContact.id);
                       }
+                      setContactDetailOpen(false);
                     }}
+                    aria-label={`Delete ${selectedContact.displayName}`}
                     className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
                     title="Delete contact"
                   >
@@ -5350,21 +5436,20 @@ export default function IndustrialCRM() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    if (window.confirm('Delete this note?')) {
-                                      handleDeleteNote(selectedContact.contactType, selectedContact.id, note.id);
-                                      setTimeout(() => {
-                                        const updatedContact =
-                                          selectedContact.contactType === 'broker' ? brokers.find(b => b.id === selectedContact.id) :
-                                          selectedContact.contactType === 'gatekeeper' ? gatekeepers.find(g => g.id === selectedContact.id) :
-                                          partners.find(p => p.id === selectedContact.id);
-                                        if (updatedContact) {
-                                          setSelectedContact({ ...updatedContact, contactType: selectedContact.contactType, displayName: updatedContact.name, company: selectedContact.company });
-                                        }
-                                      }, 100);
-                                    }
+                                    handleDeleteNote(selectedContact.contactType, selectedContact.id, note.id);
+                                    setTimeout(() => {
+                                      const updatedContact =
+                                        selectedContact.contactType === 'broker' ? brokers.find(b => b.id === selectedContact.id) :
+                                        selectedContact.contactType === 'gatekeeper' ? gatekeepers.find(g => g.id === selectedContact.id) :
+                                        partners.find(p => p.id === selectedContact.id);
+                                      if (updatedContact) {
+                                        setSelectedContact({ ...updatedContact, contactType: selectedContact.contactType, displayName: updatedContact.name, company: selectedContact.company });
+                                      }
+                                    }, 100);
                                   }}
                                   className={`p-1 ${darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition`}
                                   title="Delete note"
+                                  aria-label="Delete note"
                                 >
                                   <Trash2 size={14} />
                                 </button>
@@ -5476,17 +5561,16 @@ export default function IndustrialCRM() {
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete ${profileContact.displayName}?`)) {
-                        if (profileContact.contactType === 'broker') {
-                          handleDeleteBroker(profileContact.id);
-                        } else if (profileContact.contactType === 'gatekeeper') {
-                          handleDeleteGatekeeper(profileContact.id);
-                        } else if (profileContact.contactType === 'partner') {
-                          handleDeletePartner(profileContact.id);
-                        }
-                        setViewingContactProfile(false);
+                      if (profileContact.contactType === 'broker') {
+                        handleDeleteBroker(profileContact.id);
+                      } else if (profileContact.contactType === 'gatekeeper') {
+                        handleDeleteGatekeeper(profileContact.id);
+                      } else if (profileContact.contactType === 'partner') {
+                        handleDeletePartner(profileContact.id);
                       }
+                      setViewingContactProfile(false);
                     }}
+                    aria-label={`Delete ${profileContact.displayName}`}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${darkMode ? 'bg-red-900 hover:bg-red-800 text-red-100' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}
                   >
                     <Trash2 size={18} />
@@ -6078,6 +6162,17 @@ export default function IndustrialCRM() {
           </div>
         ))}
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={closeConfirmDialog}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        variant={confirmDialog.variant}
+        darkMode={darkMode}
+      />
     </div>
   );
 }
