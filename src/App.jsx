@@ -1497,9 +1497,9 @@ export default function IndustrialCRM() {
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Quick Actions Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <button
                 onClick={() => {
                   setFormData({});
@@ -1507,7 +1507,7 @@ export default function IndustrialCRM() {
                   setShowFollowUpForm(true);
                   setActiveTab('followups');
                 }}
-                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg"
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow"
               >
                 <Phone size={20} />
                 <span>New Call</span>
@@ -1519,7 +1519,7 @@ export default function IndustrialCRM() {
                   setShowFollowUpForm(true);
                   setActiveTab('followups');
                 }}
-                className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-lg"
+                className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition shadow"
               >
                 <Mail size={20} />
                 <span>New Email</span>
@@ -1531,7 +1531,7 @@ export default function IndustrialCRM() {
                   setShowEventForm(true);
                   setActiveTab('calendar');
                 }}
-                className="flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-purple-700 transition shadow-lg"
+                className="flex items-center justify-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition shadow"
               >
                 <Video size={20} />
                 <span>Schedule Meeting</span>
@@ -1543,7 +1543,7 @@ export default function IndustrialCRM() {
                   setShowFollowUpForm(true);
                   setActiveTab('followups');
                 }}
-                className="flex items-center justify-center gap-2 bg-orange-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg"
+                className="flex items-center justify-center gap-2 bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-orange-700 transition shadow"
               >
                 <MessageSquare size={20} />
                 <span>Add Note</span>
@@ -1551,12 +1551,12 @@ export default function IndustrialCRM() {
             </div>
 
             {/* Today's Agenda */}
-            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border-l-4 border-blue-500 ${borderClass}`}>
-              <div className="flex items-center gap-3 mb-4">
-                <Clock size={28} className="text-blue-500" />
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border-l-4 border-blue-500 ${borderClass}`}>
+              <div className="flex items-center gap-2 mb-3">
+                <Clock size={24} className="text-blue-500" />
                 <div>
-                  <h3 className={`text-2xl font-bold ${textClass}`}>Today's Agenda</h3>
-                  <p className={`text-sm ${textSecondaryClass}`}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                  <h3 className={`text-xl font-bold ${textClass}`}>Today's Agenda</h3>
+                  <p className={`text-xs ${textSecondaryClass}`}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
                 </div>
               </div>
 
@@ -1581,11 +1581,11 @@ export default function IndustrialCRM() {
                 const hasItems = todaysFollowUps.length > 0 || todaysEvents.length > 0;
 
                 return hasItems ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {todaysFollowUps.map(followUp => {
                       const overdue = isOverdue(followUp.dueDate);
                       return (
-                        <div key={`today-followup-${followUp.id}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-red-50'} border-l-4 ${overdue ? 'border-red-500' : 'border-yellow-500'}`}>
+                        <div key={`today-followup-${followUp.id}`} className={`p-2.5 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-red-50'} border-l-4 ${overdue ? 'border-red-500' : 'border-yellow-500'}`}>
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
@@ -1615,7 +1615,7 @@ export default function IndustrialCRM() {
                       );
                     })}
                     {todaysEvents.map(event => (
-                      <div key={`today-event-${event.id}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-l-4 border-blue-500`}>
+                      <div key={`today-event-${event.id}`} className={`p-2.5 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-l-4 border-blue-500`}>
                         <div className="flex items-center gap-2">
                           <Calendar size={18} className="text-blue-500" />
                           <span className={`font-semibold ${textClass}`}>{event.title}</span>
@@ -1637,52 +1637,52 @@ export default function IndustrialCRM() {
             </div>
 
             {/* Communication Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
-                  <Bell size={24} className="text-orange-500" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
+                  <Bell size={18} className="text-orange-500" />
                 </div>
-                <div className={`text-3xl font-bold ${textClass}`}>
+                <div className={`text-2xl font-bold ${textClass}`}>
                   {followUps.filter(f => f.status !== 'completed').length}
                 </div>
-                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
                   {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue • {followUps.filter(f => isDueToday(f.dueDate) && f.status !== 'completed').length} due today
                 </div>
               </div>
 
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Upcoming Events</div>
-                  <Calendar size={24} className="text-blue-500" />
+              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Upcoming Events</div>
+                  <Calendar size={18} className="text-blue-500" />
                 </div>
-                <div className={`text-3xl font-bold ${textClass}`}>
+                <div className={`text-2xl font-bold ${textClass}`}>
                   {events.filter(e => new Date(e.date) >= new Date()).length}
                 </div>
-                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
                   Next 7 days
                 </div>
               </div>
 
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold ${textSecondaryClass} uppercase`}>Total Contacts</div>
-                  <Target size={24} className="text-green-500" />
+              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Contacts</div>
+                  <Target size={18} className="text-green-500" />
                 </div>
-                <div className={`text-3xl font-bold ${textClass}`}>
+                <div className={`text-2xl font-bold ${textClass}`}>
                   {brokers.length + partners.length + gatekeepers.length}
                 </div>
-                <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
                   {brokers.length} Brokers • {gatekeepers.length} Gatekeepers
                 </div>
               </div>
             </div>
 
             {/* Upcoming Follow-ups */}
-            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
-                  <Bell size={24} />
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
+                  <Bell size={20} />
                   Upcoming Follow-ups
                 </h3>
                 <button
@@ -1699,11 +1699,11 @@ export default function IndustrialCRM() {
                   <p>No pending follow-ups. You're all caught up!</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {followUps
                     .filter(f => f.status !== 'completed')
                     .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
-                    .slice(0, 5)
+                    .slice(0, 3)
                     .map(followUp => {
                       const overdue = isOverdue(followUp.dueDate);
                       const dueToday = isDueToday(followUp.dueDate);
@@ -1727,48 +1727,36 @@ export default function IndustrialCRM() {
                       }
 
                       return (
-                        <div key={followUp.id} className={`p-4 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} hover:shadow-md transition-shadow`}>
+                        <div key={followUp.id} className={`p-3 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                {overdue && <AlertCircle size={16} className="text-red-500" />}
-                                {dueToday && <Clock size={16} className="text-yellow-500" />}
-                                {!overdue && !dueToday && <Clock size={16} className="text-green-500" />}
+                              <div className="flex items-center gap-2">
                                 <span className={`text-sm font-semibold ${textClass}`}>{followUp.contactName}</span>
-                                <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
                                   {followUp.type}
                                 </span>
                                 {followUp.priority === 'High' && (
-                                  <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded">HIGH</span>
+                                  <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">HIGH</span>
                                 )}
                               </div>
-                              {relatedContactInfo && (
-                                <div className={`flex items-center gap-1 ml-6 mb-1`}>
-                                  <relatedContactInfo.icon size={14} className="text-blue-500" />
-                                  <span className={`text-xs ${textSecondaryClass}`}>
-                                    {relatedContactInfo.type}: {relatedContactInfo.name}
-                                  </span>
-                                </div>
-                              )}
                               {followUp.notes && (
-                                <div className={`ml-6 mt-2 p-2.5 rounded-lg ${darkMode ? 'bg-slate-600' : 'bg-slate-100'}`}>
-                                  <p className={`text-sm ${textClass} leading-relaxed whitespace-pre-wrap`}>{followUp.notes}</p>
+                                <div className={`mt-1.5 p-2 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-100'}`}>
+                                  <p className={`text-xs ${textClass} leading-relaxed whitespace-pre-wrap line-clamp-2`}>{followUp.notes}</p>
                                 </div>
                               )}
-                              <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} ml-6 mt-1`}>
-                                {overdue ? `⚠️ Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? '⏰ Due today' : `📅 Due ${formatDate(followUp.dueDate)}`}
+                              <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} mt-1`}>
+                                {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
                               </p>
                             </div>
-                            <div className="flex gap-2 ml-4">
+                            <div className="flex gap-1.5 ml-3">
                               <button
                                 onClick={() => {
                                   setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
                                   showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
                                 }}
-                                className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-700 transition flex items-center gap-1"
+                                className="bg-green-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-green-700 transition"
                                 title="Mark as complete"
                               >
-                                <CheckCircle size={14} />
                                 Done
                               </button>
                               <button
@@ -1778,10 +1766,9 @@ export default function IndustrialCRM() {
                                   setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, dueDate: newDate.toISOString().split('T')[0] } : f));
                                   showToast(`Follow-up snoozed to ${newDate.toLocaleDateString()}`, 'info');
                                 }}
-                                className={`${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1`}
+                                className={`${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} px-2.5 py-1 rounded text-xs font-semibold transition`}
                                 title="Snooze until tomorrow"
                               >
-                                <Clock size={14} />
                                 Snooze
                               </button>
                             </div>
@@ -1794,10 +1781,10 @@ export default function IndustrialCRM() {
             </div>
 
             {/* Upcoming Calendar Events */}
-            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
-                  <Calendar size={24} />
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
+                  <Calendar size={20} />
                   Upcoming Events
                 </h3>
                 <button
@@ -1814,26 +1801,25 @@ export default function IndustrialCRM() {
                   <p>No upcoming events scheduled.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {events
                     .filter(e => new Date(e.date) >= new Date())
                     .sort((a, b) => new Date(a.date) - new Date(b.date))
-                    .slice(0, 5)
+                    .slice(0, 3)
                     .map(event => (
-                      <div key={event.id} className={`p-4 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div key={event.id} className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Calendar size={16} className="text-blue-500" />
+                            <div className="flex items-center gap-2">
                               <span className={`text-sm font-semibold ${textClass}`}>{event.title}</span>
-                              <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
                                 {event.type}
                               </span>
                             </div>
                             {event.location && (
-                              <p className={`text-sm ${textSecondaryClass} ml-6`}>📍 {event.location}</p>
+                              <p className={`text-xs ${textSecondaryClass} mt-1`}>📍 {event.location}</p>
                             )}
-                            <p className={`text-xs ${textSecondaryClass} ml-6 mt-1`}>
+                            <p className={`text-xs ${textSecondaryClass} mt-1`}>
                               {formatDateTime(event.date)}
                             </p>
                           </div>
@@ -1842,34 +1828,6 @@ export default function IndustrialCRM() {
                     ))}
                 </div>
               )}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button
-                onClick={() => setActiveTab('assets')}
-                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
-              >
-                <Building2 size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
-                <div className={`font-semibold ${textClass}`}>View Properties</div>
-                <div className={`text-sm ${textSecondaryClass}`}>{properties.length} assets</div>
-              </button>
-              <button
-                onClick={() => setActiveTab('followups')}
-                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
-              >
-                <Bell size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
-                <div className={`font-semibold ${textClass}`}>Manage Follow-ups</div>
-                <div className={`text-sm ${textSecondaryClass}`}>{followUps.filter(f => f.status !== 'completed').length} active</div>
-              </button>
-              <button
-                onClick={() => setActiveTab('calendar')}
-                className={`p-6 rounded-xl border-2 border-dashed ${borderClass} ${hoverBgClass} transition text-center`}
-              >
-                <Calendar size={32} className={`mx-auto mb-2 ${textSecondaryClass}`} />
-                <div className={`font-semibold ${textClass}`}>View Calendar</div>
-                <div className={`text-sm ${textSecondaryClass}`}>{events.length} events</div>
-              </button>
             </div>
           </div>
         )}
