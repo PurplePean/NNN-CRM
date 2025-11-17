@@ -8320,188 +8320,6 @@ export default function IndustrialCRM() {
                   </div>
                 )}
 
-                {/* Contact Tagging */}
-                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                  <h2 className={`text-xl font-bold ${textClass} mb-4`}>Associated Contacts</h2>
-
-                  {/* Brokers */}
-                  <div className="mb-4">
-                    <label className={`block text-sm font-semibold ${textSecondaryClass} uppercase mb-2`}>Brokers</label>
-                    <div className="relative">
-                      <Search className={`absolute left-3 top-2.5 ${textSecondaryClass}`} size={18} />
-                      <input
-                        type="text"
-                        placeholder="Search brokers..."
-                        value={propertyBrokerSearch}
-                        onChange={(e) => setPropertyBrokerSearch(e.target.value)}
-                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      />
-                    </div>
-                    {propertyBrokerSearch && (
-                      <div className={`mt-2 max-h-48 overflow-y-auto border ${borderClass} rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                        {brokers.filter(b => b.name.toLowerCase().includes(propertyBrokerSearch.toLowerCase()) || (b.firmName && b.firmName.toLowerCase().includes(propertyBrokerSearch.toLowerCase()))).map(broker => (
-                          <div
-                            key={broker.id}
-                            onClick={() => {
-                              const currentIds = profileProperty.brokerIds || [];
-                              if (!currentIds.includes(broker.id)) {
-                                const updatedProperty = { ...profileProperty, brokerIds: [...currentIds, broker.id] };
-                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
-                                setProfileProperty(updatedProperty);
-                                setPropertyBrokerSearch('');
-                                showToast('Broker added', 'success');
-                              }
-                            }}
-                            className={`p-3 border-b ${borderClass} cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 transition`}
-                          >
-                            <div className={`text-sm font-medium ${textClass}`}>{broker.name}</div>
-                            {broker.firmName && <div className={`text-xs ${textSecondaryClass}`}>{broker.firmName}</div>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {(profileProperty.brokerIds || []).map(id => {
-                        const broker = brokers.find(b => b.id === id);
-                        if (!broker) return null;
-                        return (
-                          <span key={id} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
-                            {broker.name}
-                            <X
-                              size={14}
-                              className="cursor-pointer hover:text-blue-600"
-                              onClick={() => {
-                                const updatedProperty = { ...profileProperty, brokerIds: (profileProperty.brokerIds || []).filter(bid => bid !== id) };
-                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
-                                setProfileProperty(updatedProperty);
-                                showToast('Broker removed', 'success');
-                              }}
-                            />
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Partners */}
-                  <div className="mb-4">
-                    <label className={`block text-sm font-semibold ${textSecondaryClass} uppercase mb-2`}>Partners</label>
-                    <div className="relative">
-                      <Search className={`absolute left-3 top-2.5 ${textSecondaryClass}`} size={18} />
-                      <input
-                        type="text"
-                        placeholder="Search partners..."
-                        value={propertyPartnerSearch}
-                        onChange={(e) => setPropertyPartnerSearch(e.target.value)}
-                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-green-500`}
-                      />
-                    </div>
-                    {propertyPartnerSearch && (
-                      <div className={`mt-2 max-h-48 overflow-y-auto border ${borderClass} rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                        {partners.filter(p => p.name.toLowerCase().includes(propertyPartnerSearch.toLowerCase()) || (p.type && p.type.toLowerCase().includes(propertyPartnerSearch.toLowerCase()))).map(partner => (
-                          <div
-                            key={partner.id}
-                            onClick={() => {
-                              const currentIds = profileProperty.partnerIds || [];
-                              if (!currentIds.includes(partner.id)) {
-                                const updatedProperty = { ...profileProperty, partnerIds: [...currentIds, partner.id] };
-                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
-                                setProfileProperty(updatedProperty);
-                                setPropertyPartnerSearch('');
-                                showToast('Partner added', 'success');
-                              }
-                            }}
-                            className={`p-3 border-b ${borderClass} cursor-pointer hover:bg-green-50 dark:hover:bg-green-900 transition`}
-                          >
-                            <div className={`text-sm font-medium ${textClass}`}>{partner.name}</div>
-                            {partner.type && <div className={`text-xs ${textSecondaryClass}`}>{partner.type}</div>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {(profileProperty.partnerIds || []).map(id => {
-                        const partner = partners.find(p => p.id === id);
-                        if (!partner) return null;
-                        return (
-                          <span key={id} className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm">
-                            {partner.name}
-                            <X
-                              size={14}
-                              className="cursor-pointer hover:text-green-600"
-                              onClick={() => {
-                                const updatedProperty = { ...profileProperty, partnerIds: (profileProperty.partnerIds || []).filter(pid => pid !== id) };
-                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
-                                setProfileProperty(updatedProperty);
-                                showToast('Partner removed', 'success');
-                              }}
-                            />
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Gatekeepers */}
-                  <div>
-                    <label className={`block text-sm font-semibold ${textSecondaryClass} uppercase mb-2`}>Gatekeepers</label>
-                    <div className="relative">
-                      <Search className={`absolute left-3 top-2.5 ${textSecondaryClass}`} size={18} />
-                      <input
-                        type="text"
-                        placeholder="Search gatekeepers..."
-                        value={propertyGatekeeperSearch}
-                        onChange={(e) => setPropertyGatekeeperSearch(e.target.value)}
-                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                      />
-                    </div>
-                    {propertyGatekeeperSearch && (
-                      <div className={`mt-2 max-h-48 overflow-y-auto border ${borderClass} rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                        {gatekeepers.filter(g => g.name.toLowerCase().includes(propertyGatekeeperSearch.toLowerCase()) || (g.company && g.company.toLowerCase().includes(propertyGatekeeperSearch.toLowerCase()))).map(gatekeeper => (
-                          <div
-                            key={gatekeeper.id}
-                            onClick={() => {
-                              const currentIds = profileProperty.gatekeeperIds || [];
-                              if (!currentIds.includes(gatekeeper.id)) {
-                                const updatedProperty = { ...profileProperty, gatekeeperIds: [...currentIds, gatekeeper.id] };
-                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
-                                setProfileProperty(updatedProperty);
-                                setPropertyGatekeeperSearch('');
-                                showToast('Gatekeeper added', 'success');
-                              }
-                            }}
-                            className={`p-3 border-b ${borderClass} cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900 transition`}
-                          >
-                            <div className={`text-sm font-medium ${textClass}`}>{gatekeeper.name}</div>
-                            {gatekeeper.company && <div className={`text-xs ${textSecondaryClass}`}>{gatekeeper.company}</div>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {(profileProperty.gatekeeperIds || []).map(id => {
-                        const gatekeeper = gatekeepers.find(g => g.id === id);
-                        if (!gatekeeper) return null;
-                        return (
-                          <span key={id} className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-sm">
-                            {gatekeeper.name}
-                            <X
-                              size={14}
-                              className="cursor-pointer hover:text-purple-600"
-                              onClick={() => {
-                                const updatedProperty = { ...profileProperty, gatekeeperIds: (profileProperty.gatekeeperIds || []).filter(gid => gid !== id) };
-                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
-                                setProfileProperty(updatedProperty);
-                                showToast('Gatekeeper removed', 'success');
-                              }}
-                            />
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
                 {/* Notes & Activity */}
                 <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
                   <div className={`text-xl font-bold ${textClass} mb-4 flex items-center justify-between`}>
@@ -8703,6 +8521,188 @@ export default function IndustrialCRM() {
                           </div>
                         );
                       })}
+                  </div>
+                </div>
+
+                {/* Contact Tagging */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                  <h2 className={`text-xl font-bold ${textClass} mb-4`}>Associated Contacts</h2>
+
+                  {/* Brokers */}
+                  <div className="mb-4">
+                    <label className={`block text-sm font-semibold ${textSecondaryClass} uppercase mb-2`}>Brokers</label>
+                    <div className="relative">
+                      <Search className={`absolute left-3 top-2.5 ${textSecondaryClass}`} size={18} />
+                      <input
+                        type="text"
+                        placeholder="Search brokers..."
+                        value={propertyBrokerSearch}
+                        onChange={(e) => setPropertyBrokerSearch(e.target.value)}
+                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    {propertyBrokerSearch && (
+                      <div className={`mt-2 max-h-48 overflow-y-auto border ${borderClass} rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                        {brokers.filter(b => b.name.toLowerCase().includes(propertyBrokerSearch.toLowerCase()) || (b.firmName && b.firmName.toLowerCase().includes(propertyBrokerSearch.toLowerCase()))).map(broker => (
+                          <div
+                            key={broker.id}
+                            onClick={() => {
+                              const currentIds = profileProperty.brokerIds || [];
+                              if (!currentIds.includes(broker.id)) {
+                                const updatedProperty = { ...profileProperty, brokerIds: [...currentIds, broker.id] };
+                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
+                                setProfileProperty(updatedProperty);
+                                setPropertyBrokerSearch('');
+                                showToast('Broker added', 'success');
+                              }
+                            }}
+                            className={`p-3 border-b ${borderClass} cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 transition`}
+                          >
+                            <div className={`text-sm font-medium ${textClass}`}>{broker.name}</div>
+                            {broker.firmName && <div className={`text-xs ${textSecondaryClass}`}>{broker.firmName}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {(profileProperty.brokerIds || []).map(id => {
+                        const broker = brokers.find(b => b.id === id);
+                        if (!broker) return null;
+                        return (
+                          <span key={id} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
+                            {broker.name}
+                            <X
+                              size={14}
+                              className="cursor-pointer hover:text-blue-600"
+                              onClick={() => {
+                                const updatedProperty = { ...profileProperty, brokerIds: (profileProperty.brokerIds || []).filter(bid => bid !== id) };
+                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
+                                setProfileProperty(updatedProperty);
+                                showToast('Broker removed', 'success');
+                              }}
+                            />
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Partners */}
+                  <div className="mb-4">
+                    <label className={`block text-sm font-semibold ${textSecondaryClass} uppercase mb-2`}>Partners</label>
+                    <div className="relative">
+                      <Search className={`absolute left-3 top-2.5 ${textSecondaryClass}`} size={18} />
+                      <input
+                        type="text"
+                        placeholder="Search partners..."
+                        value={propertyPartnerSearch}
+                        onChange={(e) => setPropertyPartnerSearch(e.target.value)}
+                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      />
+                    </div>
+                    {propertyPartnerSearch && (
+                      <div className={`mt-2 max-h-48 overflow-y-auto border ${borderClass} rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                        {partners.filter(p => p.name.toLowerCase().includes(propertyPartnerSearch.toLowerCase()) || (p.type && p.type.toLowerCase().includes(propertyPartnerSearch.toLowerCase()))).map(partner => (
+                          <div
+                            key={partner.id}
+                            onClick={() => {
+                              const currentIds = profileProperty.partnerIds || [];
+                              if (!currentIds.includes(partner.id)) {
+                                const updatedProperty = { ...profileProperty, partnerIds: [...currentIds, partner.id] };
+                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
+                                setProfileProperty(updatedProperty);
+                                setPropertyPartnerSearch('');
+                                showToast('Partner added', 'success');
+                              }
+                            }}
+                            className={`p-3 border-b ${borderClass} cursor-pointer hover:bg-green-50 dark:hover:bg-green-900 transition`}
+                          >
+                            <div className={`text-sm font-medium ${textClass}`}>{partner.name}</div>
+                            {partner.type && <div className={`text-xs ${textSecondaryClass}`}>{partner.type}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {(profileProperty.partnerIds || []).map(id => {
+                        const partner = partners.find(p => p.id === id);
+                        if (!partner) return null;
+                        return (
+                          <span key={id} className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm">
+                            {partner.name}
+                            <X
+                              size={14}
+                              className="cursor-pointer hover:text-green-600"
+                              onClick={() => {
+                                const updatedProperty = { ...profileProperty, partnerIds: (profileProperty.partnerIds || []).filter(pid => pid !== id) };
+                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
+                                setProfileProperty(updatedProperty);
+                                showToast('Partner removed', 'success');
+                              }}
+                            />
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Gatekeepers */}
+                  <div>
+                    <label className={`block text-sm font-semibold ${textSecondaryClass} uppercase mb-2`}>Gatekeepers</label>
+                    <div className="relative">
+                      <Search className={`absolute left-3 top-2.5 ${textSecondaryClass}`} size={18} />
+                      <input
+                        type="text"
+                        placeholder="Search gatekeepers..."
+                        value={propertyGatekeeperSearch}
+                        onChange={(e) => setPropertyGatekeeperSearch(e.target.value)}
+                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                      />
+                    </div>
+                    {propertyGatekeeperSearch && (
+                      <div className={`mt-2 max-h-48 overflow-y-auto border ${borderClass} rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                        {gatekeepers.filter(g => g.name.toLowerCase().includes(propertyGatekeeperSearch.toLowerCase()) || (g.company && g.company.toLowerCase().includes(propertyGatekeeperSearch.toLowerCase()))).map(gatekeeper => (
+                          <div
+                            key={gatekeeper.id}
+                            onClick={() => {
+                              const currentIds = profileProperty.gatekeeperIds || [];
+                              if (!currentIds.includes(gatekeeper.id)) {
+                                const updatedProperty = { ...profileProperty, gatekeeperIds: [...currentIds, gatekeeper.id] };
+                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
+                                setProfileProperty(updatedProperty);
+                                setPropertyGatekeeperSearch('');
+                                showToast('Gatekeeper added', 'success');
+                              }
+                            }}
+                            className={`p-3 border-b ${borderClass} cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900 transition`}
+                          >
+                            <div className={`text-sm font-medium ${textClass}`}>{gatekeeper.name}</div>
+                            {gatekeeper.company && <div className={`text-xs ${textSecondaryClass}`}>{gatekeeper.company}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {(profileProperty.gatekeeperIds || []).map(id => {
+                        const gatekeeper = gatekeepers.find(g => g.id === id);
+                        if (!gatekeeper) return null;
+                        return (
+                          <span key={id} className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-sm">
+                            {gatekeeper.name}
+                            <X
+                              size={14}
+                              className="cursor-pointer hover:text-purple-600"
+                              onClick={() => {
+                                const updatedProperty = { ...profileProperty, gatekeeperIds: (profileProperty.gatekeeperIds || []).filter(gid => gid !== id) };
+                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
+                                setProfileProperty(updatedProperty);
+                                showToast('Gatekeeper removed', 'success');
+                              }}
+                            />
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
