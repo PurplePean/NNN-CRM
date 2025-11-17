@@ -1,522 +1,397 @@
-# AI Assistant Context - NNN CRM
+# AI Assistant Context - NNN CRM (Production)
 
 **This document helps AI assistants (Claude Code, etc.) understand this repository and work effectively.**
+
+**Last Updated:** November 2025 - Production CI/CD Setup
 
 ---
 
 ## 🎯 Repository Overview
 
-**Name:** NNN-CRM
-**Type:** React-based Industrial Real Estate CRM
-**Version:** 1.0
+**Name:** NNN-CRM (Axispoint Industrial Real Estate CRM)
+**Type:** React-based Industrial Property Underwriting Platform
+**Version:** 1.0 (Production)
 **Primary Language:** JavaScript (React 18)
-**Tech Stack:** React, Tailwind CSS (CDN), localStorage, Create React App
+**Tech Stack:** React 18, Tailwind CSS, Supabase (PostgreSQL), Namecheap Hosting
 **Owner:** PurplePean
-**Main Branch:** (check with `git branch -r`)
+**Production URL:** crm.axispoint.llc (in deployment)
+**Staging URL:** staging.axispoint.llc (in deployment)
 
 ---
 
 ## 📋 Current State
 
-### Architecture Status
-- **Monolithic:** Single 3,285-line App.jsx component
-- **No components extracted yet**
-- **No TypeScript**
-- **No tests**
-- **No backend** (localStorage only)
+### Architecture
+- **Frontend:** React 18 with Create React App
+- **Backend:** Supabase (PostgreSQL) - in migration from localStorage
+- **Deployment:** Namecheap Stellar Hosting with GitHub Actions CI/CD
+- **Main Component:** App.jsx (~3,000+ lines - monolithic, refactoring planned)
 
-See [ROADMAP.md](./ROADMAP.md) for refactoring plan (Iterations 3-10).
+### Infrastructure Status
+- ✅ React frontend complete with full CRM features
+- ✅ Dark mode, responsive design
+- 🚧 Supabase backend integration (in progress)
+- 🚧 GitHub Actions CI/CD (in setup)
+- 📋 Component decomposition (planned - see docs/archive/ROADMAP.md)
 
-### Recent Changes
-- Development workflow documentation established
-- Feature branch workflow implemented
-- LOCAL-SETUP.md created for laptop development
+### Data Model
+**Entities:**
+- Properties (industrial real estate)
+- Brokers, Partners, Gatekeepers (contacts)
+- Events, Follow-ups
+- Notes (attached to contacts)
 
----
-
-## 🔄 Development Workflow (CRITICAL)
-
-### **IMPORTANT: Dual Environment Setup**
-
-⚠️ **AI works in:** `/home/user/NNN-CRM` (server/remote environment)
-⚠️ **User works in:** `/Users/zruss/Web Apps/NNN-CRM` (local Mac)
-
-**This means:** After AI pushes changes, USER must pull them to see in dev server!
-
-### **Core Rule: Feature Branch Workflow**
-
-```
-USER requests feature
-  ↓
-AI creates: claude/feature-name-<session-id>
-  ↓
-AI develops on branch, commits, pushes to GitHub
-  ↓
-**CRITICAL STEP:** USER pulls changes to their Mac
-  │  $ git checkout claude/feature-name-<session-id>
-  │  $ git pull origin claude/feature-name-<session-id>
-  ↓
-USER's dev server auto-reloads (2-3 seconds)
-  ↓
-USER tests the feature in browser
-  ↓
-Iterate: USER requests changes → AI updates same branch → USER pulls again
-  ↓
-USER approves: "Create a PR" or "merge it"
-  ↓
-AI creates PR (or USER does manually)
-  ↓
-USER reviews and merges to main (USER CONTROLS THIS)
-  ↓
-USER pulls main to their Mac
-  │  $ git checkout main
-  │  $ git pull origin main
-  ↓
-Dev server shows production code
-```
-
-### **Critical Constraints:**
-1. ✅ **ALWAYS work on feature branches** named `claude/*`
-2. ✅ **NEVER push directly to main** without user approval
-3. ✅ **NEVER merge to main** without explicit user permission
-4. ✅ **ALWAYS remind user to pull** after pushing changes
-5. ✅ User controls production (main branch)
-6. ✅ Create PR when user says "Create a PR" or "Looks good, merge it"
-
-### **After Pushing Changes - AI Must Say:**
-
-"✅ Changes pushed to GitHub! **On your Mac, run:**
-```bash
-git checkout claude/feature-name-<session-id>
-git pull origin claude/feature-name-<session-id>
-```
-Your dev server should auto-reload in 2-3 seconds!"
+**Features:**
+- Advanced underwriting (LTV, DSCR, Cap Rate, IRR, Equity Multiple)
+- Sensitivity analysis
+- Activity tracking
+- Contact management
 
 ---
 
-## 📂 File Structure
+## 🔄 Production Workflow (CI/CD)
+
+### **Branch Strategy**
 
 ```
-/home/user/NNN-CRM/
-├── src/
-│   ├── App.jsx           # 3,285 lines - MONOLITHIC (needs refactoring)
-│   ├── index.js          # React entry point
-│   └── index.css         # Tailwind directives
-├── public/
-│   └── index.html        # HTML template
+main                    → Production (crm.axispoint.llc)
+  └─ develop           → Staging (staging.axispoint.llc)
+      └─ feature/*     → Feature development
+      └─ claude/*      → AI-assisted features
+```
+
+### **Development Flow**
+
+1. **Create Feature Branch**
+   ```bash
+   git checkout develop
+   git checkout -b claude/feature-name
+   ```
+
+2. **Develop and Commit**
+   ```bash
+   # Make changes
+   git add .
+   git commit -m "Clear description of changes"
+   git push origin claude/feature-name
+   ```
+
+3. **Merge to Develop (Staging)**
+   ```bash
+   git checkout develop
+   git merge claude/feature-name
+   git push origin develop
+   # → Auto-deploys to staging.axispoint.llc via GitHub Actions
+   ```
+
+4. **Test on Staging**
+   - User tests at staging.axispoint.llc
+   - Verify all features work
+
+5. **Merge to Main (Production)**
+   ```bash
+   git checkout main
+   git merge develop
+   git push origin main
+   # → Auto-deploys to crm.axispoint.llc via GitHub Actions
+   # → Creates release tag
+   ```
+
+---
+
+## 🚨 Critical Rules for AI Assistants
+
+### **1. Branch Management**
+- ✅ **ALWAYS** work in feature branches (`claude/*` or `feature/*`)
+- ❌ **NEVER** push directly to `main`
+- ✅ Merge to `develop` first for staging testing
+- ✅ Only merge to `main` after user approval
+
+### **2. Deployment**
+- ✅ Deployments are **automatic** via GitHub Actions
+- ✅ Push to `develop` = auto-deploy to staging
+- ✅ Push to `main` = auto-deploy to production
+- ❌ **NEVER** manually upload to cPanel (CI/CD handles it)
+
+### **3. Environment Variables**
+- ✅ Use GitHub Secrets for sensitive data
+- ✅ Never commit `.env` files
+- ✅ Update `.env.example` when adding new vars
+
+### **4. Testing Before Production**
+- ✅ Always deploy to staging first
+- ✅ Wait for user testing confirmation
+- ✅ Only then merge to production
+
+### **5. Commit Messages**
+Use clear, descriptive commit messages:
+```
+✅ Good: "Add broker filtering to contact list"
+✅ Good: "Fix DSCR calculation for interest-only loans"
+❌ Bad: "Update files"
+❌ Bad: "Changes"
+```
+
+---
+
+## 📁 Repository Structure
+
+```
+NNN-CRM/
+├── README.md                        # Production-focused overview
+├── DEPLOYMENT-BACKEND-PLAN.md       # Deployment architecture guide
+├── package.json                     # Dependencies
+├── tailwind.config.js               # Tailwind configuration
+│
+├── .github/
+│   └── workflows/
+│       ├── deploy-production.yml    # CI/CD for main branch
+│       └── deploy-staging.yml       # CI/CD for develop branch
+│
 ├── .claude/
-│   └── AI-CONTEXT.md     # This file (AI assistant guide)
-├── LOCAL-SETUP.md        # Laptop setup for user
-├── SIMPLE-WORKFLOW.md    # User-facing workflow guide
-├── ROADMAP.md           # Feature roadmap and iterations
-├── README.md            # Project overview
-├── package.json         # Dependencies
-└── .gitignore
+│   ├── AI-CONTEXT.md                # This file
+│   └── QUICK-START.md               # Quick reference
+│
+├── docs/
+│   └── archive/                     # Historical documentation
+│       ├── ROADMAP.md               # Original feature roadmap
+│       └── UI-COMPONENTS-GUIDE.md   # Component documentation
+│
+├── src/
+│   ├── App.jsx                      # Main application (monolithic)
+│   ├── index.js                     # Entry point
+│   ├── index.css                    # Global styles
+│   └── services/                    # API service layer (being built)
+│       ├── supabase.js              # Supabase client
+│       ├── properties.js            # Property CRUD
+│       └── contacts.js              # Contact CRUD
+│
+└── public/                          # Static assets
 ```
 
 ---
 
-## 🤖 AI Assistant Instructions
+## 🛠️ Common Tasks
 
-### When Starting a New Session
+### **Add New Feature**
 
-1. **Read this file first** to understand context
-2. **Check current branch:** `git branch`
-3. **Check git status:** `git status`
-4. **Read ROADMAP.md** to understand priorities
-5. **Never assume** - ask user for clarification if unclear
+1. Create feature branch from `develop`
+2. Implement feature in `src/App.jsx` (or new component if refactoring)
+3. Test locally with `npm start`
+4. Commit with clear message
+5. Push to GitHub
+6. Merge to `develop` for staging
+7. User tests on staging.axispoint.llc
+8. Merge to `main` for production
 
-### When User Requests a Feature
+### **Fix Bug**
 
-```javascript
-// Step 1: Create feature branch
-const branchName = `claude/${featureName}`
-git checkout -b ${branchName}
+1. Create bugfix branch from `develop`
+2. Identify issue location (usually in App.jsx)
+3. Fix and test locally
+4. Follow same merge process (develop → staging → main)
 
-// Step 2: Plan the work
-// - Create todo list with TodoWrite tool
-// - Outline what you'll build
-// - Get user confirmation if unclear
+### **Update Dependencies**
 
-// Step 3: Develop
-// - Make changes
-// - Commit frequently with clear messages
-// - Push to GitHub
-
-// Step 4: Inform user
-// Tell user:
-// - Branch name
-// - What was built
-// - How to test: git checkout ${branchName}
-// - Ask for feedback
-
-// Step 5: Iterate or finalize
-// - If changes needed: update same branch
-// - If approved: create PR or merge (with permission)
+```bash
+npm update              # Update minor versions
+npm outdated            # Check for major updates
+# Test thoroughly before deploying!
 ```
 
-### Code Quality Standards
+### **Database Changes (Supabase)**
 
-**DO:**
-- ✅ Add error handling (try-catch for localStorage, etc.)
-- ✅ Validate inputs (no negative numbers, etc.)
-- ✅ Write clear commit messages
-- ✅ Use descriptive variable names
-- ✅ Follow existing code style
-- ✅ Test calculations thoroughly
-
-**DON'T:**
-- ❌ Push to main without approval
-- ❌ Use `alert()` or `confirm()` (use modals instead)
-- ❌ Add dependencies without asking
-- ❌ Break existing functionality
-- ❌ Skip error handling
+1. Make schema changes in Supabase dashboard (SQL Editor)
+2. Update service layer in `src/services/`
+3. Test with local Supabase connection
+4. Update environment variables if needed
+5. Deploy through normal flow
 
 ---
 
-## 📖 Key Documents
+## 🔐 Environment Variables
 
-### For AI Assistants (Read First)
-1. **AI-CONTEXT.md** (this file) - AI instructions
-2. **ROADMAP.md** - What to build next, priorities
+### **Local Development** (`.env.local`)
+```bash
+REACT_APP_SUPABASE_URL=https://xxx.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=eyJxxx...
+REACT_APP_ENV=development
+```
 
-### For Users
-1. **LOCAL-SETUP.md** - How to clone and set up laptop
-2. **SIMPLE-WORKFLOW.md** - How to work with Claude
-3. **README.md** - Project overview
+### **Staging** (GitHub Secrets)
+```bash
+SUPABASE_URL=https://staging-xxx.supabase.co
+SUPABASE_ANON_KEY=eyJxxx...
+FTP_SERVER=ftp.axispoint.llc
+FTP_USERNAME=staging@axispoint.llc
+FTP_PASSWORD=***
+```
+
+### **Production** (GitHub Secrets)
+```bash
+SUPABASE_URL=https://prod-xxx.supabase.co
+SUPABASE_ANON_KEY=eyJxxx...
+FTP_SERVER=ftp.axispoint.llc
+FTP_USERNAME=crm@axispoint.llc
+FTP_PASSWORD=***
+```
 
 ---
 
-## 🎯 Common Tasks
+## 📊 Key Features to Understand
 
-### "Help me set up the workflow" / "How do I get started?"
+### **Financial Calculations**
+Located in `App.jsx` (will be extracted to utils):
+- **LTV Calculation:** Loan amount based on purchase price and LTV percentage
+- **DSCR:** Debt Service Coverage Ratio (NOI / Annual Debt Service)
+- **Cap Rate:** NOI / Purchase Price
+- **Cash-on-Cash:** Annual Cash Flow / Equity Invested
+- **IRR:** Internal Rate of Return (5-year projection)
+- **Equity Multiple:** Total Returns / Equity Invested
 
-**Response:**
+### **Contact Management**
+- **Brokers:** Real estate brokers with firm details
+- **Partners:** Investment partners
+- **Gatekeepers:** Property contacts (managers, owners)
+- **Notes:** Categorized notes per contact (meeting, phone, email)
+- **Activity Feed:** Unified view of all contact interactions
 
-"I'll help you set up the development workflow. First, let's find your repository:
-
-```bash
-# On Mac/Linux
-find ~ -name "NNN-CRM" -type d 2>/dev/null
-
-# On Windows (PowerShell)
-Get-ChildItem -Path $HOME -Filter "NNN-CRM" -Recurse -Directory -ErrorAction SilentlyContinue
-```
-
-Once you have the path, run:
-
-```bash
-cd "/path/to/NNN-CRM"  # Your path from above
-npm install            # Install dependencies
-npm start              # Start live environment
-```
-
-Browser opens to `localhost:3000` - you're ready!
-
-See [GETTING-STARTED.md](../GETTING-STARTED.md) for detailed instructions."
+### **Property Features**
+- Crexi integration (link to listings)
+- Multi-broker assignment
+- Sensitivity analysis (row/col variable matrix)
+- Debt service modeling (standard vs interest-only)
 
 ---
 
-### "I want to add [feature]"
+## 🚀 Deployment Process
 
+### **Automated via GitHub Actions**
+
+**On Push to `develop`:**
+1. GitHub Actions triggers
+2. Runs tests (if configured)
+3. Builds React app (`npm run build`)
+4. Deploys to `/public_html/staging/` on Namecheap via FTP
+5. Available at staging.axispoint.llc
+
+**On Push to `main`:**
+1. GitHub Actions triggers
+2. Runs tests (if configured)
+3. Builds React app with production env vars
+4. Deploys to `/public_html/crm/` on Namecheap via FTP
+5. Available at crm.axispoint.llc
+6. Creates GitHub release tag
+
+### **Rollback**
+
+If deployment breaks production:
 ```bash
-# 1. Create branch
-git checkout -b claude/add-${feature-name}
-
-# 2. Use TodoWrite to plan
-TodoWrite: [
-  "Analyze requirements",
-  "Design implementation",
-  "Write code",
-  "Test functionality",
-  "Commit and push"
-]
-
-# 3. Implement
-
-# 4. Commit
-git add -A
-git commit -m "Add ${feature}: ${description}"
-
-# 5. Push
-git push -u origin claude/add-${feature-name}
-
-# 6. Tell user
-"✅ Feature complete!
-Branch: claude/add-${feature-name}
-To test: git checkout claude/add-${feature-name}
-Changes: [list what was built]"
-```
-
-### "What should I work on next?"
-
-```bash
-# 1. Read ROADMAP.md
-# 2. Recommend based on priorities:
-#    - Priority 1: Critical refactoring (Iterations 3-6)
-#    - Priority 2: Quality improvements (Iterations 7-10)
-#    - Priority 3: New features (Feature Backlog)
-
-# 3. Explain why it's important
-```
-
-### "Create a PR"
-
-```bash
-# If gh CLI available:
-gh pr create --title "${title}" --body "${description}" --base main
-
-# If not available:
-# Tell user to create PR manually with provided:
-# - Title
-# - Description
-# - Link to create PR
-```
-
-### "Merge it to main"
-
-```bash
-# ONLY with explicit user approval!
-
-# Option 1: If on feature branch
-git checkout main || echo "Note: main branch might have different name"
-git merge ${feature-branch}
+# Option 1: Revert commit
+git revert HEAD
 git push origin main
 
-# Option 2: Via GitHub (preferred)
-# Tell user: "I'll merge via GitHub" then use gh CLI or instruct manual merge
+# Option 2: Redeploy previous release
+# Go to GitHub Actions → Select previous successful run → Re-run
 ```
 
 ---
 
-## 🚨 Critical Errors to Avoid
+## 🎨 Code Style
 
-1. **Pushing to main without approval**
-   - ALWAYS work on `claude/*` branches
-   - NEVER `git push origin main` unless user explicitly approves
+### **Current Style**
+- JavaScript (React 18 with hooks)
+- Functional components only
+- Tailwind CSS for styling
+- Dark mode via state management
+- localStorage for persistence (migrating to Supabase)
 
-2. **Breaking the app**
-   - Test before pushing
-   - Don't remove existing functionality without permission
-   - Add error handling
+### **Naming Conventions**
+- Components: PascalCase
+- Functions: camelCase
+- Constants: UPPER_SNAKE_CASE
+- Files: camelCase or kebab-case
 
-3. **Ignoring user control**
-   - User decides when to merge
-   - User decides what features to build
-   - Ask for clarification if requirements unclear
+### **Component Pattern**
+```javascript
+// State management with hooks
+const [data, setData] = useState([]);
 
-4. **Poor git hygiene**
-   - Don't leave branches half-finished
-   - Write clear commit messages
-   - Push regularly so user can test
+// Effect hooks for data loading
+useEffect(() => {
+  // Load from Supabase
+}, []);
 
----
-
-## 🔍 Understanding the Codebase
-
-### Main Features (src/App.jsx)
-- Property CRUD with underwriting calculations
-- Broker management
-- Partner/LP tracking
-- Gatekeeper contacts
-- Dark mode
-- Notes system
-- Photo upload (base64 to localStorage)
-- Sensitivity analysis
-
-### Financial Calculations
-- Cap Rate, DSCR, Cash-on-Cash returns
-- LTV-based financing
-- IRR (Newton-Raphson method)
-- Amortization schedules
-- Exit analysis
-
-### Data Storage
-- **localStorage** only (no backend yet)
-- Keys: `properties`, `brokers`, `partners`, `gatekeepers`, `darkMode`
-- JSON serialization
-- No validation on load (needs error handling)
-
-### Known Issues (See ROADMAP.md for full list)
-- Monolithic component (3,285 lines)
-- No error handling
-- Minimal input validation
-- No tests
-- No TypeScript
-- Performance issues (no memoization)
-
----
-
-## 📊 Project Priorities
-
-### High Priority (Do First)
-1. Error handling and validation (Iteration 7)
-2. Component decomposition (Iterations 3-6)
-3. Business logic extraction (Iteration 4)
-
-### Medium Priority
-1. Custom hooks (Iteration 5)
-2. Performance optimization (Iteration 8)
-3. TypeScript migration (Iteration 9)
-
-### Low Priority
-1. Testing infrastructure (Iteration 10)
-2. Backend integration (Iteration 11)
-3. New features (Feature Backlog)
-
-See [ROADMAP.md](./ROADMAP.md) for details.
-
----
-
-## 💡 Tips for Effective Collaboration
-
-### Communicate Clearly
-- ✅ Explain what you're doing before you do it
-- ✅ Show progress with TodoWrite
-- ✅ Ask for clarification when requirements are vague
-- ✅ Provide clear testing instructions
-
-### Be Proactive
-- ✅ Suggest improvements from ROADMAP.md
-- ✅ Point out potential issues
-- ✅ Offer alternatives when appropriate
-
-### Respect User Control
-- ✅ User decides priorities
-- ✅ User approves merges
-- ✅ User controls production
-- ✅ Don't make major decisions without asking
-
----
-
-## 🔄 Continuity Between Sessions
-
-### What to Check
-```bash
-# 1. Current branch and status
-git branch
-git status
-
-# 2. Recent activity
-git log --oneline -5
-
-# 3. Open branches
-git branch -a | grep claude/
-
-# 4. Any uncommitted work
-git diff
-```
-
-### What to Ask User
-- "Where did we leave off?"
-- "What would you like to work on?"
-- "Any branches ready to merge?"
-
----
-
-## 📚 Learning the Codebase
-
-### First-Time in Repo?
-1. Read this file (AI-CONTEXT.md)
-2. Skim README.md for project overview
-3. Read ROADMAP.md for context on what's planned
-4. Check git status and current branch
-5. Ask user what they want to work on
-
-### Understanding App.jsx
-- Lines 1-100: Imports and state declarations
-- Lines 100-500: Handler functions (CRUD operations)
-- Lines 500-1000: Calculation functions
-- Lines 1000-3285: JSX rendering (forms, cards, modals)
-
-**Note:** This needs refactoring (see ROADMAP.md Iterations 3-6)
-
----
-
-## 🎯 Success Metrics
-
-### You're Doing Well If:
-- ✅ User can test features locally with hot reload
-- ✅ All changes are on feature branches
-- ✅ User approves before merging to main
-- ✅ Code works as expected
-- ✅ No breaking changes
-- ✅ Clear communication throughout
-
-### Red Flags:
-- ❌ Pushing to main without approval
-- ❌ User can't test locally
-- ❌ Breaking existing features
-- ❌ Unclear what you're building
-- ❌ No response to user feedback
-
----
-
-## 🆘 Common Issues
-
-### "Can't push to branch"
-- Check branch name starts with `claude/`
-- Ensure you're not pushing to main
-
-### "User wants to test but can't"
-- Ensure you pushed to GitHub
-- Provide branch name
-- Give clear checkout instructions
-
-### "Merge conflict"
-- Pull latest from target branch
-- Resolve conflicts
-- Ask user for guidance if unclear
-
-### "Feature request is vague"
-- Ask clarifying questions
-- Propose implementation approach
-- Get user approval before proceeding
-
----
-
-## 🎓 Example Session
-
-```
-NEW CLAUDE SESSION STARTS
-
-1. Read AI-CONTEXT.md (this file)
-2. Check: git status
-3. See: On branch claude/some-feature
-
-User: "What were we working on?"
-
-You: [Check git log] "Looks like we were working on CSV export.
-     The branch claude/add-csv-export has 3 commits.
-     Would you like to continue with this, or start something new?"
-
-User: "Let's add the broker names to that export"
-
-You: [Switch to that branch if needed]
-     [Make changes]
-     [Commit and push]
-     "✅ Updated CSV export to include broker names.
-     To test: git pull origin claude/add-csv-export
-     Your browser will hot-reload in 2-3 seconds."
-
-User: "Perfect! Merge it to main"
-
-You: [Create PR or merge with user approval]
-     "✅ Merged to main! Feature is live."
+// Event handlers
+const handleSubmit = (e) => {
+  e.preventDefault();
+  // Handle form
+};
 ```
 
 ---
 
-## 📝 Version History
+## 📝 When Making Changes
 
-- **2025-01-15:** Initial AI-CONTEXT.md created
-- **Current Version:** 1.0
-- **Last Updated:** 2025-01-15
+### **Always Consider:**
+1. **Dark mode:** Does this work in both light and dark mode?
+2. **Responsive:** Does this work on mobile and desktop?
+3. **Data persistence:** Is this saving to Supabase properly?
+4. **Loading states:** Do we show a spinner while fetching?
+5. **Error handling:** What if the API call fails?
+6. **Existing patterns:** Follow the established code style
+
+### **Before Committing:**
+1. Test locally (`npm start`)
+2. Check for console errors
+3. Verify dark mode still works
+4. Test key user flows (add property, add broker, etc.)
+5. Write clear commit message
+
+### **Before Production:**
+1. Deploy to staging first
+2. Wait for user testing
+3. Get explicit approval
+4. Then merge to main
 
 ---
 
-**Remember: You're a collaborator, not a decision-maker. The user owns this project. Your job is to build what they ask for, suggest improvements, and maintain quality. Always work on feature branches, never touch main without approval, and communicate clearly.**
+## 🐛 Common Issues
+
+### **Build Fails**
+- Check environment variables are set
+- Run `npm install` to update dependencies
+- Check for syntax errors in code
+
+### **Deployment Fails**
+- Check GitHub Actions logs
+- Verify FTP credentials in GitHub Secrets
+- Check Namecheap server is accessible
+
+### **Supabase Connection Issues**
+- Verify `REACT_APP_SUPABASE_URL` is set
+- Check `REACT_APP_SUPABASE_ANON_KEY` is correct
+- Ensure Supabase project is not paused (free tier)
 
 ---
 
-*This document should be updated as the workflow or project evolves.*
+## 📚 Reference Documentation
+
+- **[DEPLOYMENT-BACKEND-PLAN.md](../DEPLOYMENT-BACKEND-PLAN.md)** - Full deployment architecture
+- **[docs/archive/ROADMAP.md](../docs/archive/ROADMAP.md)** - Original feature roadmap
+- **[README.md](../README.md)** - Production overview
+
+---
+
+## 💡 Future Improvements
+
+See `docs/archive/ROADMAP.md` for planned iterations:
+- Component decomposition (break up monolithic App.jsx)
+- TypeScript migration
+- Testing infrastructure
+- Performance optimization
+- Authentication and multi-user support
+
+---
+
+**Remember:** This is a production system for a real business. Always test on staging before production deployment!
