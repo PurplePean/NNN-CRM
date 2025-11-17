@@ -8076,6 +8076,390 @@ export default function IndustrialCRM() {
                   </div>
                 )}
 
+                {/* Sensitivity Analysis */}
+                {profileProperty.holdingPeriodMonths && (
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                    <button
+                      onClick={() => {
+                        if (sensitivityPropertyId === profileProperty.id) {
+                          setSensitivityPropertyId(null);
+                          setSensitivityTable(null);
+                        } else {
+                          setSensitivityPropertyId(profileProperty.id);
+                          setSensitivityTable(null);
+                          // Set default ranges based on current property values
+                          const currentRent = parseFloat(profileProperty.monthlyBaseRentPerSqft) || 1.0;
+                          const currentExitCap = parseFloat(profileProperty.exitCapRate) || 7.0;
+                          setSensitivityRowMin((currentRent * 0.7).toFixed(2));
+                          setSensitivityRowMax((currentRent * 1.3).toFixed(2));
+                          setSensitivityColMin((currentExitCap - 2).toFixed(2));
+                          setSensitivityColMax((currentExitCap + 2).toFixed(2));
+                        }
+                      }}
+                      className={`w-full px-4 py-2 rounded-lg font-semibold transition ${
+                        darkMode
+                          ? 'bg-purple-900 hover:bg-purple-800 text-purple-200'
+                          : 'bg-purple-100 hover:bg-purple-200 text-purple-900'
+                      }`}
+                    >
+                      {sensitivityPropertyId === profileProperty.id ? '− Hide' : '+ Show'} Sensitivity Analysis
+                    </button>
+
+                    {sensitivityPropertyId === profileProperty.id && (
+                      <div className={`mt-4 p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div className={`text-sm font-bold ${textSecondaryClass} uppercase mb-4`}>
+                          Sensitivity Analysis
+                        </div>
+
+                        {/* Output Metric Selection */}
+                        <div className="mb-4">
+                          <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>
+                            Output Metric
+                          </label>
+                          <select
+                            value={sensitivityOutputMetric}
+                            onChange={(e) => setSensitivityOutputMetric(e.target.value)}
+                            className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                          >
+                            <option value="irr">IRR (Internal Rate of Return) %</option>
+                            <option value="equityMultiple">Equity Multiple</option>
+                            <option value="dscr">DSCR (Debt Service Coverage Ratio)</option>
+                            <option value="cashOnCash">Cash-on-Cash Return %</option>
+                            <option value="capRate">Cap Rate %</option>
+                            <option value="annualCashFlow">Annual Cash Flow</option>
+                            <option value="netProceedsAtExit">Net Proceeds at Exit</option>
+                            <option value="noi">NOI (Net Operating Income)</option>
+                          </select>
+                        </div>
+
+                        {/* Variable Selection */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          {/* Row Variable */}
+                          <div>
+                            <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>
+                              Row Variable
+                            </label>
+                            <select
+                              value={sensitivityRowVar}
+                              onChange={(e) => setSensitivityRowVar(e.target.value)}
+                              className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                            >
+                              <option value="monthlyBaseRentPerSqft">Monthly Rent/SF</option>
+                              <option value="purchasePrice">Purchase Price</option>
+                              <option value="improvements">Improvements</option>
+                              <option value="closingCosts">Closing Costs</option>
+                              <option value="ltvPercent">LTV %</option>
+                              <option value="interestRate">Interest Rate</option>
+                              <option value="exitCapRate">Exit Cap Rate</option>
+                              <option value="holdingPeriodMonths">Holding Period</option>
+                            </select>
+
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              <div>
+                                <label className={`block text-xs ${textSecondaryClass} mb-1`}>Min</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={sensitivityRowMin}
+                                  onChange={(e) => setSensitivityRowMin(e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                />
+                              </div>
+                              <div>
+                                <label className={`block text-xs ${textSecondaryClass} mb-1`}>Max</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={sensitivityRowMax}
+                                  onChange={(e) => setSensitivityRowMax(e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Column Variable */}
+                          <div>
+                            <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>
+                              Column Variable
+                            </label>
+                            <select
+                              value={sensitivityColVar}
+                              onChange={(e) => setSensitivityColVar(e.target.value)}
+                              className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                            >
+                              <option value="monthlyBaseRentPerSqft">Monthly Rent/SF</option>
+                              <option value="purchasePrice">Purchase Price</option>
+                              <option value="improvements">Improvements</option>
+                              <option value="closingCosts">Closing Costs</option>
+                              <option value="ltvPercent">LTV %</option>
+                              <option value="interestRate">Interest Rate</option>
+                              <option value="exitCapRate">Exit Cap Rate</option>
+                              <option value="holdingPeriodMonths">Holding Period</option>
+                            </select>
+
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              <div>
+                                <label className={`block text-xs ${textSecondaryClass} mb-1`}>Min</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={sensitivityColMin}
+                                  onChange={(e) => setSensitivityColMin(e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                />
+                              </div>
+                              <div>
+                                <label className={`block text-xs ${textSecondaryClass} mb-1`}>Max</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={sensitivityColMax}
+                                  onChange={(e) => setSensitivityColMax(e.target.value)}
+                                  className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Generate Button */}
+                        <button
+                          onClick={() => {
+                            const table = generateSensitivityTable(
+                              profileProperty,
+                              sensitivityRowVar,
+                              sensitivityColVar,
+                              sensitivityRowMin,
+                              sensitivityRowMax,
+                              sensitivityColMin,
+                              sensitivityColMax
+                            );
+                            setSensitivityTable(table);
+                          }}
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition mb-4"
+                        >
+                          Generate Sensitivity Table
+                        </button>
+
+                        {/* Sensitivity Table Display */}
+                        {sensitivityTable && (() => {
+                          // Metric metadata
+                          const metricMeta = {
+                            irr: { label: 'IRR %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 18, fair: 13 },
+                            equityMultiple: { label: 'Equity Multiple', format: (v) => v > 0 ? `${v.toFixed(2)}x` : 'N/A', good: 2.0, fair: 1.5 },
+                            dscr: { label: 'DSCR', format: (v) => v > 0 ? v.toFixed(2) : 'N/A', good: 1.25, fair: 1.0 },
+                            cashOnCash: { label: 'Cash-on-Cash %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 8, fair: 5 },
+                            capRate: { label: 'Cap Rate %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 7, fair: 5 },
+                            annualCashFlow: { label: 'Annual Cash Flow', format: (v) => formatCurrency(v), good: 50000, fair: 25000 },
+                            netProceedsAtExit: { label: 'Net Proceeds at Exit', format: (v) => formatCurrency(v), good: 500000, fair: 250000 },
+                            noi: { label: 'NOI', format: (v) => formatCurrency(v), good: 100000, fair: 50000 }
+                          };
+
+                          const selectedMetric = metricMeta[sensitivityOutputMetric];
+
+                          return (
+                            <div className="overflow-x-auto">
+                              <div className={`text-xs ${textSecondaryClass} mb-2 text-center`}>
+                                {sensitivityTable.rowLabel} (rows) vs {sensitivityTable.colLabel} (columns) → {selectedMetric.label}
+                              </div>
+                              <table className="w-full text-xs border-collapse">
+                                <thead>
+                                  <tr>
+                                    <th className={`border ${borderClass} p-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                      ↓ / →
+                                    </th>
+                                    {sensitivityTable.colValues.map((colVal, i) => (
+                                      <th key={i} className={`border ${borderClass} p-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                        {sensitivityTable.colFormat(colVal)}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {sensitivityTable.tableData.map((row, rowIdx) => (
+                                    <tr key={rowIdx}>
+                                      <td className={`border ${borderClass} p-2 font-semibold ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                        {sensitivityTable.rowFormat(sensitivityTable.rowValues[rowIdx])}
+                                      </td>
+                                      {row.map((cell, colIdx) => {
+                                        // Get metric value
+                                        const value = cell[sensitivityOutputMetric];
+
+                                        // Color coding based on metric thresholds
+                                        let bgColor = '';
+                                        if (value >= selectedMetric.good) {
+                                          bgColor = darkMode ? 'bg-green-900' : 'bg-green-100';
+                                        } else if (value >= selectedMetric.fair) {
+                                          bgColor = darkMode ? 'bg-yellow-900' : 'bg-yellow-100';
+                                        } else {
+                                          bgColor = darkMode ? 'bg-red-900' : 'bg-red-100';
+                                        }
+
+                                        return (
+                                          <td key={colIdx} className={`border ${borderClass} p-2 text-center font-semibold ${bgColor} ${textClass}`}>
+                                            {selectedMetric.format(value)}
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              <div className={`text-xs ${textSecondaryClass} mt-2 text-center`}>
+                                Color Guide: Green ≥{selectedMetric.format(selectedMetric.good)} | Yellow {selectedMetric.format(selectedMetric.fair)}-{selectedMetric.format(selectedMetric.good)} | Red &lt;{selectedMetric.format(selectedMetric.fair)}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Contact Tagging */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                  <h2 className={`text-xl font-bold ${textClass} mb-4`}>Associated Contacts</h2>
+
+                  {/* Brokers Section */}
+                  <div className="mb-6">
+                    <h3 className={`text-sm font-bold ${textSecondaryClass} uppercase mb-3`}>Brokers</h3>
+                    {brokers.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {brokers.map(broker => (
+                          <label
+                            key={broker.id}
+                            className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition ${
+                              (profileProperty.brokerIds || []).includes(broker.id)
+                                ? 'bg-blue-100 border-blue-500'
+                                : `${inputBorderClass} ${inputBgClass} hover:border-blue-400`
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(profileProperty.brokerIds || []).includes(broker.id)}
+                              onChange={() => {
+                                const currentBrokerIds = profileProperty.brokerIds || [];
+                                const newBrokerIds = currentBrokerIds.includes(broker.id)
+                                  ? currentBrokerIds.filter(id => id !== broker.id)
+                                  : [...currentBrokerIds, broker.id];
+
+                                const updatedProperty = { ...profileProperty, brokerIds: newBrokerIds };
+                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
+                                setProfileProperty(updatedProperty);
+                                showToast(currentBrokerIds.includes(broker.id) ? 'Broker removed' : 'Broker added', 'success');
+                              }}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                            <div className="flex-1">
+                              <div className={`text-sm font-medium ${textClass}`}>{broker.name}</div>
+                              {broker.firmName && (
+                                <div className={`text-xs ${textSecondaryClass}`}>{broker.firmName}</div>
+                              )}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className={`text-sm ${textSecondaryClass} italic`}>
+                        No brokers available. Go to Brokers tab to add one.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Partners Section */}
+                  <div className="mb-6">
+                    <h3 className={`text-sm font-bold ${textSecondaryClass} uppercase mb-3`}>Partners</h3>
+                    {partners.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {partners.map(partner => (
+                          <label
+                            key={partner.id}
+                            className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition ${
+                              (profileProperty.partnerIds || []).includes(partner.id)
+                                ? 'bg-green-100 border-green-500'
+                                : `${inputBorderClass} ${inputBgClass} hover:border-green-400`
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(profileProperty.partnerIds || []).includes(partner.id)}
+                              onChange={() => {
+                                const currentPartnerIds = profileProperty.partnerIds || [];
+                                const newPartnerIds = currentPartnerIds.includes(partner.id)
+                                  ? currentPartnerIds.filter(id => id !== partner.id)
+                                  : [...currentPartnerIds, partner.id];
+
+                                const updatedProperty = { ...profileProperty, partnerIds: newPartnerIds };
+                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
+                                setProfileProperty(updatedProperty);
+                                showToast(currentPartnerIds.includes(partner.id) ? 'Partner removed' : 'Partner added', 'success');
+                              }}
+                              className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                            />
+                            <div className="flex-1">
+                              <div className={`text-sm font-medium ${textClass}`}>{partner.name}</div>
+                              {partner.type && (
+                                <div className={`text-xs ${textSecondaryClass}`}>{partner.type}</div>
+                              )}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className={`text-sm ${textSecondaryClass} italic`}>
+                        No partners available. Go to Partners tab to add one.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Gatekeepers Section */}
+                  <div>
+                    <h3 className={`text-sm font-bold ${textSecondaryClass} uppercase mb-3`}>Gatekeepers</h3>
+                    {gatekeepers.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {gatekeepers.map(gatekeeper => (
+                          <label
+                            key={gatekeeper.id}
+                            className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition ${
+                              (profileProperty.gatekeeperIds || []).includes(gatekeeper.id)
+                                ? 'bg-purple-100 border-purple-500'
+                                : `${inputBorderClass} ${inputBgClass} hover:border-purple-400`
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(profileProperty.gatekeeperIds || []).includes(gatekeeper.id)}
+                              onChange={() => {
+                                const currentGatekeeperIds = profileProperty.gatekeeperIds || [];
+                                const newGatekeeperIds = currentGatekeeperIds.includes(gatekeeper.id)
+                                  ? currentGatekeeperIds.filter(id => id !== gatekeeper.id)
+                                  : [...currentGatekeeperIds, gatekeeper.id];
+
+                                const updatedProperty = { ...profileProperty, gatekeeperIds: newGatekeeperIds };
+                                setProperties(properties.map(p => p.id === profileProperty.id ? updatedProperty : p));
+                                setProfileProperty(updatedProperty);
+                                showToast(currentGatekeeperIds.includes(gatekeeper.id) ? 'Gatekeeper removed' : 'Gatekeeper added', 'success');
+                              }}
+                              className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                            />
+                            <div className="flex-1">
+                              <div className={`text-sm font-medium ${textClass}`}>{gatekeeper.name}</div>
+                              {gatekeeper.company && (
+                                <div className={`text-xs ${textSecondaryClass}`}>{gatekeeper.company}</div>
+                              )}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className={`text-sm ${textSecondaryClass} italic`}>
+                        No gatekeepers available. Go to Gatekeepers tab to add one.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 {/* Notes & Activity */}
                 <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
                   <div className={`text-xl font-bold ${textClass} mb-4 flex items-center justify-between`}>
