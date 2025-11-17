@@ -6691,7 +6691,23 @@ export default function IndustrialCRM() {
 
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {(() => {
-                      const contactEvents = events.filter(e => e.title?.includes(profileContact.displayName) || e.location?.includes(profileContact.displayName) || e.description?.includes(profileContact.displayName)).sort((a, b) => new Date(a.date) - new Date(b.date));
+                      const contactEvents = events.filter(e => {
+                        // Check if contact name appears in event text
+                        const nameMatch = e.title?.includes(profileContact.displayName) ||
+                                         e.location?.includes(profileContact.displayName) ||
+                                         e.description?.includes(profileContact.displayName);
+
+                        // Check if contact is tagged in the event
+                        const tagMatch = profileContact.contactType === 'broker'
+                          ? e.taggedContacts?.brokers?.includes(profileContact.id)
+                          : profileContact.contactType === 'partner'
+                          ? e.taggedContacts?.partners?.includes(profileContact.id)
+                          : profileContact.contactType === 'gatekeeper'
+                          ? e.taggedContacts?.gatekeepers?.includes(profileContact.id)
+                          : false;
+
+                        return nameMatch || tagMatch;
+                      }).sort((a, b) => new Date(a.date) - new Date(b.date));
                       if (contactEvents.length === 0) {
                         return (
                           <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} rounded-lg p-8 text-center`}>
