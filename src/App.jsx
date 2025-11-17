@@ -12,6 +12,7 @@ export default function IndustrialCRM() {
   const [events, setEvents] = useState([]);
   const [followUps, setFollowUps] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [dashboardView, setDashboardView] = useState('communication'); // communication, today, weekly, analytics
   const [searchTerm, setSearchTerm] = useState('');
   const [contactFilter, setContactFilter] = useState('all'); // all, brokers, gatekeepers, partners
   const [contactSort, setContactSort] = useState('name'); // name, recent
@@ -119,6 +120,7 @@ export default function IndustrialCRM() {
     const savedEvents = localStorage.getItem('events');
     const savedFollowUps = localStorage.getItem('followUps');
     const savedDarkMode = localStorage.getItem('darkMode');
+    const savedDashboardView = localStorage.getItem('dashboardView');
     if (savedProperties) setProperties(JSON.parse(savedProperties));
     if (savedBrokers) setBrokers(JSON.parse(savedBrokers));
     if (savedPartners) setPartners(JSON.parse(savedPartners));
@@ -126,6 +128,7 @@ export default function IndustrialCRM() {
     if (savedEvents) setEvents(JSON.parse(savedEvents));
     if (savedFollowUps) setFollowUps(JSON.parse(savedFollowUps));
     if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
+    if (savedDashboardView) setDashboardView(savedDashboardView);
   }, []);
 
   // Save to localStorage
@@ -156,6 +159,10 @@ export default function IndustrialCRM() {
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('dashboardView', dashboardView);
+  }, [dashboardView]);
 
   // Number formatting utilities
   const formatCurrency = (num) => {
@@ -1704,8 +1711,374 @@ export default function IndustrialCRM() {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="space-y-4">
-            {/* Quick Actions Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {/* Dashboard View Selector */}
+            <div className={`${cardBgClass} rounded-lg shadow-sm border ${borderClass} p-1 flex gap-1`}>
+              <button
+                onClick={() => setDashboardView('communication')}
+                className={`flex-1 px-4 py-2.5 rounded-md font-medium transition text-sm ${
+                  dashboardView === 'communication'
+                    ? 'bg-blue-600 text-white shadow'
+                    : `${textSecondaryClass} hover:bg-slate-100 ${darkMode ? 'hover:bg-slate-700' : ''}`
+                }`}
+              >
+                🗣️ Communication
+              </button>
+              <button
+                onClick={() => setDashboardView('today')}
+                className={`flex-1 px-4 py-2.5 rounded-md font-medium transition text-sm ${
+                  dashboardView === 'today'
+                    ? 'bg-blue-600 text-white shadow'
+                    : `${textSecondaryClass} hover:bg-slate-100 ${darkMode ? 'hover:bg-slate-700' : ''}`
+                }`}
+              >
+                ⚡ Today
+              </button>
+              <button
+                onClick={() => setDashboardView('weekly')}
+                className={`flex-1 px-4 py-2.5 rounded-md font-medium transition text-sm ${
+                  dashboardView === 'weekly'
+                    ? 'bg-blue-600 text-white shadow'
+                    : `${textSecondaryClass} hover:bg-slate-100 ${darkMode ? 'hover:bg-slate-700' : ''}`
+                }`}
+              >
+                📅 Weekly
+              </button>
+              <button
+                onClick={() => setDashboardView('analytics')}
+                className={`flex-1 px-4 py-2.5 rounded-md font-medium transition text-sm ${
+                  dashboardView === 'analytics'
+                    ? 'bg-blue-600 text-white shadow'
+                    : `${textSecondaryClass} hover:bg-slate-100 ${darkMode ? 'hover:bg-slate-700' : ''}`
+                }`}
+              >
+                📊 Analytics
+              </button>
+            </div>
+
+            {/* Communication View */}
+            {dashboardView === 'communication' && (
+              <>
+                {/* Relationship Status Board */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Hot Relationships */}
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border-l-4 border-red-500 ${borderClass}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">🔥</span>
+                      <h3 className={`text-lg font-bold ${textClass}`}>Hot</h3>
+                    </div>
+                    <div className={`text-2xl font-bold ${textClass} mb-2`}>
+                      {(() => {
+                        const recentContacts = [...brokers, ...partners, ...gatekeepers]
+                          .filter(contact => {
+                            const recentFollowUps = followUps.filter(f =>
+                              f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}` &&
+                              new Date(f.createdAt || f.dueDate) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                            );
+                            const recentEvents = events.filter(e => {
+                              const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
+                              return e.taggedContacts?.[type]?.includes(contact.id) &&
+                                new Date(e.date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                            });
+                            return (recentFollowUps.length + recentEvents.length) >= 2;
+                          });
+                        return recentContacts.length;
+                      })()}
+                    </div>
+                    <p className={`text-xs ${textSecondaryClass}`}>Active in last 7 days</p>
+                  </div>
+
+                  {/* Warming Relationships */}
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border-l-4 border-yellow-500 ${borderClass}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">🌡️</span>
+                      <h3 className={`text-lg font-bold ${textClass}`}>Warming</h3>
+                    </div>
+                    <div className={`text-2xl font-bold ${textClass} mb-2`}>
+                      {(() => {
+                        const warmingContacts = [...brokers, ...partners, ...gatekeepers]
+                          .filter(contact => {
+                            const recentFollowUps = followUps.filter(f =>
+                              f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}` &&
+                              new Date(f.createdAt || f.dueDate) > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) &&
+                              new Date(f.createdAt || f.dueDate) <= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                            );
+                            const recentEvents = events.filter(e => {
+                              const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
+                              return e.taggedContacts?.[type]?.includes(contact.id) &&
+                                new Date(e.date) > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) &&
+                                new Date(e.date) <= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                            });
+                            return (recentFollowUps.length + recentEvents.length) >= 1;
+                          });
+                        return warmingContacts.length;
+                      })()}
+                    </div>
+                    <p className={`text-xs ${textSecondaryClass}`}>Some activity (7-14 days)</p>
+                  </div>
+
+                  {/* Cold Relationships */}
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border-l-4 border-blue-400 ${borderClass}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">❄️</span>
+                      <h3 className={`text-lg font-bold ${textClass}`}>Need Attention</h3>
+                    </div>
+                    <div className={`text-2xl font-bold ${textClass} mb-2`}>
+                      {(() => {
+                        const coldContacts = [...brokers, ...partners, ...gatekeepers]
+                          .filter(contact => {
+                            const recentFollowUps = followUps.filter(f =>
+                              f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}` &&
+                              new Date(f.createdAt || f.dueDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                            );
+                            const recentEvents = events.filter(e => {
+                              const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
+                              return e.taggedContacts?.[type]?.includes(contact.id) &&
+                                new Date(e.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+                            });
+                            return (recentFollowUps.length + recentEvents.length) === 0;
+                          });
+                        return coldContacts.length;
+                      })()}
+                    </div>
+                    <p className={`text-xs ${textSecondaryClass}`}>No activity in 30+ days</p>
+                  </div>
+                </div>
+
+                {/* Recent Interactions Feed */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
+                      <MessageSquare size={20} />
+                      Recent Interactions
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
+                    {(() => {
+                      const interactions = [
+                        ...followUps.map(f => ({ ...f, type: 'followup', timestamp: f.completedAt || f.dueDate })),
+                        ...events.map(e => ({ ...e, type: 'event', timestamp: e.date }))
+                      ]
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .slice(0, 10);
+
+                      if (interactions.length === 0) {
+                        return (
+                          <div className={`text-center py-8 ${textSecondaryClass}`}>
+                            <MessageSquare size={48} className="mx-auto mb-2 opacity-50" />
+                            <p>No recent interactions yet</p>
+                          </div>
+                        );
+                      }
+
+                      return interactions.map((item, idx) => {
+                        const timeAgo = (() => {
+                          const diff = Date.now() - new Date(item.timestamp).getTime();
+                          const hours = Math.floor(diff / (1000 * 60 * 60));
+                          const days = Math.floor(hours / 24);
+                          if (days > 0) return `${days}d ago`;
+                          if (hours > 0) return `${hours}h ago`;
+                          return 'Just now';
+                        })();
+
+                        if (item.type === 'followup') {
+                          return (
+                            <div key={`interaction-followup-${item.id}-${idx}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} border ${borderClass}`}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    {item.status === 'completed' ? (
+                                      <CheckCircle size={16} className="text-green-500" />
+                                    ) : (
+                                      <Clock size={16} className="text-yellow-500" />
+                                    )}
+                                    <span className={`text-sm font-semibold ${textClass}`}>{item.contactName}</span>
+                                    <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                      {item.type}
+                                    </span>
+                                    <span className={`text-xs ${textSecondaryClass}`}>{timeAgo}</span>
+                                  </div>
+                                  {item.notes && (
+                                    <p className={`text-xs ${textSecondaryClass} mt-1 line-clamp-1`}>{item.notes}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div key={`interaction-event-${item.id}-${idx}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} border ${borderClass}`}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar size={16} className="text-blue-500" />
+                                    <span className={`text-sm font-semibold ${textClass}`}>{item.title}</span>
+                                    <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                      {item.type}
+                                    </span>
+                                    <span className={`text-xs ${textSecondaryClass}`}>{timeAgo}</span>
+                                  </div>
+                                  {item.location && (
+                                    <p className={`text-xs ${textSecondaryClass} mt-1`}>📍 {item.location}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* Priority Contacts - Need Attention */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
+                      <AlertCircle size={20} className="text-orange-500" />
+                      Contacts Needing Attention
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
+                    {(() => {
+                      const needsAttention = [...brokers, ...partners, ...gatekeepers]
+                        .map(contact => {
+                          const lastFollowUp = followUps
+                            .filter(f => f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}`)
+                            .sort((a, b) => new Date(b.completedAt || b.dueDate) - new Date(a.completedAt || a.dueDate))[0];
+
+                          const lastEvent = events
+                            .filter(e => {
+                              const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
+                              return e.taggedContacts?.[type]?.includes(contact.id);
+                            })
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+                          const lastInteraction = lastFollowUp && lastEvent
+                            ? new Date(lastFollowUp.completedAt || lastFollowUp.dueDate) > new Date(lastEvent.date)
+                              ? lastFollowUp.completedAt || lastFollowUp.dueDate
+                              : lastEvent.date
+                            : lastFollowUp
+                              ? lastFollowUp.completedAt || lastFollowUp.dueDate
+                              : lastEvent?.date;
+
+                          const daysSinceInteraction = lastInteraction
+                            ? Math.floor((Date.now() - new Date(lastInteraction).getTime()) / (1000 * 60 * 60 * 24))
+                            : 999;
+
+                          return { contact, daysSinceInteraction, lastInteraction };
+                        })
+                        .filter(({ daysSinceInteraction }) => daysSinceInteraction > 14)
+                        .sort((a, b) => b.daysSinceInteraction - a.daysSinceInteraction)
+                        .slice(0, 5);
+
+                      if (needsAttention.length === 0) {
+                        return (
+                          <div className={`text-center py-8 ${textSecondaryClass}`}>
+                            <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
+                            <p>All contacts have recent activity!</p>
+                          </div>
+                        );
+                      }
+
+                      return needsAttention.map(({ contact, daysSinceInteraction, lastInteraction }) => (
+                        <div key={`need-attention-${contact.id}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-orange-50'} border-l-4 border-orange-500`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-semibold ${textClass}`}>{contact.name}</span>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-orange-200'} ${textSecondaryClass}`}>
+                                  {contact.contactType || 'broker'}
+                                </span>
+                              </div>
+                              <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                                {lastInteraction
+                                  ? `Last contact: ${daysSinceInteraction} days ago`
+                                  : 'No interactions yet'}
+                              </p>
+                            </div>
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setFormData({
+                                    contactName: contact.name,
+                                    relatedContact: `${contact.contactType || 'broker'}-${contact.id}`
+                                  });
+                                  setEditingId(null);
+                                  setShowFollowUpForm(true);
+                                  setActiveTab('followups');
+                                }}
+                                className="bg-blue-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-blue-700 transition"
+                                title="Schedule follow-up"
+                              >
+                                <Phone size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <button
+                    onClick={() => {
+                      setFormData({});
+                      setEditingId(null);
+                      setShowFollowUpForm(true);
+                      setActiveTab('followups');
+                    }}
+                    className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow"
+                  >
+                    <Phone size={20} />
+                    <span>Log Call</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFormData({ type: 'Email' });
+                      setEditingId(null);
+                      setShowFollowUpForm(true);
+                      setActiveTab('followups');
+                    }}
+                    className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition shadow"
+                  >
+                    <Mail size={20} />
+                    <span>Log Email</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFormData({ type: 'Meeting' });
+                      setEditingId(null);
+                      setShowEventForm(true);
+                      setActiveTab('calendar');
+                    }}
+                    className="flex items-center justify-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition shadow"
+                  >
+                    <Video size={20} />
+                    <span>Schedule Meeting</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFormData({});
+                      setEditingId(null);
+                      setShowFollowUpForm(true);
+                      setActiveTab('followups');
+                    }}
+                    className="flex items-center justify-center gap-2 bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-orange-700 transition shadow"
+                  >
+                    <MessageSquare size={20} />
+                    <span>Add Note</span>
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Today View */}
+            {dashboardView === 'today' && (
+              <>
+                {/* Quick Actions Bar */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <button
                 onClick={() => {
                   setFormData({});
@@ -2035,6 +2408,408 @@ export default function IndustrialCRM() {
                 </div>
               )}
             </div>
+              </>
+            )}
+
+            {/* Weekly View */}
+            {dashboardView === 'weekly' && (
+              <>
+                {/* Week Overview Header */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <h3 className={`text-lg font-bold ${textClass} mb-4`}>This Week at a Glance</h3>
+                  <div className="grid grid-cols-7 gap-2">
+                    {(() => {
+                      const today = new Date();
+                      const startOfWeek = new Date(today);
+                      startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+
+                      return Array.from({ length: 7 }).map((_, index) => {
+                        const day = new Date(startOfWeek);
+                        day.setDate(startOfWeek.getDate() + index);
+                        day.setHours(0, 0, 0, 0);
+                        const nextDay = new Date(day);
+                        nextDay.setDate(day.getDate() + 1);
+
+                        const dayEvents = events.filter(e => {
+                          const eventDate = new Date(e.date);
+                          return eventDate >= day && eventDate < nextDay;
+                        });
+
+                        const dayFollowUps = followUps.filter(f => {
+                          if (f.status === 'completed') return false;
+                          const dueDate = new Date(f.dueDate);
+                          dueDate.setHours(0, 0, 0, 0);
+                          return dueDate.getTime() === day.getTime();
+                        });
+
+                        const isToday = day.toDateString() === today.toDateString();
+                        const totalItems = dayEvents.length + dayFollowUps.length;
+
+                        return (
+                          <div
+                            key={index}
+                            className={`p-3 rounded-lg border-2 ${
+                              isToday
+                                ? 'border-blue-500 bg-blue-50'
+                                : totalItems > 0
+                                  ? `border-green-300 ${darkMode ? 'bg-slate-700' : 'bg-green-50'}`
+                                  : `border-slate-200 ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`
+                            }`}
+                          >
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>
+                              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][index]}
+                            </div>
+                            <div className={`text-2xl font-bold ${textClass} my-1`}>
+                              {day.getDate()}
+                            </div>
+                            {totalItems > 0 && (
+                              <div className={`text-xs ${textClass} mt-2`}>
+                                {dayEvents.length > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <Calendar size={12} className="text-blue-500" />
+                                    <span>{dayEvents.length}</span>
+                                  </div>
+                                )}
+                                {dayFollowUps.length > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <Bell size={12} className="text-orange-500" />
+                                    <span>{dayFollowUps.length}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {totalItems === 0 && (
+                              <div className={`text-xs ${textSecondaryClass} mt-2`}>Free</div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* This Week's Events */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2 mb-3`}>
+                    <Calendar size={20} />
+                    This Week's Events
+                  </h3>
+                  <div className="space-y-2">
+                    {(() => {
+                      const today = new Date();
+                      const startOfWeek = new Date(today);
+                      startOfWeek.setDate(today.getDate() - today.getDay());
+                      startOfWeek.setHours(0, 0, 0, 0);
+                      const endOfWeek = new Date(startOfWeek);
+                      endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+                      const weekEvents = events
+                        .filter(e => {
+                          const eventDate = new Date(e.date);
+                          return eventDate >= startOfWeek && eventDate < endOfWeek;
+                        })
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                      if (weekEvents.length === 0) {
+                        return (
+                          <div className={`text-center py-8 ${textSecondaryClass}`}>
+                            <Calendar size={48} className="mx-auto mb-2 opacity-50" />
+                            <p>No events this week</p>
+                          </div>
+                        );
+                      }
+
+                      return weekEvents.map(event => (
+                        <div key={event.id} className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-semibold ${textClass}`}>{event.title}</span>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                  {event.type}
+                                </span>
+                              </div>
+                              {event.location && (
+                                <p className={`text-xs ${textSecondaryClass} mt-1`}>📍 {event.location}</p>
+                              )}
+                              <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                                {formatDateTime(event.date)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+
+                {/* This Week's Follow-ups */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2 mb-3`}>
+                    <Bell size={20} />
+                    This Week's Follow-ups
+                  </h3>
+                  <div className="space-y-2">
+                    {(() => {
+                      const today = new Date();
+                      const startOfWeek = new Date(today);
+                      startOfWeek.setDate(today.getDate() - today.getDay());
+                      startOfWeek.setHours(0, 0, 0, 0);
+                      const endOfWeek = new Date(startOfWeek);
+                      endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+                      const weekFollowUps = followUps
+                        .filter(f => {
+                          if (f.status === 'completed') return false;
+                          const dueDate = new Date(f.dueDate);
+                          dueDate.setHours(0, 0, 0, 0);
+                          return dueDate >= startOfWeek && dueDate < endOfWeek;
+                        })
+                        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+                      if (weekFollowUps.length === 0) {
+                        return (
+                          <div className={`text-center py-8 ${textSecondaryClass}`}>
+                            <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
+                            <p>No follow-ups this week</p>
+                          </div>
+                        );
+                      }
+
+                      return weekFollowUps.map(followUp => {
+                        const overdue = isOverdue(followUp.dueDate);
+                        const dueToday = isDueToday(followUp.dueDate);
+
+                        return (
+                          <div key={followUp.id} className={`p-3 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-sm font-semibold ${textClass}`}>{followUp.contactName}</span>
+                                  <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                    {followUp.type}
+                                  </span>
+                                </div>
+                                {followUp.notes && (
+                                  <p className={`text-xs ${textSecondaryClass} mt-1 line-clamp-1`}>{followUp.notes}</p>
+                                )}
+                                <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} mt-1`}>
+                                  {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
+                                </p>
+                              </div>
+                              <div className="flex gap-1.5 ml-3">
+                                <button
+                                  onClick={() => {
+                                    setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
+                                    showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
+                                  }}
+                                  className="bg-green-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-green-700 transition"
+                                  title="Mark as complete"
+                                >
+                                  Done
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Analytics View */}
+            {dashboardView === 'analytics' && (
+              <>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Contacts</div>
+                      <Target size={20} className="text-blue-500" />
+                    </div>
+                    <div className={`text-3xl font-bold ${textClass}`}>
+                      {brokers.length + partners.length + gatekeepers.length}
+                    </div>
+                    <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                      {brokers.length} Brokers • {partners.length} Partners • {gatekeepers.length} Gatekeepers
+                    </div>
+                  </div>
+
+                  <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
+                      <Bell size={20} className="text-orange-500" />
+                    </div>
+                    <div className={`text-3xl font-bold ${textClass}`}>
+                      {followUps.filter(f => f.status !== 'completed').length}
+                    </div>
+                    <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                      {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue
+                    </div>
+                  </div>
+
+                  <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Events</div>
+                      <Calendar size={20} className="text-green-500" />
+                    </div>
+                    <div className={`text-3xl font-bold ${textClass}`}>
+                      {events.length}
+                    </div>
+                    <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                      {events.filter(e => new Date(e.date) >= new Date()).length} upcoming
+                    </div>
+                  </div>
+
+                  <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Properties</div>
+                      <Building2 size={20} className="text-purple-500" />
+                    </div>
+                    <div className={`text-3xl font-bold ${textClass}`}>
+                      {properties.length}
+                    </div>
+                    <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                      Tracked assets
+                    </div>
+                  </div>
+                </div>
+
+                {/* Activity Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Follow-ups by Type */}
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                    <h3 className={`text-lg font-bold ${textClass} mb-3`}>Follow-ups by Type</h3>
+                    <div className="space-y-2">
+                      {(() => {
+                        const types = ['Call', 'Email', 'Meeting', 'Text'];
+                        return types.map(type => {
+                          const count = followUps.filter(f => f.type === type).length;
+                          const completed = followUps.filter(f => f.type === type && f.status === 'completed').length;
+                          const percentage = count > 0 ? (completed / count) * 100 : 0;
+
+                          return (
+                            <div key={type}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-sm ${textClass}`}>{type}</span>
+                                <span className={`text-sm ${textSecondaryClass}`}>
+                                  {completed}/{count}
+                                </span>
+                              </div>
+                              <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                <div
+                                  className="h-full rounded-full bg-blue-600"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Events by Type */}
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                    <h3 className={`text-lg font-bold ${textClass} mb-3`}>Events by Type</h3>
+                    <div className="space-y-2">
+                      {(() => {
+                        const types = ['Meeting', 'Call', 'Site Visit', 'Other'];
+                        return types.map(type => {
+                          const count = events.filter(e => e.type === type).length;
+                          const total = events.length;
+                          const percentage = total > 0 ? (count / total) * 100 : 0;
+
+                          return (
+                            <div key={type}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-sm ${textClass}`}>{type}</span>
+                                <span className={`text-sm ${textSecondaryClass}`}>
+                                  {count} ({percentage.toFixed(0)}%)
+                                </span>
+                              </div>
+                              <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                <div
+                                  className="h-full rounded-full bg-green-600"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Engagement */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <h3 className={`text-lg font-bold ${textClass} mb-3`}>Contact Engagement (Last 30 Days)</h3>
+                  <div className="space-y-2">
+                    {(() => {
+                      const allContacts = [
+                        ...brokers.map(b => ({ ...b, contactType: 'broker' })),
+                        ...partners.map(p => ({ ...p, contactType: 'partner' })),
+                        ...gatekeepers.map(g => ({ ...g, contactType: 'gatekeeper' }))
+                      ];
+
+                      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+                      const contactEngagement = allContacts
+                        .map(contact => {
+                          const recentFollowUps = followUps.filter(f =>
+                            f.relatedContact === `${contact.contactType}-${contact.id}` &&
+                            new Date(f.createdAt || f.dueDate) > thirtyDaysAgo
+                          ).length;
+
+                          const recentEvents = events.filter(e => {
+                            const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
+                            return e.taggedContacts?.[type]?.includes(contact.id) &&
+                              new Date(e.date) > thirtyDaysAgo;
+                          }).length;
+
+                          const totalInteractions = recentFollowUps + recentEvents;
+
+                          return { contact, totalInteractions };
+                        })
+                        .filter(({ totalInteractions }) => totalInteractions > 0)
+                        .sort((a, b) => b.totalInteractions - a.totalInteractions)
+                        .slice(0, 10);
+
+                      if (contactEngagement.length === 0) {
+                        return (
+                          <div className={`text-center py-8 ${textSecondaryClass}`}>
+                            <TrendingUp size={48} className="mx-auto mb-2 opacity-50" />
+                            <p>No activity in the last 30 days</p>
+                          </div>
+                        );
+                      }
+
+                      const maxInteractions = Math.max(...contactEngagement.map(({ totalInteractions }) => totalInteractions));
+
+                      return contactEngagement.map(({ contact, totalInteractions }) => (
+                        <div key={`${contact.contactType}-${contact.id}`} className="flex items-center gap-3">
+                          <div className={`text-sm ${textClass} flex-1`}>{contact.name}</div>
+                          <div className="flex-1">
+                            <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                              <div
+                                className="h-full rounded-full bg-blue-600"
+                                style={{ width: `${(totalInteractions / maxInteractions) * 100}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className={`text-sm ${textSecondaryClass} w-12 text-right`}>
+                            {totalInteractions}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
