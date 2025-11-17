@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink } from 'lucide-react';
+import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
 import EmptyState from './components/EmptyState';
@@ -26,6 +26,11 @@ export default function IndustrialCRM() {
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
   const [darkMode, setDarkMode] = useState(true);
+
+  // Calendar view state
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [calendarView, setCalendarView] = useState('month'); // 'month' or 'list'
 
   // Toast notification state
   const [toasts, setToasts] = useState([]);
@@ -222,6 +227,78 @@ export default function IndustrialCRM() {
     const today = new Date();
     return date.toDateString() === today.toDateString();
   };
+
+  // Calendar helper functions
+  const getDaysInMonth = (month, year) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (month, year) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const generateCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+    const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
+    const days = [];
+
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+
+    // Add all days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+
+    return days;
+  };
+
+  const getEventsForDay = (day) => {
+    if (!day) return [];
+    const dateToCheck = new Date(currentYear, currentMonth, day);
+    return events.filter(event => {
+      const eventDate = new Date(event.date);
+      return eventDate.getFullYear() === currentYear &&
+             eventDate.getMonth() === currentMonth &&
+             eventDate.getDate() === day;
+    });
+  };
+
+  const goToPreviousMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentMonth(today.getMonth());
+    setCurrentYear(today.getFullYear());
+  };
+
+  const isToday = (day) => {
+    const today = new Date();
+    return day === today.getDate() &&
+           currentMonth === today.getMonth() &&
+           currentYear === today.getFullYear();
+  };
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
 
   // Toast notification system
   const showToast = useCallback((message, type = 'success') => {
@@ -4894,17 +4971,27 @@ export default function IndustrialCRM() {
                 <h2 className={`text-2xl font-bold ${textClass}`}>Calendar & Events</h2>
                 <p className={textSecondaryClass}>Schedule property tours, meetings, and deadlines</p>
               </div>
-              <button
-                onClick={() => {
-                  setFormData({});
-                  setEditingId(null);
-                  setShowEventForm(true);
-                }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                <Plus size={20} />
-                Add Event
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCalendarView(calendarView === 'month' ? 'list' : 'month')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${
+                    darkMode ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+                  }`}
+                >
+                  {calendarView === 'month' ? 'List View' : 'Month View'}
+                </button>
+                <button
+                  onClick={() => {
+                    setFormData({});
+                    setEditingId(null);
+                    setShowEventForm(true);
+                  }}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                >
+                  <Plus size={20} />
+                  Add Event
+                </button>
+              </div>
             </div>
 
             {/* Event Form */}
@@ -4989,8 +5076,120 @@ export default function IndustrialCRM() {
               </div>
             )}
 
-            {/* Events List */}
-            <div className="space-y-4">
+            {/* Calendar Month View */}
+            {calendarView === 'month' && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} overflow-hidden`}>
+                {/* Calendar Header */}
+                <div className={`p-6 border-b ${borderClass} flex items-center justify-between`}>
+                  <button
+                    onClick={goToPreviousMonth}
+                    className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                    title="Previous Month"
+                  >
+                    <ChevronLeft size={24} className={textClass} />
+                  </button>
+
+                  <div className="text-center">
+                    <h3 className={`text-2xl font-bold ${textClass}`}>
+                      {monthNames[currentMonth]} {currentYear}
+                    </h3>
+                    <button
+                      onClick={goToToday}
+                      className={`mt-1 text-sm ${textSecondaryClass} hover:text-blue-500 transition`}
+                    >
+                      Today
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={goToNextMonth}
+                    className={`p-2 rounded-lg ${hoverBgClass} transition`}
+                    title="Next Month"
+                  >
+                    <ChevronRight size={24} className={textClass} />
+                  </button>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="p-6">
+                  {/* Day Headers */}
+                  <div className="grid grid-cols-7 gap-2 mb-2">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <div key={day} className={`text-center text-sm font-semibold ${textSecondaryClass} py-2`}>
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Calendar Days */}
+                  <div className="grid grid-cols-7 gap-2">
+                    {generateCalendarDays().map((day, index) => {
+                      const dayEvents = day ? getEventsForDay(day) : [];
+                      const isTodayCell = day && isToday(day);
+
+                      return (
+                        <div
+                          key={index}
+                          onClick={() => {
+                            if (day) {
+                              // Pre-fill the date when clicking a day
+                              const selectedDate = new Date(currentYear, currentMonth, day, 12, 0); // Default to noon
+                              const dateTimeString = selectedDate.toISOString().slice(0, 16);
+                              setFormData({ date: dateTimeString });
+                              setEditingId(null);
+                              setShowEventForm(true);
+                            }
+                          }}
+                          className={`min-h-[100px] p-2 rounded-lg border ${borderClass} ${
+                            day
+                              ? `${darkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'} cursor-pointer transition`
+                              : darkMode ? 'bg-slate-900' : 'bg-slate-100'
+                          } ${isTodayCell ? 'ring-2 ring-blue-500' : ''}`}
+                        >
+                          {day && (
+                            <>
+                              <div className={`text-sm font-semibold mb-1 ${
+                                isTodayCell ? 'text-blue-500' : textClass
+                              }`}>
+                                {day}
+                              </div>
+                              <div className="space-y-1">
+                                {dayEvents.slice(0, 3).map(event => (
+                                  <div
+                                    key={event.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFormData(event);
+                                      setEditingId(event.id);
+                                      setShowEventForm(true);
+                                    }}
+                                    className={`text-xs px-2 py-1 rounded ${
+                                      darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'
+                                    } truncate hover:opacity-80 transition`}
+                                    title={event.title}
+                                  >
+                                    {event.title}
+                                  </div>
+                                ))}
+                                {dayEvents.length > 3 && (
+                                  <div className={`text-xs ${textSecondaryClass} px-2`}>
+                                    +{dayEvents.length - 3} more
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Events List View */}
+            {calendarView === 'list' && (
+              <div className="space-y-4">
               {events.length === 0 && !showEventForm && (
                 <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
                   <Calendar size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
@@ -5070,7 +5269,8 @@ export default function IndustrialCRM() {
                     </div>
                   );
                 })}
-            </div>
+              </div>
+            )}
           </div>
         )}
         </div>
