@@ -1857,30 +1857,6 @@ export default function IndustrialCRM() {
         {/* Bottom Actions */}
         <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-white'} space-y-2`}>
           <button
-            onClick={loadTestData}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
-              darkMode
-                ? 'bg-blue-900 hover:bg-blue-800 text-blue-200'
-                : 'bg-blue-100 hover:bg-blue-200 text-blue-900'
-            }`}
-            title="Load sample data for testing"
-          >
-            <Database size={16} />
-            Load Test Data
-          </button>
-          <button
-            onClick={clearAllData}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
-              darkMode
-                ? 'bg-red-900 hover:bg-red-800 text-red-200'
-                : 'bg-red-100 hover:bg-red-200 text-red-900'
-            }`}
-            title="Clear all data permanently"
-          >
-            <AlertTriangle size={16} />
-            Clear All
-          </button>
-          <button
             onClick={() => setDarkMode(!darkMode)}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${hoverBgClass} transition`}
             title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
