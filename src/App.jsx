@@ -130,7 +130,7 @@ export default function IndustrialCRM() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: 'https://crm.axispoint.llc'
       }
     });
     if (error) console.error('Error signing in:', error);
