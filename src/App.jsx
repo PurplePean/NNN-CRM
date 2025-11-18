@@ -1668,6 +1668,7 @@ export default function IndustrialCRM() {
             <Building2 size={64} className="mx-auto text-blue-400 mb-4" />
             <h1 className="text-4xl font-bold text-white mb-2">NNN CRM</h1>
             <p className="text-slate-300 text-lg">Industrial Property Management</p>
+            <p className="text-slate-500 text-xs mt-2">Build: Nov 18 2025 - v3</p>
           </div>
           <button
             onClick={signInWithGoogle}
