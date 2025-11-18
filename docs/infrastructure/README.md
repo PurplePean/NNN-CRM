@@ -9,8 +9,7 @@
 |----------|---------|-------------|
 | **[CURRENT-STATUS.md](./CURRENT-STATUS.md)** | Current deployment state & issues | Start here - check what's working/broken |
 | **[DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md)** | Complete deployment procedures | Deploy code, rollback, troubleshooting |
-| **[BACKEND-INFRASTRUCTURE.md](./BACKEND-INFRASTRUCTURE.md)** | Supabase database details | Understand database schema & RLS |
-| **[PHASE-3-GOOGLE-AUTH.md](./PHASE-3-GOOGLE-AUTH.md)** | Google OAuth implementation | Add authentication (future) |
+| **[BACKEND-INFRASTRUCTURE.md](./BACKEND-INFRASTRUCTURE.md)** | Supabase database & Google Auth | Understand database schema, RLS, authentication |
 | **[IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md)** | Original roadmap | Historical context |
 | **[DEPLOYMENT-SETUP.md](./DEPLOYMENT-SETUP.md)** | GitHub Actions & FTP setup | Already done - reference only |
 
@@ -57,7 +56,7 @@
 ---
 
 ### 🗄️ BACKEND-INFRASTRUCTURE.md
-**Database & API reference**
+**Database & API reference + Google Authentication**
 
 - Complete database schema (7 tables)
 - SQL table creation scripts
@@ -65,6 +64,10 @@
 - Supabase service layer structure
 - API usage examples
 - Environment variables
+- **Google OAuth setup (step-by-step)**
+- **Auth state management code**
+- **Email whitelist implementation**
+- **Multi-user testing procedures**
 
 **Use when:**
 - Understanding database structure
@@ -72,24 +75,8 @@
 - Modifying RLS policies
 - Creating new API services
 - Debugging data issues
-
----
-
-### 🔐 PHASE-3-GOOGLE-AUTH.md
-**Future: Add authentication**
-
-- Complete Google OAuth setup
-- Supabase auth configuration
-- App.jsx auth state management
-- Email whitelist implementation
-- Remove test data buttons
-- Multi-user testing procedures
-
-**Use when:**
-- Ready to add Google sign-in
-- Want multi-user authentication
-- Need to restrict access
-- Phase 2 is fully working
+- **Ready to add Google sign-in**
+- **Implementing authentication**
 
 ---
 
@@ -159,7 +146,7 @@
 **Status:** NOT STARTED
 
 - Waiting for Phase 2 to be fully working
-- Documentation complete (PHASE-3-GOOGLE-AUTH.md)
+- Documentation complete (see BACKEND-INFRASTRUCTURE.md)
 - Estimated 2-4 hours once Phase 2 works
 
 ---
@@ -198,9 +185,10 @@
 ### 🔐 Adding Authentication?
 
 1. Ensure Phase 2 is working first!
-2. Open [PHASE-3-GOOGLE-AUTH.md](./PHASE-3-GOOGLE-AUTH.md)
-3. Follow step-by-step guide
-4. Estimated 2-4 hours
+2. Open [BACKEND-INFRASTRUCTURE.md](./BACKEND-INFRASTRUCTURE.md)
+3. Go to "Google Authentication Implementation" section
+4. Follow step-by-step guide
+5. Estimated 2-4 hours
 
 ---
 
