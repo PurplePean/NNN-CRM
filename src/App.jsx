@@ -3,6 +3,7 @@ import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Cal
 import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
 import EmptyState from './components/EmptyState';
+import { supabaseService, isSupabaseConfigured } from './services/supabase';
 
 export default function IndustrialCRM() {
   const [properties, setProperties] = useState([]);
@@ -27,6 +28,7 @@ export default function IndustrialCRM() {
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
   const [darkMode, setDarkMode] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Calendar view state
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
@@ -118,24 +120,57 @@ export default function IndustrialCRM() {
     });
   };
 
-  // Load from localStorage
+  // Load data from Supabase or localStorage fallback
   useEffect(() => {
-    const savedProperties = localStorage.getItem('properties');
-    const savedBrokers = localStorage.getItem('brokers');
-    const savedPartners = localStorage.getItem('partners');
-    const savedGatekeepers = localStorage.getItem('gatekeepers');
-    const savedEvents = localStorage.getItem('events');
-    const savedFollowUps = localStorage.getItem('followUps');
-    const savedDarkMode = localStorage.getItem('darkMode');
-    const savedDashboardView = localStorage.getItem('dashboardView');
-    if (savedProperties) setProperties(JSON.parse(savedProperties));
-    if (savedBrokers) setBrokers(JSON.parse(savedBrokers));
-    if (savedPartners) setPartners(JSON.parse(savedPartners));
-    if (savedGatekeepers) setGatekeepers(JSON.parse(savedGatekeepers));
-    if (savedEvents) setEvents(JSON.parse(savedEvents));
-    if (savedFollowUps) setFollowUps(JSON.parse(savedFollowUps));
-    if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
-    if (savedDashboardView) setDashboardView(savedDashboardView);
+    const loadData = async () => {
+      try {
+        if (isSupabaseConfigured()) {
+          // Load from Supabase
+          const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbFollowUps] = await Promise.all([
+            supabaseService.getAll('properties'),
+            supabaseService.getAll('brokers'),
+            supabaseService.getAll('partners'),
+            supabaseService.getAll('gatekeepers'),
+            supabaseService.getAll('events'),
+            supabaseService.getAll('follow_ups')
+          ]);
+
+          if (dbProperties) setProperties(dbProperties);
+          if (dbBrokers) setBrokers(dbBrokers);
+          if (dbPartners) setPartners(dbPartners);
+          if (dbGatekeepers) setGatekeepers(dbGatekeepers);
+          if (dbEvents) setEvents(dbEvents);
+          if (dbFollowUps) setFollowUps(dbFollowUps);
+        } else {
+          // Fallback to localStorage if Supabase not configured
+          const savedProperties = localStorage.getItem('properties');
+          const savedBrokers = localStorage.getItem('brokers');
+          const savedPartners = localStorage.getItem('partners');
+          const savedGatekeepers = localStorage.getItem('gatekeepers');
+          const savedEvents = localStorage.getItem('events');
+          const savedFollowUps = localStorage.getItem('followUps');
+
+          if (savedProperties) setProperties(JSON.parse(savedProperties));
+          if (savedBrokers) setBrokers(JSON.parse(savedBrokers));
+          if (savedPartners) setPartners(JSON.parse(savedPartners));
+          if (savedGatekeepers) setGatekeepers(JSON.parse(savedGatekeepers));
+          if (savedEvents) setEvents(JSON.parse(savedEvents));
+          if (savedFollowUps) setFollowUps(JSON.parse(savedFollowUps));
+        }
+
+        // Always load UI preferences from localStorage
+        const savedDarkMode = localStorage.getItem('darkMode');
+        const savedDashboardView = localStorage.getItem('dashboardView');
+        if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
+        if (savedDashboardView) setDashboardView(savedDashboardView);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    loadData();
   }, []);
 
   // Save to localStorage
@@ -1001,7 +1036,7 @@ export default function IndustrialCRM() {
 
   // Test Data Functions
   const loadTestData = () => {
-    const loadData = () => {
+    const loadData = async () => {
       const now = new Date().toISOString();
       const testBrokers = [
       { id: 1001, name: 'Sarah Mitchell', company: 'CBRE', email: 'sarah.mitchell@cbre.com', phone: '555-0101', noteHistory: [] },
@@ -1216,14 +1251,51 @@ export default function IndustrialCRM() {
       }
     ];
 
-      setBrokers(testBrokers);
-      setPartners(testPartners);
-      setGatekeepers(testGatekeepers);
-      setProperties(testProperties);
-      setFollowUps(testFollowUps);
-      setEvents(testEvents);
+      try {
+        if (isSupabaseConfigured()) {
+          // Load to Supabase
+          await Promise.all([
+            supabaseService.bulkInsert('brokers', testBrokers.map(b => ({ ...b, id: undefined }))),
+            supabaseService.bulkInsert('partners', testPartners.map(p => ({ ...p, id: undefined }))),
+            supabaseService.bulkInsert('gatekeepers', testGatekeepers.map(g => ({ ...g, id: undefined }))),
+            supabaseService.bulkInsert('properties', testProperties.map(p => ({ ...p, id: undefined }))),
+            supabaseService.bulkInsert('follow_ups', testFollowUps.map(f => ({ ...f, id: undefined }))),
+            supabaseService.bulkInsert('events', testEvents.map(e => ({ ...e, id: undefined })))
+          ]);
 
-      showToast('Test data loaded! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, 4 follow-ups, and 5 events.', 'success');
+          // Reload from Supabase to get the new IDs
+          const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbFollowUps] = await Promise.all([
+            supabaseService.getAll('properties'),
+            supabaseService.getAll('brokers'),
+            supabaseService.getAll('partners'),
+            supabaseService.getAll('gatekeepers'),
+            supabaseService.getAll('events'),
+            supabaseService.getAll('follow_ups')
+          ]);
+
+          setProperties(dbProperties || []);
+          setBrokers(dbBrokers || []);
+          setPartners(dbPartners || []);
+          setGatekeepers(dbGatekeepers || []);
+          setEvents(dbEvents || []);
+          setFollowUps(dbFollowUps || []);
+
+          showToast('Test data loaded to cloud! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, 4 follow-ups, and 5 events.', 'success');
+        } else {
+          // Fallback to localStorage
+          setBrokers(testBrokers);
+          setPartners(testPartners);
+          setGatekeepers(testGatekeepers);
+          setProperties(testProperties);
+          setFollowUps(testFollowUps);
+          setEvents(testEvents);
+
+          showToast('Test data loaded! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, 4 follow-ups, and 5 events.', 'success');
+        }
+      } catch (error) {
+        console.error('Error loading test data:', error);
+        showToast('Error loading test data. Check console for details.', 'error');
+      }
     };
 
     showConfirmDialog(
@@ -1235,17 +1307,37 @@ export default function IndustrialCRM() {
   };
 
   const clearAllData = () => {
-    const performClear = () => {
-      setProperties([]);
-      setBrokers([]);
-      setPartners([]);
-      setGatekeepers([]);
-      setEvents([]);
-      setFollowUps([]);
-      setSensitivityTable(null);
-      setSensitivityPropertyId(null);
+    const performClear = async () => {
+      try {
+        if (isSupabaseConfigured()) {
+          // Clear all data from Supabase
+          const tables = ['properties', 'brokers', 'partners', 'gatekeepers', 'events', 'follow_ups'];
 
-      showToast('All data has been cleared.', 'success');
+          for (const table of tables) {
+            const items = await supabaseService.getAll(table);
+            if (items && items.length > 0) {
+              await Promise.all(items.map(item => supabaseService.delete(table, item.id)));
+            }
+          }
+
+          showToast('All cloud data has been cleared.', 'success');
+        } else {
+          showToast('All local data has been cleared.', 'success');
+        }
+
+        // Clear local state
+        setProperties([]);
+        setBrokers([]);
+        setPartners([]);
+        setGatekeepers([]);
+        setEvents([]);
+        setFollowUps([]);
+        setSensitivityTable(null);
+        setSensitivityPropertyId(null);
+      } catch (error) {
+        console.error('Error clearing data:', error);
+        showToast('Error clearing data. Check console for details.', 'error');
+      }
     };
 
     showConfirmDialog(
