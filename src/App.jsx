@@ -1253,14 +1253,14 @@ export default function IndustrialCRM() {
 
       try {
         if (isSupabaseConfigured()) {
-          // Load to Supabase
+          // Load to Supabase - remove id field so DB can auto-generate UUIDs
           await Promise.all([
-            supabaseService.bulkInsert('brokers', testBrokers.map(b => ({ ...b, id: undefined }))),
-            supabaseService.bulkInsert('partners', testPartners.map(p => ({ ...p, id: undefined }))),
-            supabaseService.bulkInsert('gatekeepers', testGatekeepers.map(g => ({ ...g, id: undefined }))),
-            supabaseService.bulkInsert('properties', testProperties.map(p => ({ ...p, id: undefined }))),
-            supabaseService.bulkInsert('follow_ups', testFollowUps.map(f => ({ ...f, id: undefined }))),
-            supabaseService.bulkInsert('events', testEvents.map(e => ({ ...e, id: undefined })))
+            supabaseService.bulkInsert('brokers', testBrokers.map(({ id, ...rest }) => rest)),
+            supabaseService.bulkInsert('partners', testPartners.map(({ id, ...rest }) => rest)),
+            supabaseService.bulkInsert('gatekeepers', testGatekeepers.map(({ id, ...rest }) => rest)),
+            supabaseService.bulkInsert('properties', testProperties.map(({ id, brokerIds, ...rest }) => ({ ...rest, brokerIds: [] }))),
+            supabaseService.bulkInsert('follow_ups', testFollowUps.map(({ id, ...rest }) => rest)),
+            supabaseService.bulkInsert('events', testEvents.map(({ id, ...rest }) => rest))
           ]);
 
           // Reload from Supabase to get the new IDs
