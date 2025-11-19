@@ -493,7 +493,7 @@ export default function IndustrialCRM() {
     setShowInlineBrokerForm(false);
   };
 
-  const handleSaveProperty = () => {
+  const handleSaveProperty = async () => {
     if (!formData.address) {
       showToast('Please enter an address', 'error');
       return;
@@ -508,22 +508,58 @@ export default function IndustrialCRM() {
       closingCosts: stripCommas(formData.closingCosts)
     };
 
-    if (editingId) {
-      setProperties(properties.map(p => p.id === editingId ? { ...propertyData, id: editingId } : p));
-    } else {
-      setProperties([...properties, { ...propertyData, id: Date.now() }]);
-    }
+    try {
+      if (editingId) {
+        // Update existing property
+        setProperties(properties.map(p => p.id === editingId ? { ...propertyData, id: editingId } : p));
 
-    setShowPropertyForm(false);
-    setShowInlineBrokerForm(false);
-    setFormData({});
+        // Sync to Supabase if configured
+        if (isSupabaseConfigured()) {
+          await supabaseService.update('properties', editingId, propertyData);
+        }
+      } else {
+        // Create new property
+        if (isSupabaseConfigured()) {
+          // Save to Supabase and get the ID from Supabase
+          const savedProperty = await supabaseService.create('properties', propertyData);
+          if (savedProperty) {
+            setProperties([...properties, savedProperty]);
+          } else {
+            // Fallback to local ID if Supabase fails
+            setProperties([...properties, { ...propertyData, id: Date.now() }]);
+            showToast('Saved locally only - Supabase error', 'warning');
+          }
+        } else {
+          // No Supabase - use local ID
+          setProperties([...properties, { ...propertyData, id: Date.now() }]);
+        }
+      }
+
+      setShowPropertyForm(false);
+      setShowInlineBrokerForm(false);
+      setFormData({});
+      showToast(editingId ? 'Property updated' : 'Property added', 'success');
+    } catch (error) {
+      console.error('Error saving property:', error);
+      showToast('Error saving property', 'error');
+    }
   };
 
   const handleDeleteProperty = (id) => {
     showConfirmDialog(
       'Delete Property',
       'Are you sure you want to delete this property? This action cannot be undone.',
-      () => setProperties(properties.filter(p => p.id !== id)),
+      async () => {
+        setProperties(properties.filter(p => p.id !== id));
+
+        // Delete from Supabase if configured
+        if (isSupabaseConfigured()) {
+          const success = await supabaseService.delete('properties', id);
+          if (!success) {
+            showToast('Deleted locally but Supabase sync failed', 'warning');
+          }
+        }
+      },
       'danger'
     );
   };
@@ -839,27 +875,56 @@ export default function IndustrialCRM() {
     setShowBrokerForm(true);
   };
 
-  const handleSaveBroker = () => {
+  const handleSaveBroker = async () => {
     if (!formData.name) {
       showToast('Please enter broker name', 'error');
       return;
     }
 
-    if (editingId) {
-      setBrokers(brokers.map(b => b.id === editingId ? { ...formData, id: editingId } : b));
-    } else {
-      setBrokers([...brokers, { ...formData, id: Date.now() }]);
-    }
+    try {
+      if (editingId) {
+        setBrokers(brokers.map(b => b.id === editingId ? { ...formData, id: editingId } : b));
 
-    setShowBrokerForm(false);
-    setFormData({});
+        if (isSupabaseConfigured()) {
+          await supabaseService.update('brokers', editingId, formData);
+        }
+      } else {
+        if (isSupabaseConfigured()) {
+          const savedBroker = await supabaseService.create('brokers', formData);
+          if (savedBroker) {
+            setBrokers([...brokers, savedBroker]);
+          } else {
+            setBrokers([...brokers, { ...formData, id: Date.now() }]);
+            showToast('Saved locally only - Supabase error', 'warning');
+          }
+        } else {
+          setBrokers([...brokers, { ...formData, id: Date.now() }]);
+        }
+      }
+
+      setShowBrokerForm(false);
+      setFormData({});
+      showToast(editingId ? 'Broker updated' : 'Broker added', 'success');
+    } catch (error) {
+      console.error('Error saving broker:', error);
+      showToast('Error saving broker', 'error');
+    }
   };
 
   const handleDeleteBroker = (id) => {
     showConfirmDialog(
       'Delete Broker',
       'Are you sure you want to delete this broker? This action cannot be undone.',
-      () => setBrokers(brokers.filter(b => b.id !== id)),
+      async () => {
+        setBrokers(brokers.filter(b => b.id !== id));
+
+        if (isSupabaseConfigured()) {
+          const success = await supabaseService.delete('brokers', id);
+          if (!success) {
+            showToast('Deleted locally but Supabase sync failed', 'warning');
+          }
+        }
+      },
       'danger'
     );
   };
@@ -884,27 +949,56 @@ export default function IndustrialCRM() {
     setShowGatekeeperForm(true);
   };
 
-  const handleSaveGatekeeper = () => {
+  const handleSaveGatekeeper = async () => {
     if (!formData.name) {
       showToast('Please enter gatekeeper name', 'error');
       return;
     }
 
-    if (editingId) {
-      setGatekeepers(gatekeepers.map(g => g.id === editingId ? { ...formData, id: editingId } : g));
-    } else {
-      setGatekeepers([...gatekeepers, { ...formData, id: Date.now() }]);
-    }
+    try {
+      if (editingId) {
+        setGatekeepers(gatekeepers.map(g => g.id === editingId ? { ...formData, id: editingId } : g));
 
-    setShowGatekeeperForm(false);
-    setFormData({});
+        if (isSupabaseConfigured()) {
+          await supabaseService.update('gatekeepers', editingId, formData);
+        }
+      } else {
+        if (isSupabaseConfigured()) {
+          const savedGatekeeper = await supabaseService.create('gatekeepers', formData);
+          if (savedGatekeeper) {
+            setGatekeepers([...gatekeepers, savedGatekeeper]);
+          } else {
+            setGatekeepers([...gatekeepers, { ...formData, id: Date.now() }]);
+            showToast('Saved locally only - Supabase error', 'warning');
+          }
+        } else {
+          setGatekeepers([...gatekeepers, { ...formData, id: Date.now() }]);
+        }
+      }
+
+      setShowGatekeeperForm(false);
+      setFormData({});
+      showToast(editingId ? 'Gatekeeper updated' : 'Gatekeeper added', 'success');
+    } catch (error) {
+      console.error('Error saving gatekeeper:', error);
+      showToast('Error saving gatekeeper', 'error');
+    }
   };
 
   const handleDeleteGatekeeper = (id) => {
     showConfirmDialog(
       'Delete Gatekeeper',
       'Are you sure you want to delete this gatekeeper? This action cannot be undone.',
-      () => setGatekeepers(gatekeepers.filter(g => g.id !== id)),
+      async () => {
+        setGatekeepers(gatekeepers.filter(g => g.id !== id));
+
+        if (isSupabaseConfigured()) {
+          const success = await supabaseService.delete('gatekeepers', id);
+          if (!success) {
+            showToast('Deleted locally but Supabase sync failed', 'warning');
+          }
+        }
+      },
       'danger'
     );
   };
@@ -987,56 +1081,203 @@ export default function IndustrialCRM() {
     setShowPartnerForm(true);
   };
 
-  const handleSavePartner = () => {
+  const handleSavePartner = async () => {
     if (!formData.name) {
       showToast('Please enter partner name', 'error');
       return;
     }
 
-    // Prepare initial note if provided
-    const initialNoteHistory = [];
-    if (formData.initialNotes && formData.initialNotes.trim()) {
-      initialNoteHistory.push({
-        id: Date.now(),
-        timestamp: new Date().toISOString(),
-        content: formData.initialNotes.trim(),
-        category: formData.initialNoteCategory || 'general',
-        edited: false
-      });
-    }
+    try {
+      // Prepare initial note if provided
+      const initialNoteHistory = [];
+      if (formData.initialNotes && formData.initialNotes.trim()) {
+        initialNoteHistory.push({
+          id: Date.now(),
+          timestamp: new Date().toISOString(),
+          content: formData.initialNotes.trim(),
+          category: formData.initialNoteCategory || 'general',
+          edited: false
+        });
+      }
 
-    // Remove initialNotes fields from saved data
-    const { initialNotes, initialNoteCategory, ...partnerData } = formData;
+      // Remove initialNotes fields from saved data
+      const { initialNotes, initialNoteCategory, ...partnerData } = formData;
 
-    if (editingId) {
-      setPartners(partners.map(p => {
-        if (p.id === editingId) {
-          // When editing, append new note to existing notes if provided
-          const updatedNoteHistory = initialNoteHistory.length > 0
-            ? [...(p.noteHistory || []), ...initialNoteHistory]
-            : p.noteHistory;
-          return { ...partnerData, id: editingId, noteHistory: updatedNoteHistory };
+      if (editingId) {
+        const updatedPartner = partners.find(p => p.id === editingId);
+        const updatedNoteHistory = initialNoteHistory.length > 0
+          ? [...(updatedPartner.noteHistory || []), ...initialNoteHistory]
+          : updatedPartner.noteHistory;
+
+        const partnerWithNotes = { ...partnerData, noteHistory: updatedNoteHistory };
+
+        setPartners(partners.map(p => p.id === editingId ? { ...partnerWithNotes, id: editingId } : p));
+
+        if (isSupabaseConfigured()) {
+          await supabaseService.update('partners', editingId, partnerWithNotes);
         }
-        return p;
-      }));
-    } else {
-      // When creating new partner, add initial note
-      setPartners([...partners, {
-        ...partnerData,
-        id: Date.now(),
-        noteHistory: initialNoteHistory
-      }]);
-    }
+      } else {
+        const newPartner = {
+          ...partnerData,
+          noteHistory: initialNoteHistory
+        };
 
-    setShowPartnerForm(false);
-    setFormData({});
+        if (isSupabaseConfigured()) {
+          const savedPartner = await supabaseService.create('partners', newPartner);
+          if (savedPartner) {
+            setPartners([...partners, savedPartner]);
+          } else {
+            setPartners([...partners, { ...newPartner, id: Date.now() }]);
+            showToast('Saved locally only - Supabase error', 'warning');
+          }
+        } else {
+          setPartners([...partners, { ...newPartner, id: Date.now() }]);
+        }
+      }
+
+      setShowPartnerForm(false);
+      setFormData({});
+      showToast(editingId ? 'Partner updated' : 'Partner added', 'success');
+    } catch (error) {
+      console.error('Error saving partner:', error);
+      showToast('Error saving partner', 'error');
+    }
   };
 
   const handleDeletePartner = (id) => {
     showConfirmDialog(
       'Delete Partner',
       'Are you sure you want to delete this partner? This action cannot be undone.',
-      () => setPartners(partners.filter(p => p.id !== id)),
+      async () => {
+        setPartners(partners.filter(p => p.id !== id));
+
+        if (isSupabaseConfigured()) {
+          const success = await supabaseService.delete('partners', id);
+          if (!success) {
+            showToast('Deleted locally but Supabase sync failed', 'warning');
+          }
+        }
+      },
+      'danger'
+    );
+  };
+
+  // Event handlers
+  const handleSaveEvent = async (eventData) => {
+    if (!eventData.title || !eventData.date) {
+      showToast('Please fill in event title and date', 'error');
+      return false;
+    }
+
+    try {
+      if (eventData.id && events.some(e => e.id === eventData.id)) {
+        // Update existing event
+        setEvents(events.map(e => e.id === eventData.id ? eventData : e));
+
+        if (isSupabaseConfigured()) {
+          await supabaseService.update('events', eventData.id, eventData);
+        }
+      } else {
+        // Create new event
+        const newEvent = { ...eventData, createdAt: eventData.createdAt || new Date().toISOString() };
+
+        if (isSupabaseConfigured()) {
+          const savedEvent = await supabaseService.create('events', newEvent);
+          if (savedEvent) {
+            setEvents([...events, savedEvent]);
+          } else {
+            setEvents([...events, { ...newEvent, id: Date.now() }]);
+            showToast('Saved locally only - Supabase error', 'warning');
+          }
+        } else {
+          setEvents([...events, { ...newEvent, id: Date.now() }]);
+        }
+      }
+
+      showToast(eventData.id ? 'Event updated' : 'Event added', 'success');
+      return true;
+    } catch (error) {
+      console.error('Error saving event:', error);
+      showToast('Error saving event', 'error');
+      return false;
+    }
+  };
+
+  const handleDeleteEvent = (id) => {
+    showConfirmDialog(
+      'Delete Event',
+      'Are you sure you want to delete this event? This action cannot be undone.',
+      async () => {
+        setEvents(events.filter(e => e.id !== id));
+
+        if (isSupabaseConfigured()) {
+          const success = await supabaseService.delete('events', id);
+          if (!success) {
+            showToast('Deleted locally but Supabase sync failed', 'warning');
+          }
+        }
+      },
+      'danger'
+    );
+  };
+
+  // Follow-up handlers
+  const handleSaveFollowUp = async (followUpData) => {
+    if (!followUpData.contactName || !followUpData.dueDate) {
+      showToast('Please fill in contact name and due date', 'error');
+      return false;
+    }
+
+    try {
+      const dataWithStatus = { ...followUpData, status: followUpData.status || 'pending' };
+
+      if (followUpData.id && followUps.some(f => f.id === followUpData.id)) {
+        // Update existing follow-up
+        setFollowUps(followUps.map(f => f.id === followUpData.id ? dataWithStatus : f));
+
+        if (isSupabaseConfigured()) {
+          await supabaseService.update('follow_ups', followUpData.id, dataWithStatus);
+        }
+      } else {
+        // Create new follow-up
+        const newFollowUp = { ...dataWithStatus, createdAt: dataWithStatus.createdAt || new Date().toISOString() };
+
+        if (isSupabaseConfigured()) {
+          const savedFollowUp = await supabaseService.create('follow_ups', newFollowUp);
+          if (savedFollowUp) {
+            setFollowUps([...followUps, savedFollowUp]);
+          } else {
+            setFollowUps([...followUps, { ...newFollowUp, id: Date.now() }]);
+            showToast('Saved locally only - Supabase error', 'warning');
+          }
+        } else {
+          setFollowUps([...followUps, { ...newFollowUp, id: Date.now() }]);
+        }
+      }
+
+      showToast(followUpData.id ? 'Follow-up updated' : 'Follow-up added', 'success');
+      return true;
+    } catch (error) {
+      console.error('Error saving follow-up:', error);
+      showToast('Error saving follow-up', 'error');
+      return false;
+    }
+  };
+
+  const handleDeleteFollowUp = (id) => {
+    showConfirmDialog(
+      'Delete Follow-up',
+      'Are you sure you want to delete this follow-up? This action cannot be undone.',
+      async () => {
+        setFollowUps(followUps.filter(f => f.id !== id));
+
+        if (isSupabaseConfigured()) {
+          const success = await supabaseService.delete('follow_ups', id);
+          if (!success) {
+            showToast('Deleted locally but Supabase sync failed', 'warning');
+          }
+        }
+      },
       'danger'
     );
   };
@@ -5817,19 +6058,14 @@ export default function IndustrialCRM() {
                 </div>
                 <div className="flex gap-4 mt-6">
                   <button
-                    onClick={() => {
-                      if (!formData.contactName || !formData.dueDate) {
-                        showToast('Please fill in contact name and due date', 'error');
-                        return;
+                    onClick={async () => {
+                      const followUpData = editingId ? { ...formData, id: editingId } : { ...formData };
+                      const success = await handleSaveFollowUp(followUpData);
+                      if (success) {
+                        setShowFollowUpForm(false);
+                        setFormData({});
+                        setEditingId(null);
                       }
-                      if (editingId) {
-                        setFollowUps(followUps.map(f => f.id === editingId ? { ...formData, id: editingId, status: formData.status || 'pending' } : f));
-                      } else {
-                        setFollowUps([...followUps, { ...formData, id: Date.now(), status: 'pending', createdAt: new Date().toISOString() }]);
-                      }
-                      setShowFollowUpForm(false);
-                      setFormData({});
-                      setEditingId(null);
                     }}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
                   >
@@ -6338,20 +6574,15 @@ export default function IndustrialCRM() {
                 </div>
                 <div className="flex gap-4 mt-6">
                   <button
-                    onClick={() => {
-                      if (!formData.title || !formData.date) {
-                        showToast('Please fill in event title and date', 'error');
-                        return;
+                    onClick={async () => {
+                      const eventData = editingId ? { ...formData, id: editingId } : { ...formData };
+                      const success = await handleSaveEvent(eventData);
+                      if (success) {
+                        setShowEventForm(false);
+                        setFormData({});
+                        setEditingId(null);
+                        setContactTagSearch('');
                       }
-                      if (editingId) {
-                        setEvents(events.map(e => e.id === editingId ? { ...formData, id: editingId } : e));
-                      } else {
-                        setEvents([...events, { ...formData, id: Date.now(), createdAt: new Date().toISOString() }]);
-                      }
-                      setShowEventForm(false);
-                      setFormData({});
-                      setEditingId(null);
-                      setContactTagSearch('');
                     }}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
                   >
@@ -7672,18 +7903,18 @@ export default function IndustrialCRM() {
                           rows="2"
                         />
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             const newFollowUp = {
                               ...inlineFollowUpData,
-                              id: Date.now(),
                               contactName: profileContact.displayName,
                               status: 'pending',
                               createdAt: new Date().toISOString()
                             };
-                            setFollowUps([...followUps, newFollowUp]);
-                            setShowInlineFollowUpForm(false);
-                            setInlineFollowUpData({});
-                            showToast('Follow-up created!', 'success');
+                            const success = await handleSaveFollowUp(newFollowUp);
+                            if (success) {
+                              setShowInlineFollowUpForm(false);
+                              setInlineFollowUpData({});
+                            }
                           }}
                           className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
                         >
@@ -7796,16 +8027,16 @@ export default function IndustrialCRM() {
                           className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         />
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             const newEvent = {
                               ...inlineEventData,
-                              id: Date.now(),
                               createdAt: new Date().toISOString()
                             };
-                            setEvents([...events, newEvent]);
-                            setShowInlineEventForm(false);
-                            setInlineEventData({});
-                            showToast('Event created!', 'success');
+                            const success = await handleSaveEvent(newEvent);
+                            if (success) {
+                              setShowInlineEventForm(false);
+                              setInlineEventData({});
+                            }
                           }}
                           className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
                         >
