@@ -2,21 +2,64 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
-import EmptyState from './components/EmptyState';
 import { supabaseService, isSupabaseConfigured, supabase } from './services/supabase';
 
+// ==================
+// CONSTANTS
+// ==================
+
+const ALLOWED_EMAILS = [
+  'zach@axispoint.llc',
+  'ethaniel@axispoint.llc'
+];
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+
+const EVENT_TYPES = ['Call', 'Email', 'Meeting', 'Property Tour', 'Broker Meeting', 'Partner Presentation',
+                     'Due Diligence Deadline', 'Closing Date', 'Other'];
+
+const PRIORITY_LEVELS = ['High', 'Medium', 'Low'];
+
+const ASSET_CLASSES = ['Industrial', 'Retail', 'Office', 'Multifamily', 'Self Storage',
+                       'Hotel', 'Land', 'CRE Lending', 'Mixed Use', 'Other'];
+
+const DEBT_SERVICE_TYPES = [
+  { value: 'standard', label: 'Amortizing (Standard)' },
+  { value: 'interestOnly', label: 'Interest-Only' }
+];
+
 export default function IndustrialCRM() {
+  // ==================
+  // ENTITY DATA STATE
+  // ==================
   const [properties, setProperties] = useState([]);
   const [brokers, setBrokers] = useState([]);
   const [partners, setPartners] = useState([]);
   const [gatekeepers, setGatekeepers] = useState([]);
   const [events, setEvents] = useState([]);
   const [followUps, setFollowUps] = useState([]);
+
+  // ==================
+  // UI NAVIGATION STATE
+  // ==================
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [dashboardView, setDashboardView] = useState('communication'); // communication, today, weekly, analytics
+  const [dashboardView, setDashboardView] = useState('communication');
   const [searchTerm, setSearchTerm] = useState('');
-  const [contactFilter, setContactFilter] = useState('all'); // all, brokers, gatekeepers, partners
-  const [contactSort, setContactSort] = useState('name'); // name, recent
+  const [contactFilter, setContactFilter] = useState('all');
+  const [contactSort, setContactSort] = useState('name');
+  const [darkMode, setDarkMode] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // ==================
+  // AUTH STATE
+  // ==================
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // ==================
+  // FORM/MODAL STATE
+  // ==================
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [showBrokerForm, setShowBrokerForm] = useState(false);
   const [showPartnerForm, setShowPartnerForm] = useState(false);
@@ -27,33 +70,37 @@ export default function IndustrialCRM() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
-  const [darkMode, setDarkMode] = useState(true);
-  const [isLoadingData, setIsLoadingData] = useState(true);
 
-  // Auth state
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  // Calendar view state
+  // ==================
+  // CALENDAR STATE
+  // ==================
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [calendarView, setCalendarView] = useState('month'); // 'month' or 'list'
-  const [selectedDayDetails, setSelectedDayDetails] = useState(null); // { day, month, year, events }
+  const [calendarView, setCalendarView] = useState('month');
+  const [selectedDayDetails, setSelectedDayDetails] = useState(null);
   const [contactTagSearch, setContactTagSearch] = useState('');
 
-  // Toast notification state
+  // ==================
+  // NOTIFICATION STATE
+  // ==================
   const [toasts, setToasts] = useState([]);
 
-  // Photo lightbox state
+  // ==================
+  // PHOTO LIGHTBOX STATE
+  // ==================
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxPhotos, setLightboxPhotos] = useState([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  // Contact detail modal state
+  // ==================
+  // CONTACT DETAIL MODAL STATE
+  // ==================
   const [contactDetailOpen, setContactDetailOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
 
-  // Full-screen contact profile state
+  // ==================
+  // CONTACT PROFILE STATE
+  // ==================
   const [viewingContactProfile, setViewingContactProfile] = useState(false);
   const [profileContact, setProfileContact] = useState(null);
   const [editingObjective, setEditingObjective] = useState(false);
@@ -63,14 +110,18 @@ export default function IndustrialCRM() {
   const [inlineFollowUpData, setInlineFollowUpData] = useState({});
   const [inlineEventData, setInlineEventData] = useState({});
 
-  // Full-screen property profile state
+  // ==================
+  // PROPERTY PROFILE STATE
+  // ==================
   const [viewingPropertyProfile, setViewingPropertyProfile] = useState(false);
   const [profileProperty, setProfileProperty] = useState(null);
   const [propertyBrokerSearch, setPropertyBrokerSearch] = useState('');
   const [propertyPartnerSearch, setPropertyPartnerSearch] = useState('');
   const [propertyGatekeeperSearch, setPropertyGatekeeperSearch] = useState('');
 
-  // Note-taking state
+  // ==================
+  // NOTE-TAKING STATE
+  // ==================
   const [noteContent, setNoteContent] = useState({});
   const [noteCategory, setNoteCategory] = useState({});
   const [editingNoteId, setEditingNoteId] = useState(null);
@@ -78,12 +129,16 @@ export default function IndustrialCRM() {
   const [expandedNotes, setExpandedNotes] = useState({});
   const [collapsedNoteSections, setCollapsedNoteSections] = useState({});
 
-  // Activity feed filters
+  // ==================
+  // ACTIVITY FEED FILTERS
+  // ==================
   const [activityContactType, setActivityContactType] = useState('all');
   const [activityCategory, setActivityCategory] = useState('all');
   const [activityDateFilter, setActivityDateFilter] = useState('all');
 
-  // Sensitivity Analysis state
+  // ==================
+  // SENSITIVITY ANALYSIS STATE
+  // ==================
   const [sensitivityPropertyId, setSensitivityPropertyId] = useState(null);
   const [sensitivityRowVar, setSensitivityRowVar] = useState('monthlyBaseRentPerSqft');
   const [sensitivityColVar, setSensitivityColVar] = useState('exitCapRate');
@@ -94,7 +149,9 @@ export default function IndustrialCRM() {
   const [sensitivityColMax, setSensitivityColMax] = useState('');
   const [sensitivityTable, setSensitivityTable] = useState(null);
 
-  // Confirmation dialog state
+  // ==================
+  // CONFIRMATION DIALOG STATE
+  // ==================
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: '',
@@ -103,7 +160,17 @@ export default function IndustrialCRM() {
     variant: 'danger'
   });
 
-  // Helper function to show confirmation dialog
+  // ==================
+  // DIALOG HELPERS
+  // ==================
+
+  /**
+   * Show confirmation dialog to user
+   * @param {string} title - Dialog title
+   * @param {string} message - Dialog message
+   * @param {Function} onConfirm - Callback function when user confirms
+   * @param {string} variant - Dialog variant (danger, warning, info)
+   */
   const showConfirmDialog = (title, message, onConfirm, variant = 'danger') => {
     setConfirmDialog({
       isOpen: true,
@@ -114,6 +181,9 @@ export default function IndustrialCRM() {
     });
   };
 
+  /**
+   * Close confirmation dialog
+   */
   const closeConfirmDialog = () => {
     setConfirmDialog({
       isOpen: false,
@@ -124,7 +194,15 @@ export default function IndustrialCRM() {
     });
   };
 
-  // Auth functions
+  // ==================
+  // AUTH FUNCTIONS
+  // ==================
+
+  /**
+   * Sign in with Google OAuth
+   * @async
+   * @returns {Promise<void>}
+   */
   const signInWithGoogle = async () => {
     if (!supabase) return;
     const { error } = await supabase.auth.signInWithOAuth({
@@ -136,13 +214,22 @@ export default function IndustrialCRM() {
     if (error) console.error('Error signing in:', error);
   };
 
+  /**
+   * Sign out current user
+   * @async
+   * @returns {Promise<void>}
+   */
   const signOut = async () => {
     if (!supabase) return;
     const { error } = await supabase.auth.signOut();
     if (error) console.error('Error signing out:', error);
   };
 
-  // Check auth state on mount
+  // ==================
+  // INITIALIZATION & EFFECTS
+  // ==================
+
+  // Check auth state on mount and listen for auth changes
   useEffect(() => {
     if (!supabase) {
       setAuthLoading(false);
@@ -157,13 +244,8 @@ export default function IndustrialCRM() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
-          // Email whitelist - only these emails can access
-          const allowedEmails = [
-            'zach@axispoint.llc',
-            'ethaniel@axispoint.llc'
-          ];
-
-          if (!allowedEmails.includes(session.user.email)) {
+          // Email whitelist check - only authorized emails can access
+          if (!ALLOWED_EMAILS.includes(session.user.email)) {
             await supabase.auth.signOut();
             alert('Access denied. Your email is not authorized to access this application.');
             return;
@@ -176,7 +258,7 @@ export default function IndustrialCRM() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load data from Supabase only
+  // Load all data from Supabase on mount
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -219,16 +301,25 @@ export default function IndustrialCRM() {
     loadData();
   }, []);
 
-  // Save UI preferences to localStorage (darkMode and dashboardView only)
+  // Persist dark mode preference to localStorage
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
+  // Persist dashboard view preference to localStorage
   useEffect(() => {
     localStorage.setItem('dashboardView', dashboardView);
   }, [dashboardView]);
 
-  // Number formatting utilities
+  // ==================
+  // FORMATTING UTILITIES
+  // ==================
+
+  /**
+   * Format number as USD currency
+   * @param {number} num - Number to format
+   * @returns {string} Formatted currency string
+   */
   const formatCurrency = (num) => {
     if (!num && num !== 0) return 'N/A';
     return new Intl.NumberFormat('en-US', {
@@ -239,17 +330,32 @@ export default function IndustrialCRM() {
     }).format(num);
   };
 
+  /**
+   * Format number with commas
+   * @param {number} num - Number to format
+   * @returns {string} Formatted number string
+   */
   const formatNumber = (num) => {
     if (!num && num !== 0) return 'N/A';
     return new Intl.NumberFormat('en-US').format(num);
   };
 
+  /**
+   * Format number as percentage
+   * @param {number} num - Number to format
+   * @param {number} decimals - Number of decimal places
+   * @returns {string} Formatted percentage string
+   */
   const formatPercent = (num, decimals = 2) => {
     if (!num && num !== 0) return 'N/A';
     return `${parseFloat(num).toFixed(decimals)}%`;
   };
 
-  // Format number input with commas as user types
+  /**
+   * Format number input with commas as user types
+   * @param {string|number} value - Value to format
+   * @returns {string} Formatted value
+   */
   const formatNumberInput = (value) => {
     if (!value) return '';
     const stripped = value.toString().replace(/,/g, '');
@@ -258,24 +364,46 @@ export default function IndustrialCRM() {
     return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(numValue);
   };
 
-  // Strip commas for storage
+  /**
+   * Strip commas from formatted numbers for storage
+   * @param {string} value - Value with commas
+   * @returns {string} Value without commas
+   */
   const stripCommas = (value) => {
     return value ? value.replace(/,/g, '') : '';
   };
 
-  // Date formatting utilities
+  // ==================
+  // DATE/TIME UTILITIES
+  // ==================
+
+  /**
+   * Format date string to short date format
+   * @param {string} dateString - ISO date string
+   * @returns {string} Formatted date
+   */
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  /**
+   * Format date string with time
+   * @param {string} dateString - ISO date string
+   * @returns {string} Formatted date and time
+   */
   const formatDateTime = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
   };
 
+  /**
+   * Calculate days between date and today
+   * @param {string} dateString - ISO date string
+   * @returns {number|null} Number of days ago
+   */
   const getDaysAgo = (dateString) => {
     if (!dateString) return null;
     const date = new Date(dateString);
@@ -285,6 +413,11 @@ export default function IndustrialCRM() {
     return diffDays;
   };
 
+  /**
+   * Check if date is in the past
+   * @param {string} dateString - ISO date string
+   * @returns {boolean} True if date is overdue
+   */
   const isOverdue = (dateString) => {
     if (!dateString) return false;
     const date = new Date(dateString);
@@ -294,6 +427,11 @@ export default function IndustrialCRM() {
     return date < today;
   };
 
+  /**
+   * Check if date is today
+   * @param {string} dateString - ISO date string
+   * @returns {boolean} True if date is today
+   */
   const isDueToday = (dateString) => {
     if (!dateString) return false;
     const date = new Date(dateString);
@@ -301,15 +439,34 @@ export default function IndustrialCRM() {
     return date.toDateString() === today.toDateString();
   };
 
-  // Calendar helper functions
+  // ==================
+  // CALENDAR UTILITIES
+  // ==================
+
+  /**
+   * Get number of days in month
+   * @param {number} month - Month (0-11)
+   * @param {number} year - Year
+   * @returns {number} Number of days
+   */
   const getDaysInMonth = (month, year) => {
     return new Date(year, month + 1, 0).getDate();
   };
 
+  /**
+   * Get first day of month (0=Sunday, 6=Saturday)
+   * @param {number} month - Month (0-11)
+   * @param {number} year - Year
+   * @returns {number} Day of week
+   */
   const getFirstDayOfMonth = (month, year) => {
     return new Date(year, month, 1).getDay();
   };
 
+  /**
+   * Generate array of days for calendar grid
+   * @returns {Array<number|null>} Array of days with null for empty cells
+   */
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentMonth, currentYear);
     const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
@@ -328,6 +485,11 @@ export default function IndustrialCRM() {
     return days;
   };
 
+  /**
+   * Get events for specific day
+   * @param {number} day - Day of month
+   * @returns {Array} Events for that day
+   */
   const getEventsForDay = (day) => {
     if (!day) return [];
     const dateToCheck = new Date(currentYear, currentMonth, day);
@@ -339,6 +501,9 @@ export default function IndustrialCRM() {
     });
   };
 
+  /**
+   * Navigate to previous month in calendar
+   */
   const goToPreviousMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
@@ -348,6 +513,9 @@ export default function IndustrialCRM() {
     }
   };
 
+  /**
+   * Navigate to next month in calendar
+   */
   const goToNextMonth = () => {
     if (currentMonth === 11) {
       setCurrentMonth(0);
@@ -357,12 +525,20 @@ export default function IndustrialCRM() {
     }
   };
 
+  /**
+   * Navigate to today's month in calendar
+   */
   const goToToday = () => {
     const today = new Date();
     setCurrentMonth(today.getMonth());
     setCurrentYear(today.getFullYear());
   };
 
+  /**
+   * Check if calendar day is today
+   * @param {number} day - Day of month
+   * @returns {boolean} True if day is today
+   */
   const isToday = (day) => {
     const today = new Date();
     return day === today.getDate() &&
@@ -370,10 +546,15 @@ export default function IndustrialCRM() {
            currentYear === today.getFullYear();
   };
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                      'July', 'August', 'September', 'October', 'November', 'December'];
+  // ==================
+  // TOAST NOTIFICATIONS
+  // ==================
 
-  // Toast notification system
+  /**
+   * Show toast notification
+   * @param {string} message - Message to display
+   * @param {string} type - Toast type (success, error, warning, info)
+   */
   const showToast = useCallback((message, type = 'success') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -382,7 +563,14 @@ export default function IndustrialCRM() {
     }, 4000);
   }, []);
 
-  // Google Calendar export
+  // ==================
+  // GOOGLE CALENDAR INTEGRATION
+  // ==================
+
+  /**
+   * Export event to Google Calendar
+   * @param {Object} event - Event object
+   */
   const exportToGoogleCalendar = (event) => {
     const title = encodeURIComponent(event.title);
     const details = encodeURIComponent(event.description || '');
@@ -402,7 +590,17 @@ export default function IndustrialCRM() {
     window.open(url, '_blank');
   };
 
-  // Calculate amortization payment
+  // ==================
+  // FINANCIAL CALCULATIONS
+  // ==================
+
+  /**
+   * Calculate monthly amortization payment
+   * @param {number} principal - Loan principal
+   * @param {number} annualRate - Annual interest rate (percentage)
+   * @param {number} years - Loan term in years
+   * @returns {number} Monthly payment
+   */
   const calculateAmortizationPayment = (principal, annualRate, years) => {
     const monthlyRate = annualRate / 100 / 12;
     const numPayments = years * 12;
@@ -423,7 +621,13 @@ export default function IndustrialCRM() {
     return Math.max(0, remainingBalance);
   };
 
-  // Property form handlers
+  // ==================
+  // PROPERTY CRUD OPERATIONS
+  // ==================
+
+  /**
+   * Initialize property form for adding new property
+   */
   const handleAddProperty = () => {
     setFormData({
       address: '',
@@ -448,6 +652,10 @@ export default function IndustrialCRM() {
     setShowInlineBrokerForm(false);
   };
 
+  /**
+   * Initialize property form for editing existing property
+   * @param {Object} property - Property object to edit
+   */
   const handleEditProperty = (property) => {
     setFormData({
       ...property,
@@ -530,7 +738,17 @@ export default function IndustrialCRM() {
     );
   };
 
-  // Note handlers
+  // ==================
+  // NOTE MANAGEMENT OPERATIONS
+  // ==================
+
+  /**
+   * Add note to property or contact
+   * @param {string} entityType - Type of entity (property, broker, partner, gatekeeper)
+   * @param {string|number} entityId - Entity ID
+   * @param {string} content - Note content
+   * @param {string} category - Note category
+   */
   const handleAddNote = (entityType, entityId, content, category = 'general') => {
     if (!content.trim()) return;
 
@@ -647,7 +865,14 @@ export default function IndustrialCRM() {
     return then.toLocaleDateString();
   };
 
-  // Photo handlers
+  // ==================
+  // PHOTO MANAGEMENT OPERATIONS
+  // ==================
+
+  /**
+   * Handle photo upload from file input
+   * @param {Event} e - File input change event
+   */
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
 
@@ -819,7 +1044,13 @@ export default function IndustrialCRM() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightboxOpen, nextPhoto, prevPhoto]);
 
-  // Broker form handlers
+  // ==================
+  // BROKER CRUD OPERATIONS
+  // ==================
+
+  /**
+   * Initialize broker form for adding new broker
+   */
   const handleAddBroker = () => {
     setFormData({
       name: '',
@@ -895,7 +1126,13 @@ export default function IndustrialCRM() {
     );
   };
 
-  // Gatekeeper form handlers
+  // ==================
+  // GATEKEEPER CRUD OPERATIONS
+  // ==================
+
+  /**
+   * Initialize gatekeeper form for adding new gatekeeper
+   */
   const handleAddGatekeeper = () => {
     setFormData({
       name: '',
@@ -1017,7 +1254,13 @@ export default function IndustrialCRM() {
     }
   };
 
-  // Partner form handlers
+  // ==================
+  // PARTNER CRUD OPERATIONS
+  // ==================
+
+  /**
+   * Initialize partner form for adding new partner
+   */
   const handleAddPartner = () => {
     setFormData({
       name: '',
@@ -1128,7 +1371,16 @@ export default function IndustrialCRM() {
     );
   };
 
-  // Event handlers
+  // ==================
+  // EVENT CRUD OPERATIONS
+  // ==================
+
+  /**
+   * Save or update event
+   * @async
+   * @param {Object} eventData - Event data object
+   * @returns {Promise<boolean>} True if successful
+   */
   const handleSaveEvent = async (eventData) => {
     if (!eventData.title || !eventData.date) {
       showToast('Please fill in event title and date', 'error');
@@ -1187,7 +1439,16 @@ export default function IndustrialCRM() {
     );
   };
 
-  // Follow-up handlers
+  // ==================
+  // FOLLOW-UP CRUD OPERATIONS
+  // ==================
+
+  /**
+   * Save or update follow-up
+   * @async
+   * @param {Object} followUpData - Follow-up data object
+   * @returns {Promise<boolean>} True if successful
+   */
   const handleSaveFollowUp = async (followUpData) => {
     if (!followUpData.contactName || !followUpData.dueDate) {
       showToast('Please fill in contact name and due date', 'error');
@@ -1297,7 +1558,14 @@ export default function IndustrialCRM() {
     }
   };
 
-  // Test Data Functions
+  // ==================
+  // TEST DATA & UTILITIES
+  // ==================
+
+  /**
+   * Load test data into application
+   * Creates sample properties, brokers, partners, gatekeepers, events, and follow-ups
+   */
   const loadTestData = () => {
     const loadData = async () => {
       const now = new Date().toISOString();
