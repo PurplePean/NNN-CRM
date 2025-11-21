@@ -1,8 +1,8 @@
 -- ============================================================================
--- NNN CRM - Production Database Schema
+-- NNN CRM - Production Database Schema (REBUILT)
 -- ============================================================================
--- This schema creates all necessary tables for the NNN CRM application
--- with proper data types, security policies, and performance indexes.
+-- Generated: November 21, 2025
+-- Source: All fields extracted from src/App.jsx form handlers and test data
 --
 -- IMPORTANT: This will DROP all existing tables and recreate them.
 -- Make sure to backup any important data before running this script.
@@ -24,196 +24,257 @@ DROP TABLE IF EXISTS brokers CASCADE;
 
 -- ============================================================================
 -- TABLE: brokers
--- Purpose: Store information about real estate brokers and agents
+-- Source: handleAddBroker() form in App.jsx lines 1054-1067
 -- ============================================================================
 CREATE TABLE brokers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  company TEXT,
-  email TEXT,
-  phone TEXT,
-  "noteHistory" JSONB DEFAULT '[]'::jsonb,
+
+  -- Core contact info (form fields)
+  name TEXT NOT NULL,                    -- Broker Name input
+  email TEXT,                            -- Email input
+  phone TEXT,                            -- Phone input
+
+  -- Firm details (form fields)
+  "firmName" TEXT,                       -- Firm Name input
+  "firmWebsite" TEXT,                    -- Firm Website input
+  "crexiLink" TEXT,                      -- CREXi Link input
+  "licenseNumber" TEXT,                  -- License # input
+
+  -- Additional info
+  conversations TEXT,                    -- Conversations textarea (from form)
+  company TEXT,                          -- Legacy field from test data
+
+  -- Notes (stored as JSONB array)
+  "noteHistory" JSONB DEFAULT '[]'::jsonb,  -- Array of note objects
+
+  -- System fields
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- Add unique constraint on email per user (prevent duplicate emails for same user)
-CREATE UNIQUE INDEX idx_brokers_user_email ON brokers(user_id, email) WHERE email IS NOT NULL;
-
--- Add index for performance
+-- Indexes for brokers
 CREATE INDEX idx_brokers_user_id ON brokers(user_id);
 CREATE INDEX idx_brokers_email ON brokers(email) WHERE email IS NOT NULL;
+CREATE INDEX idx_brokers_firm ON brokers("firmName");
 
--- Add comment
-COMMENT ON TABLE brokers IS 'Real estate brokers and agents who facilitate property transactions';
+COMMENT ON TABLE brokers IS 'Real estate brokers - fields from handleAddBroker() form';
 
 -- ============================================================================
 -- TABLE: partners
--- Purpose: Store information about investment partners and capital sources
+-- Source: handleAddPartner() form in App.jsx lines 1264-1278
 -- ============================================================================
 CREATE TABLE partners (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  type TEXT,
-  "commitmentAmount" NUMERIC(15,2),
-  "assetClass" TEXT,
-  email TEXT,
-  phone TEXT,
-  "noteHistory" JSONB DEFAULT '[]'::jsonb,
+
+  -- Core contact info (form fields)
+  name TEXT NOT NULL,                    -- Partner Name input
+  "entityName" TEXT,                     -- Entity Name input
+  email TEXT,                            -- Email input
+  phone TEXT,                            -- Phone input
+
+  -- Investment details (form fields)
+  "checkSize" TEXT,                      -- Check Size input (commitmentAmount in test data)
+  "assetClasses" JSONB DEFAULT '[]'::jsonb,  -- Asset Classes multi-select (array)
+  "creExperience" TEXT,                  -- CRE Experience select/input
+  background TEXT,                       -- Background textarea
+  "riskTolerance" TEXT,                  -- Risk Tolerance select
+  "customTags" JSONB DEFAULT '[]'::jsonb,    -- Custom Tags (array)
+
+  -- Legacy fields from test data
+  type TEXT,                             -- Partner type (Institutional, Family Office, etc.)
+  "commitmentAmount" TEXT,               -- Legacy: commitment amount
+  "assetClass" TEXT,                     -- Legacy: single asset class
+
+  -- Notes (stored as JSONB array)
+  "noteHistory" JSONB DEFAULT '[]'::jsonb,  -- Array of note objects
+
+  -- System fields
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- Add unique constraint on email per user
-CREATE UNIQUE INDEX idx_partners_user_email ON partners(user_id, email) WHERE email IS NOT NULL;
-
--- Add indexes for performance
+-- Indexes for partners
 CREATE INDEX idx_partners_user_id ON partners(user_id);
 CREATE INDEX idx_partners_email ON partners(email) WHERE email IS NOT NULL;
+CREATE INDEX idx_partners_type ON partners(type);
 
--- Add comment
-COMMENT ON TABLE partners IS 'Investment partners, capital providers, and equity sources';
+COMMENT ON TABLE partners IS 'Investment partners - fields from handleAddPartner() form';
 
 -- ============================================================================
 -- TABLE: gatekeepers
--- Purpose: Store information about key decision makers and influencers
+-- Source: handleAddGatekeeper() form in App.jsx lines 1136-1144
 -- ============================================================================
 CREATE TABLE gatekeepers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  title TEXT,
-  company TEXT,
-  "relatedTo" TEXT,
-  email TEXT,
-  phone TEXT,
+
+  -- Core contact info (form fields)
+  name TEXT NOT NULL,                    -- Gatekeeper Name input
+  title TEXT,                            -- Title input
+  email TEXT,                            -- Email input
+  phone TEXT,                            -- Phone input
+  company TEXT,                          -- Company input
+  "relatedTo" TEXT,                      -- Related To input (partner relationship)
+
+  -- System fields
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- Add unique constraint on email per user
-CREATE UNIQUE INDEX idx_gatekeepers_user_email ON gatekeepers(user_id, email) WHERE email IS NOT NULL;
-
--- Add indexes for performance
+-- Indexes for gatekeepers
 CREATE INDEX idx_gatekeepers_user_id ON gatekeepers(user_id);
 CREATE INDEX idx_gatekeepers_email ON gatekeepers(email) WHERE email IS NOT NULL;
+CREATE INDEX idx_gatekeepers_company ON gatekeepers(company);
 
--- Add comment
-COMMENT ON TABLE gatekeepers IS 'Key decision makers and influencers at partner organizations';
+COMMENT ON TABLE gatekeepers IS 'Key decision makers - fields from handleAddGatekeeper() form';
 
 -- ============================================================================
 -- TABLE: properties
--- Purpose: Store industrial real estate properties and their financial data
+-- Source: handleAddProperty() form in App.jsx lines 631-649
 -- ============================================================================
 CREATE TABLE properties (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  address TEXT NOT NULL,
-  "squareFeet" INTEGER,
-  "monthlyBaseRentPerSqft" NUMERIC(10,2),
-  "purchasePrice" NUMERIC(15,2),
-  improvements NUMERIC(15,2),
-  "closingCosts" NUMERIC(15,2),
-  "ltvPercent" NUMERIC(5,2),
-  "interestRate" NUMERIC(5,3),
-  "loanTerm" INTEGER,
-  "debtServiceType" TEXT,
-  "exitCapRate" NUMERIC(5,2),
-  "holdingPeriodMonths" INTEGER,
-  "brokerIds" UUID[] DEFAULT '{}'::UUID[],
-  "noteHistory" JSONB DEFAULT '[]'::jsonb,
-  photos JSONB DEFAULT '[]'::jsonb,
+
+  -- Property details (form fields)
+  address TEXT NOT NULL,                 -- Property Address input
+  "squareFeet" TEXT,                     -- Square Feet input
+  "monthlyBaseRentPerSqft" TEXT,         -- Monthly Base Rent per Sq Ft input
+
+  -- Purchase & costs (form fields)
+  "purchasePrice" TEXT,                  -- Purchase Price input
+  improvements TEXT,                     -- Improvements (CapEx/Renovation) input
+  "closingCosts" TEXT,                   -- Closing Costs input
+
+  -- Financing (form fields)
+  "ltvPercent" TEXT,                     -- LTV % input
+  "interestRate" TEXT,                   -- Interest Rate input
+  "loanTerm" TEXT,                       -- Loan Term input (default '30')
+  "debtServiceType" TEXT,                -- Debt Service Type select (standard/interestOnly)
+
+  -- Exit analysis (form fields)
+  "exitCapRate" TEXT,                    -- Exit Cap Rate input
+  "holdingPeriodMonths" TEXT,            -- Holding Period (months) input
+
+  -- External links (form fields)
+  crexi TEXT,                            -- CREXi Listing URL input
+
+  -- Relationships
+  "brokerIds" UUID[] DEFAULT '{}'::UUID[],  -- Array of broker IDs
+
+  -- Media and notes
+  photos JSONB DEFAULT '[]'::jsonb,      -- Array of photo objects
+  "noteHistory" JSONB DEFAULT '[]'::jsonb,  -- Array of note objects
+  notes TEXT,                            -- Simple notes field
+
+  -- System fields
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- Add indexes for performance
+-- Indexes for properties
 CREATE INDEX idx_properties_user_id ON properties(user_id);
 CREATE INDEX idx_properties_address ON properties(address);
 CREATE INDEX idx_properties_broker_ids ON properties USING GIN("brokerIds");
 
--- Add comment
-COMMENT ON TABLE properties IS 'Industrial real estate properties with financial analysis data';
+COMMENT ON TABLE properties IS 'Industrial real estate properties - fields from handleAddProperty() form';
 
 -- ============================================================================
 -- TABLE: events
--- Purpose: Store calendar events, tours, meetings, and important dates
+-- Source: testEvents in App.jsx lines 1737-1783
 -- ============================================================================
 CREATE TABLE events (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  title TEXT NOT NULL,
-  type TEXT,
-  date TIMESTAMP WITH TIME ZONE,
-  location TEXT,
-  description TEXT,
+
+  -- Event details
+  title TEXT NOT NULL,                   -- Event title
+  type TEXT,                             -- Event type (Property Tour, Meeting, etc.)
+  date TEXT,                             -- Event date/time (ISO string)
+  location TEXT,                         -- Event location
+  description TEXT,                      -- Event description
+
+  -- Legacy field from test data
+  "createdAt" TEXT,                      -- Creation timestamp (string format)
+
+  -- System fields
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- Add indexes for performance
+-- Indexes for events
 CREATE INDEX idx_events_user_id ON events(user_id);
 CREATE INDEX idx_events_date ON events(date);
 CREATE INDEX idx_events_type ON events(type);
 
--- Add comment
-COMMENT ON TABLE events IS 'Calendar events including property tours, meetings, deadlines, and closings';
+COMMENT ON TABLE events IS 'Calendar events - fields from testEvents in App.jsx';
 
 -- ============================================================================
 -- TABLE: follow_ups
--- Purpose: Store follow-up tasks and reminders for contacts
+-- Source: testFollowUps in App.jsx lines 1694-1735
 -- ============================================================================
 CREATE TABLE follow_ups (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  title TEXT NOT NULL,
-  "contactName" TEXT,
-  type TEXT,
-  "dueDate" DATE,
-  priority TEXT,
-  notes TEXT,
-  status TEXT DEFAULT 'pending',
+
+  -- Follow-up details
+  "contactName" TEXT,                    -- Contact name (e.g., "Sarah Mitchell (CBRE)")
+  type TEXT,                             -- Follow-up type (Call, Meeting, Email, Property Tour)
+  "dueDate" TEXT,                        -- Due date (ISO date string)
+  priority TEXT,                         -- Priority (High, Medium, Low)
+  notes TEXT,                            -- Follow-up notes
+  status TEXT DEFAULT 'pending',         -- Status (pending, completed)
+
+  -- Legacy fields
+  title TEXT,                            -- Title field (from old schema)
+  "createdAt" TEXT,                      -- Creation timestamp (string format)
+
+  -- System fields
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- Add indexes for performance
+-- Indexes for follow_ups
 CREATE INDEX idx_follow_ups_user_id ON follow_ups(user_id);
 CREATE INDEX idx_follow_ups_due_date ON follow_ups("dueDate");
 CREATE INDEX idx_follow_ups_status ON follow_ups(status);
 CREATE INDEX idx_follow_ups_priority ON follow_ups(priority);
 
--- Add comment
-COMMENT ON TABLE follow_ups IS 'Follow-up tasks and reminders for maintaining contact relationships';
+COMMENT ON TABLE follow_ups IS 'Follow-up tasks - fields from testFollowUps in App.jsx';
 
 -- ============================================================================
 -- TABLE: notes
--- Purpose: Store notes associated with any entity in the system
+-- Purpose: Standalone notes table for any entity
 -- ============================================================================
 CREATE TABLE notes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  "entityType" TEXT NOT NULL,
-  "entityId" UUID NOT NULL,
-  content TEXT NOT NULL,
-  category TEXT,
+
+  -- Note association
+  "entityType" TEXT NOT NULL,            -- Entity type (broker, partner, property, etc.)
+  "entityId" UUID NOT NULL,              -- ID of the associated entity
+
+  -- Note content
+  content TEXT NOT NULL,                 -- Note content
+  category TEXT,                         -- Note category (general, financial, etc.)
+  edited BOOLEAN DEFAULT FALSE,          -- Whether note has been edited
+
+  -- System fields
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- Add indexes for performance
+-- Indexes for notes
 CREATE INDEX idx_notes_user_id ON notes(user_id);
 CREATE INDEX idx_notes_entity ON notes("entityType", "entityId");
 
--- Add comment
-COMMENT ON TABLE notes IS 'Notes and comments associated with brokers, partners, properties, etc.';
+COMMENT ON TABLE notes IS 'Standalone notes for any entity in the system';
 
 -- ============================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
+-- ROW LEVEL SECURITY (RLS) - Enable on all tables
 -- ============================================================================
--- Enable RLS on all tables
 ALTER TABLE brokers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE partners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE gatekeepers ENABLE ROW LEVEL SECURITY;
@@ -223,137 +284,50 @@ ALTER TABLE follow_ups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- RLS POLICIES: brokers
+-- RLS POLICIES - Allow all authenticated users (shared data model)
 -- ============================================================================
-CREATE POLICY "Users can view their own brokers"
-  ON brokers FOR SELECT
-  USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own brokers"
-  ON brokers FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+-- Brokers policies
+CREATE POLICY "brokers_select" ON brokers FOR SELECT TO authenticated USING (true);
+CREATE POLICY "brokers_insert" ON brokers FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "brokers_update" ON brokers FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "brokers_delete" ON brokers FOR DELETE TO authenticated USING (true);
 
-CREATE POLICY "Users can update their own brokers"
-  ON brokers FOR UPDATE
-  USING (auth.uid() = user_id);
+-- Partners policies
+CREATE POLICY "partners_select" ON partners FOR SELECT TO authenticated USING (true);
+CREATE POLICY "partners_insert" ON partners FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "partners_update" ON partners FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "partners_delete" ON partners FOR DELETE TO authenticated USING (true);
 
-CREATE POLICY "Users can delete their own brokers"
-  ON brokers FOR DELETE
-  USING (auth.uid() = user_id);
+-- Gatekeepers policies
+CREATE POLICY "gatekeepers_select" ON gatekeepers FOR SELECT TO authenticated USING (true);
+CREATE POLICY "gatekeepers_insert" ON gatekeepers FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "gatekeepers_update" ON gatekeepers FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "gatekeepers_delete" ON gatekeepers FOR DELETE TO authenticated USING (true);
 
--- ============================================================================
--- RLS POLICIES: partners
--- ============================================================================
-CREATE POLICY "Users can view their own partners"
-  ON partners FOR SELECT
-  USING (auth.uid() = user_id);
+-- Properties policies
+CREATE POLICY "properties_select" ON properties FOR SELECT TO authenticated USING (true);
+CREATE POLICY "properties_insert" ON properties FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "properties_update" ON properties FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "properties_delete" ON properties FOR DELETE TO authenticated USING (true);
 
-CREATE POLICY "Users can insert their own partners"
-  ON partners FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+-- Events policies
+CREATE POLICY "events_select" ON events FOR SELECT TO authenticated USING (true);
+CREATE POLICY "events_insert" ON events FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "events_update" ON events FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "events_delete" ON events FOR DELETE TO authenticated USING (true);
 
-CREATE POLICY "Users can update their own partners"
-  ON partners FOR UPDATE
-  USING (auth.uid() = user_id);
+-- Follow-ups policies
+CREATE POLICY "follow_ups_select" ON follow_ups FOR SELECT TO authenticated USING (true);
+CREATE POLICY "follow_ups_insert" ON follow_ups FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "follow_ups_update" ON follow_ups FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "follow_ups_delete" ON follow_ups FOR DELETE TO authenticated USING (true);
 
-CREATE POLICY "Users can delete their own partners"
-  ON partners FOR DELETE
-  USING (auth.uid() = user_id);
-
--- ============================================================================
--- RLS POLICIES: gatekeepers
--- ============================================================================
-CREATE POLICY "Users can view their own gatekeepers"
-  ON gatekeepers FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own gatekeepers"
-  ON gatekeepers FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own gatekeepers"
-  ON gatekeepers FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own gatekeepers"
-  ON gatekeepers FOR DELETE
-  USING (auth.uid() = user_id);
-
--- ============================================================================
--- RLS POLICIES: properties
--- ============================================================================
-CREATE POLICY "Users can view their own properties"
-  ON properties FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own properties"
-  ON properties FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own properties"
-  ON properties FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own properties"
-  ON properties FOR DELETE
-  USING (auth.uid() = user_id);
-
--- ============================================================================
--- RLS POLICIES: events
--- ============================================================================
-CREATE POLICY "Users can view their own events"
-  ON events FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own events"
-  ON events FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own events"
-  ON events FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own events"
-  ON events FOR DELETE
-  USING (auth.uid() = user_id);
-
--- ============================================================================
--- RLS POLICIES: follow_ups
--- ============================================================================
-CREATE POLICY "Users can view their own follow_ups"
-  ON follow_ups FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own follow_ups"
-  ON follow_ups FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own follow_ups"
-  ON follow_ups FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own follow_ups"
-  ON follow_ups FOR DELETE
-  USING (auth.uid() = user_id);
-
--- ============================================================================
--- RLS POLICIES: notes
--- ============================================================================
-CREATE POLICY "Users can view their own notes"
-  ON notes FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own notes"
-  ON notes FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own notes"
-  ON notes FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own notes"
-  ON notes FOR DELETE
-  USING (auth.uid() = user_id);
+-- Notes policies
+CREATE POLICY "notes_select" ON notes FOR SELECT TO authenticated USING (true);
+CREATE POLICY "notes_insert" ON notes FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "notes_update" ON notes FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "notes_delete" ON notes FOR DELETE TO authenticated USING (true);
 
 -- ============================================================================
 -- TRIGGERS: Auto-update updated_at timestamp
@@ -395,6 +369,7 @@ NOTIFY pgrst, 'reload schema';
 -- ============================================================================
 -- SCHEMA CREATION COMPLETE
 -- ============================================================================
--- The database schema is now ready for production use.
--- All tables have proper data types, security policies, and performance indexes.
+-- All tables now match the exact field names used in App.jsx
+-- Quoted column names preserve camelCase (e.g., "firmName", "noteHistory")
+-- RLS enabled with policies allowing all authenticated users
 -- ============================================================================
