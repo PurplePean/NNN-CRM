@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Search, User, Building2, Users, ChevronDown } from 'lucide-react';
+import CustomSelect from './CustomSelect';
 
 /**
  * FollowUpForm Component
@@ -331,25 +332,22 @@ const FollowUpForm = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Type */}
             <div>
-              <label className={`block text-sm font-semibold mb-2 ${textClass}`}>
-                Type <span className="text-red-500">*</span>
-              </label>
-              <select
+              <CustomSelect
+                label="Type"
                 value={formData.type}
-                onChange={(e) => {
-                  setFormData({ ...formData, type: e.target.value });
+                onChange={(value) => {
+                  setFormData({ ...formData, type: value });
                   setErrors({ ...errors, type: null });
                 }}
-                className={`w-full px-4 py-3 rounded-lg border ${
-                  errors.type ? 'border-red-500' : inputBorderClass
-                } ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              >
-                <option value="Call">Call</option>
-                <option value="Email">Email</option>
-                <option value="Meeting">Meeting</option>
-                <option value="Property Tour">Property Tour</option>
-                <option value="Check-in">Check-in</option>
-              </select>
+                options={[
+                  { value: 'Call', label: 'Call' },
+                  { value: 'Email', label: 'Email' },
+                  { value: 'Meeting', label: 'Meeting' },
+                  { value: 'Property Tour', label: 'Property Tour' },
+                  { value: 'Check-in', label: 'Check-in' }
+                ]}
+                required
+              />
               {errors.type && (
                 <p className="text-red-500 text-sm mt-1">{errors.type}</p>
               )}
@@ -378,23 +376,20 @@ const FollowUpForm = ({
 
             {/* Priority */}
             <div>
-              <label className={`block text-sm font-semibold mb-2 ${textClass}`}>
-                Priority <span className="text-red-500">*</span>
-              </label>
-              <select
+              <CustomSelect
+                label="Priority"
                 value={formData.priority}
-                onChange={(e) => {
-                  setFormData({ ...formData, priority: e.target.value });
+                onChange={(value) => {
+                  setFormData({ ...formData, priority: value });
                   setErrors({ ...errors, priority: null });
                 }}
-                className={`w-full px-4 py-3 rounded-lg border ${
-                  errors.priority ? 'border-red-500' : inputBorderClass
-                } ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              >
-                <option value="High">High Priority</option>
-                <option value="Medium">Medium Priority</option>
-                <option value="Low">Low Priority</option>
-              </select>
+                options={[
+                  { value: 'High', label: 'High Priority' },
+                  { value: 'Medium', label: 'Medium Priority' },
+                  { value: 'Low', label: 'Low Priority' }
+                ]}
+                required
+              />
               {errors.priority && (
                 <p className="text-red-500 text-sm mt-1">{errors.priority}</p>
               )}

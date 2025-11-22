@@ -3,6 +3,7 @@ import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Cal
 import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
 import FollowUpForm from './components/FollowUpForm';
+import CustomSelect from './components/CustomSelect';
 import { supabaseService, isSupabaseConfigured, supabase } from './services/supabase';
 
 // ==================
@@ -3631,14 +3632,15 @@ export default function IndustrialCRM() {
                     onChange={(e) => setFormData({ ...formData, loanTerm: e.target.value })}
                     className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   />
-                  <select
+                  <CustomSelect
+                    label="Debt Service Type"
                     value={formData.debtServiceType || 'standard'}
-                    onChange={(e) => setFormData({ ...formData, debtServiceType: e.target.value })}
-                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  >
-                    <option value="standard">Standard Amortization</option>
-                    <option value="interestOnly">Interest-Only</option>
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, debtServiceType: value })}
+                    options={[
+                      { value: 'standard', label: 'Standard Amortization' },
+                      { value: 'interestOnly', label: 'Interest-Only' }
+                    ]}
+                  />
 
                   {/* Exit & Hold Section */}
                   <div className="col-span-2 mt-4">
