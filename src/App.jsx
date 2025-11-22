@@ -30,6 +30,34 @@ const DEBT_SERVICE_TYPES = [
   { value: 'interestOnly', label: 'Interest-Only' }
 ];
 
+// ==================
+// HELPER COMPONENTS
+// ==================
+
+const EmptyState = ({ icon: Icon, title, message, action, darkMode }) => {
+  const textClass = darkMode ? 'text-gray-100' : 'text-gray-900';
+  const textSecondaryClass = darkMode ? 'text-gray-400' : 'text-gray-600';
+  const buttonClass = darkMode
+    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+    : 'bg-indigo-600 hover:bg-indigo-700 text-white';
+
+  return (
+    <div className="text-center py-12">
+      {Icon && <Icon className={`mx-auto ${textSecondaryClass} mb-4`} size={48} />}
+      <h3 className={`text-lg font-semibold ${textClass} mb-2`}>{title}</h3>
+      <p className={`${textSecondaryClass} mb-6 max-w-md mx-auto`}>{message}</p>
+      {action && (
+        <button
+          onClick={action.onClick}
+          className={`px-6 py-2 rounded-lg font-medium ${buttonClass}`}
+        >
+          {action.label}
+        </button>
+      )}
+    </div>
+  );
+};
+
 export default function IndustrialCRM() {
   // ==================
   // ENTITY DATA STATE
@@ -6805,7 +6833,7 @@ export default function IndustrialCRM() {
 
                   <div className="text-center">
                     <h3 className={`text-2xl font-bold ${textClass}`}>
-                      {monthNames[currentMonth]} {currentYear}
+                      {MONTH_NAMES[currentMonth]} {currentYear}
                     </h3>
                     <button
                       onClick={goToToday}
@@ -7070,7 +7098,7 @@ export default function IndustrialCRM() {
             <div className={`p-6 border-b ${borderClass} flex items-center justify-between sticky top-0 ${cardBgClass} z-10`}>
               <div>
                 <h3 className={`text-2xl font-bold ${textClass}`}>
-                  {monthNames[selectedDayDetails.month]} {selectedDayDetails.day}, {selectedDayDetails.year}
+                  {MONTH_NAMES[selectedDayDetails.month]} {selectedDayDetails.day}, {selectedDayDetails.year}
                 </h3>
                 <p className={`text-sm ${textSecondaryClass} mt-1`}>
                   {selectedDayDetails.events.length} event{selectedDayDetails.events.length !== 1 ? 's' : ''}
