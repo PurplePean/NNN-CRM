@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
+import FollowUpForm from './components/FollowUpForm';
 import { supabaseService, isSupabaseConfigured, supabase } from './services/supabase';
 
 // ==================
@@ -1456,7 +1457,18 @@ export default function IndustrialCRM() {
     }
 
     try {
-      const dataWithStatus = { ...followUpData, status: followUpData.status || 'pending' };
+      // Prepare data with new contact fields
+      const dataWithStatus = {
+        ...followUpData,
+        status: followUpData.status || 'pending',
+        contactName: followUpData.contactName,
+        contactId: followUpData.contactId || null,
+        contactType: followUpData.contactType || 'manual',
+        // For backward compatibility with existing code
+        relatedContact: followUpData.contactId
+          ? `${followUpData.contactType}-${followUpData.contactId}`
+          : followUpData.contactName
+      };
 
       if (followUpData.id && followUps.some(f => f.id === followUpData.id)) {
         // Update existing follow-up
@@ -6216,101 +6228,48 @@ export default function IndustrialCRM() {
 
             {/* Follow-up Form */}
             {showFollowUpForm && (
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
-                <h3 className={`text-xl font-bold ${textClass} mb-6`}>
-                  {editingId ? 'Edit Follow-up' : 'New Follow-up'}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Contact Name"
-                    value={formData.contactName || ''}
-                    onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                  />
-                  <select
-                    value={formData.relatedContact || ''}
-                    onChange={(e) => setFormData({ ...formData, relatedContact: e.target.value })}
-                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                  >
-                    <option value="">Select Contact (Optional)</option>
-                    <optgroup label="Brokers">
-                      {brokers.map(b => (
-                        <option key={`broker-${b.id}`} value={`broker-${b.id}`}>{b.name}{b.firmName ? ` - ${b.firmName}` : ''}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Partners">
-                      {partners.map(p => (
-                        <option key={`partner-${p.id}`} value={`partner-${p.id}`}>{p.name}{p.entityName ? ` - ${p.entityName}` : ''}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Gatekeepers">
-                      {gatekeepers.map(g => (
-                        <option key={`gatekeeper-${g.id}`} value={`gatekeeper-${g.id}`}>{g.name}{g.company ? ` - ${g.company}` : ''}</option>
-                      ))}
-                    </optgroup>
-                  </select>
-                  <select
-                    value={formData.type || 'Call'}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                  >
-                    <option value="Call">Call</option>
-                    <option value="Email">Email</option>
-                    <option value="Meeting">Meeting</option>
-                    <option value="Property Tour">Property Tour</option>
-                    <option value="Check-in">Check-in</option>
-                  </select>
-                  <input
-                    type="date"
-                    value={formData.dueDate || ''}
-                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                  />
-                  <select
-                    value={formData.priority || 'Medium'}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                  >
-                    <option value="High">High Priority</option>
-                    <option value="Medium">Medium Priority</option>
-                    <option value="Low">Low Priority</option>
-                  </select>
-                  <textarea
-                    placeholder="Notes (optional)"
-                    value={formData.notes || ''}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                    rows={3}
-                  />
-                </div>
-                <div className="flex gap-4 mt-6">
-                  <button
-                    onClick={async () => {
-                      const followUpData = editingId ? { ...formData, id: editingId } : { ...formData };
-                      const success = await handleSaveFollowUp(followUpData);
-                      if (success) {
-                        setShowFollowUpForm(false);
-                        setFormData({});
-                        setEditingId(null);
-                      }
-                    }}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
-                  >
-                    {editingId ? 'Update' : 'Save'} Follow-up
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowFollowUpForm(false);
-                      setFormData({});
-                      setEditingId(null);
-                    }}
-                    className={`px-6 py-2 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'}`}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
+              <FollowUpForm
+                contacts={[
+                  ...brokers.map(b => ({
+                    id: b.id,
+                    name: b.name,
+                    type: 'broker',
+                    typeLabel: 'Broker',
+                    company: b.firmName || b.company
+                  })),
+                  ...partners.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    type: 'partner',
+                    typeLabel: 'Partner',
+                    company: p.entityName
+                  })),
+                  ...gatekeepers.map(g => ({
+                    id: g.id,
+                    name: g.name,
+                    type: 'gatekeeper',
+                    typeLabel: 'Gatekeeper',
+                    company: g.company
+                  }))
+                ]}
+                onSave={async (followUpData) => {
+                  const dataToSave = editingId ? { ...followUpData, id: editingId } : followUpData;
+                  const success = await handleSaveFollowUp(dataToSave);
+                  if (success) {
+                    setShowFollowUpForm(false);
+                    setFormData({});
+                    setEditingId(null);
+                  }
+                }}
+                onCancel={() => {
+                  setShowFollowUpForm(false);
+                  setFormData({});
+                  setEditingId(null);
+                }}
+                initialData={formData}
+                darkMode={darkMode}
+                isEditing={!!editingId}
+              />
             )}
 
             {/* Follow-ups List */}
