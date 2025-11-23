@@ -1,16 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Search, User, Building2, Users, ChevronDown } from 'lucide-react';
-import CustomSelect from './CustomSelect';
+import { Label } from './ui/label';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 /**
  * FollowUpForm Component
  *
- * A modern, redesigned follow-up form with smart contact selector
+ * A modern, redesigned follow-up form with Shadcn UI components
  *
  * Features:
  * ✅ Smart contact selector with autocomplete
  * ✅ Select existing contacts (brokers, partners, gatekeepers)
  * ✅ Manual text entry as fallback
+ * ✅ Shadcn UI Radio Groups for Type and Priority
+ * ✅ Professional, modern design
  * ✅ Form validation
  * ✅ Loading states
  * ✅ Error handling
@@ -42,7 +45,6 @@ const FollowUpForm = ({
   const [errors, setErrors] = useState({});
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(initialData.contactName || '');
-  const [isManualEntry, setIsManualEntry] = useState(!initialData.contactId);
 
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -98,7 +100,6 @@ const FollowUpForm = ({
       contactType: contact.type
     });
     setSearchTerm(`${contact.name} (${contact.typeLabel})`);
-    setIsManualEntry(false);
     setIsDropdownOpen(false);
     setErrors({ ...errors, contactName: null });
   };
@@ -113,7 +114,6 @@ const FollowUpForm = ({
       contactId: null,
       contactType: 'manual'
     });
-    setIsManualEntry(true);
     setIsDropdownOpen(true);
     setErrors({ ...errors, contactName: null });
   };
@@ -160,6 +160,30 @@ const FollowUpForm = ({
       setErrors({ submit: 'Failed to save follow-up. Please try again.' });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Calculate recommended follow-up date based on type
+  const getRecommendedDate = () => {
+    const today = new Date();
+    switch (formData.type) {
+      case 'Call':
+        today.setDate(today.getDate() + 2); // 2 days
+        return 'Recommended: 2 days from today';
+      case 'Email':
+        today.setDate(today.getDate() + 3); // 3 days
+        return 'Recommended: 3 days from today';
+      case 'Meeting':
+        today.setDate(today.getDate() + 7); // 1 week
+        return 'Recommended: 1 week from today';
+      case 'Property Tour':
+        today.setDate(today.getDate() + 5); // 5 days
+        return 'Recommended: 5 days from today';
+      case 'Check-in':
+        today.setDate(today.getDate() + 14); // 2 weeks
+        return 'Recommended: 2 weeks from today';
+      default:
+        return '';
     }
   };
 
@@ -330,70 +354,95 @@ const FollowUpForm = ({
 
           {/* Form Fields Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Type */}
-            <div>
-              <CustomSelect
-                label="Type"
+            {/* Type - Radio Group */}
+            <div className="space-y-3">
+              <Label className={textClass}>
+                Type <span className="text-red-500">*</span>
+              </Label>
+              <RadioGroup
                 value={formData.type}
-                onChange={(value) => {
+                onValueChange={(value) => {
                   setFormData({ ...formData, type: value });
                   setErrors({ ...errors, type: null });
                 }}
-                options={[
-                  { value: 'Call', label: 'Call' },
-                  { value: 'Email', label: 'Email' },
-                  { value: 'Meeting', label: 'Meeting' },
-                  { value: 'Property Tour', label: 'Property Tour' },
-                  { value: 'Check-in', label: 'Check-in' }
-                ]}
-                required
-              />
+                className="flex flex-wrap gap-3"
+              >
+                {['Call', 'Email', 'Meeting', 'Property Tour', 'Check-in'].map((type) => (
+                  <div key={type} className="flex items-center space-x-2">
+                    <RadioGroupItem value={type} id={`type-${type}`} />
+                    <Label
+                      htmlFor={`type-${type}`}
+                      className={`font-normal cursor-pointer ${textClass}`}
+                    >
+                      {type}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
               {errors.type && (
                 <p className="text-red-500 text-sm mt-1">{errors.type}</p>
               )}
             </div>
 
-            {/* Due Date */}
-            <div>
-              <label className={`block text-sm font-semibold mb-2 ${textClass}`}>
-                Due Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={formData.dueDate}
-                onChange={(e) => {
-                  setFormData({ ...formData, dueDate: e.target.value });
-                  setErrors({ ...errors, dueDate: null });
-                }}
-                className={`w-full px-4 py-3 rounded-lg border ${
-                  errors.dueDate ? 'border-red-500' : inputBorderClass
-                } ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              />
-              {errors.dueDate && (
-                <p className="text-red-500 text-sm mt-1">{errors.dueDate}</p>
-              )}
-            </div>
-
-            {/* Priority */}
-            <div>
-              <CustomSelect
-                label="Priority"
+            {/* Priority - Radio Group */}
+            <div className="space-y-3">
+              <Label className={textClass}>
+                Priority <span className="text-red-500">*</span>
+              </Label>
+              <RadioGroup
                 value={formData.priority}
-                onChange={(value) => {
+                onValueChange={(value) => {
                   setFormData({ ...formData, priority: value });
                   setErrors({ ...errors, priority: null });
                 }}
-                options={[
-                  { value: 'High', label: 'High Priority' },
-                  { value: 'Medium', label: 'Medium Priority' },
-                  { value: 'Low', label: 'Low Priority' }
-                ]}
-                required
-              />
+                className="flex gap-4"
+              >
+                {[
+                  { value: 'High', label: 'High', color: 'text-red-600 dark:text-red-400' },
+                  { value: 'Medium', label: 'Medium', color: 'text-yellow-600 dark:text-yellow-400' },
+                  { value: 'Low', label: 'Low', color: 'text-green-600 dark:text-green-400' }
+                ].map((priority) => (
+                  <div key={priority.value} className="flex items-center space-x-2">
+                    <RadioGroupItem value={priority.value} id={`priority-${priority.value}`} />
+                    <Label
+                      htmlFor={`priority-${priority.value}`}
+                      className={`font-normal cursor-pointer ${priority.color}`}
+                    >
+                      {priority.label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
               {errors.priority && (
                 <p className="text-red-500 text-sm mt-1">{errors.priority}</p>
               )}
             </div>
+          </div>
+
+          {/* Due Date */}
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${textClass}`}>
+              Due Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={formData.dueDate}
+              onChange={(e) => {
+                setFormData({ ...formData, dueDate: e.target.value });
+                setErrors({ ...errors, dueDate: null });
+              }}
+              className={`w-full px-4 py-3 rounded-lg border ${
+                errors.dueDate ? 'border-red-500' : inputBorderClass
+              } ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            />
+            {getRecommendedDate() && (
+              <p className={`text-xs mt-1 ${textSecondaryClass} italic`}>
+                {getRecommendedDate()}
+              </p>
+            )}
+            {errors.dueDate && (
+              <p className="text-red-500 text-sm mt-1">{errors.dueDate}</p>
+            )}
           </div>
 
           {/* Notes */}
@@ -406,14 +455,17 @@ const FollowUpForm = ({
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Add any additional notes or context..."
               rows={4}
-              className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+              className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:${textSecondaryClass}`}
             />
+            <p className={`text-xs mt-1 ${textSecondaryClass}`}>
+              Optional: Add context, reminders, or key discussion points
+            </p>
           </div>
 
           {/* Submit Error */}
           {errors.submit && (
-            <div className="p-4 bg-red-100 border border-red-300 rounded-lg">
-              <p className="text-red-800 text-sm">{errors.submit}</p>
+            <div className="p-4 bg-red-100 border border-red-300 rounded-lg dark:bg-red-900/20 dark:border-red-800">
+              <p className="text-red-800 dark:text-red-400 text-sm">{errors.submit}</p>
             </div>
           )}
 
