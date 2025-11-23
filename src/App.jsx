@@ -5,6 +5,14 @@ import LoadingSpinner from './components/LoadingSpinner';
 import FollowUpForm from './components/FollowUpForm';
 import CustomSelect from './components/CustomSelect';
 import { supabaseService, isSupabaseConfigured, supabase } from './services/supabase';
+import {
+  initGoogleCalendar,
+  isGoogleCalendarReady,
+  syncEventToGoogle,
+  deleteGoogleCalendarEvent,
+  syncFromGoogleCalendar,
+  syncAllEventsToGoogle
+} from './services/googleCalendar';
 
 // ==================
 // CONSTANTS
@@ -86,6 +94,14 @@ export default function IndustrialCRM() {
   // ==================
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+
+  // ==================
+  // GOOGLE CALENDAR SYNC STATE
+  // ==================
+  const [googleCalendarReady, setGoogleCalendarReady] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [syncStatus, setSyncStatus] = useState({ message: '', type: '' });
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // ==================
   // FORM/MODAL STATE
@@ -340,6 +356,89 @@ export default function IndustrialCRM() {
   useEffect(() => {
     localStorage.setItem('dashboardView', dashboardView);
   }, [dashboardView]);
+
+  // Initialize Google Calendar API
+  useEffect(() => {
+    const initCalendar = async () => {
+      if (user && isSupabaseConfigured()) {
+        try {
+          const initialized = await initGoogleCalendar();
+          setGoogleCalendarReady(initialized);
+
+          if (initialized) {
+            console.log('Google Calendar initialized successfully');
+            setSyncStatus({ message: 'Google Calendar connected', type: 'success' });
+
+            // Perform initial sync
+            const result = await syncFromGoogleCalendar();
+            if (result.success) {
+              setLastSyncTime(new Date());
+              // Reload events and follow-ups after sync
+              const [dbEvents, dbFollowUps] = await Promise.all([
+                supabaseService.getAll('events'),
+                supabaseService.getAll('follow_ups')
+              ]);
+              if (dbEvents) setEvents(dbEvents);
+              if (dbFollowUps) setFollowUps(dbFollowUps);
+            }
+          } else {
+            setSyncStatus({ message: 'Google Calendar initialization failed', type: 'error' });
+          }
+        } catch (error) {
+          console.error('Failed to initialize Google Calendar:', error);
+          setGoogleCalendarReady(false);
+          setSyncStatus({ message: `Calendar error: ${error.message}`, type: 'error' });
+        }
+      }
+    };
+
+    initCalendar();
+  }, [user]);
+
+  // Periodic sync from Google Calendar (every 5 minutes)
+  useEffect(() => {
+    if (!googleCalendarReady || !user) return;
+
+    const syncInterval = setInterval(async () => {
+      try {
+        setIsSyncing(true);
+        console.log('Running periodic sync from Google Calendar...');
+
+        const result = await syncFromGoogleCalendar();
+
+        if (result.success) {
+          setLastSyncTime(new Date());
+          setSyncStatus({
+            message: result.message || 'Synced successfully',
+            type: 'success'
+          });
+
+          // Reload events and follow-ups after sync
+          const [dbEvents, dbFollowUps] = await Promise.all([
+            supabaseService.getAll('events'),
+            supabaseService.getAll('follow_ups')
+          ]);
+          if (dbEvents) setEvents(dbEvents);
+          if (dbFollowUps) setFollowUps(dbFollowUps);
+        } else {
+          setSyncStatus({
+            message: result.message || 'Sync failed',
+            type: 'warning'
+          });
+        }
+      } catch (error) {
+        console.error('Periodic sync error:', error);
+        setSyncStatus({
+          message: `Sync error: ${error.message}`,
+          type: 'error'
+        });
+      } finally {
+        setIsSyncing(false);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(syncInterval);
+  }, [googleCalendarReady, user]);
 
   // ==================
   // FORMATTING UTILITIES
@@ -1418,19 +1517,22 @@ export default function IndustrialCRM() {
     }
 
     try {
+      let savedEvent = null;
+
       if (eventData.id && events.some(e => e.id === eventData.id)) {
         // Update existing event
         setEvents(events.map(e => e.id === eventData.id ? eventData : e));
 
         if (isSupabaseConfigured()) {
           await supabaseService.update('events', eventData.id, eventData);
+          savedEvent = eventData;
         }
       } else {
         // Create new event
         const newEvent = { ...eventData, createdAt: eventData.createdAt || new Date().toISOString() };
 
         if (isSupabaseConfigured()) {
-          const savedEvent = await supabaseService.create('events', newEvent);
+          savedEvent = await supabaseService.create('events', newEvent);
           if (savedEvent) {
             setEvents([...events, savedEvent]);
           } else {
@@ -1439,6 +1541,17 @@ export default function IndustrialCRM() {
           }
         } else {
           setEvents([...events, { ...newEvent, id: Date.now() }]);
+        }
+      }
+
+      // Sync to Google Calendar immediately
+      if (savedEvent && isGoogleCalendarReady()) {
+        try {
+          await syncEventToGoogle(savedEvent, 'events');
+          console.log('Event synced to Google Calendar');
+        } catch (error) {
+          console.error('Failed to sync event to Google Calendar:', error);
+          showToast('Event saved but Google Calendar sync failed', 'warning');
         }
       }
 
@@ -1456,12 +1569,27 @@ export default function IndustrialCRM() {
       'Delete Event',
       'Are you sure you want to delete this event? This action cannot be undone.',
       async () => {
+        // Find the event to get google_event_id before deletion
+        const eventToDelete = events.find(e => e.id === id);
+        const googleEventId = eventToDelete?.google_event_id;
+
         setEvents(events.filter(e => e.id !== id));
 
         if (isSupabaseConfigured()) {
           const success = await supabaseService.delete('events', id);
           if (!success) {
             showToast('Deleted locally but Supabase sync failed', 'warning');
+          }
+        }
+
+        // Delete from Google Calendar if synced
+        if (googleEventId && isGoogleCalendarReady()) {
+          try {
+            await deleteGoogleCalendarEvent(googleEventId);
+            console.log('Event deleted from Google Calendar');
+          } catch (error) {
+            console.error('Failed to delete from Google Calendar:', error);
+            showToast('Deleted locally but Google Calendar sync failed', 'warning');
           }
         }
       },
@@ -1499,19 +1627,22 @@ export default function IndustrialCRM() {
           : followUpData.contactName
       };
 
+      let savedFollowUp = null;
+
       if (followUpData.id && followUps.some(f => f.id === followUpData.id)) {
         // Update existing follow-up
         setFollowUps(followUps.map(f => f.id === followUpData.id ? dataWithStatus : f));
 
         if (isSupabaseConfigured()) {
           await supabaseService.update('follow_ups', followUpData.id, dataWithStatus);
+          savedFollowUp = dataWithStatus;
         }
       } else {
         // Create new follow-up
         const newFollowUp = { ...dataWithStatus, createdAt: dataWithStatus.createdAt || new Date().toISOString() };
 
         if (isSupabaseConfigured()) {
-          const savedFollowUp = await supabaseService.create('follow_ups', newFollowUp);
+          savedFollowUp = await supabaseService.create('follow_ups', newFollowUp);
           if (savedFollowUp) {
             setFollowUps([...followUps, savedFollowUp]);
           } else {
@@ -1520,6 +1651,17 @@ export default function IndustrialCRM() {
           }
         } else {
           setFollowUps([...followUps, { ...newFollowUp, id: Date.now() }]);
+        }
+      }
+
+      // Sync to Google Calendar immediately
+      if (savedFollowUp && isGoogleCalendarReady()) {
+        try {
+          await syncEventToGoogle(savedFollowUp, 'follow_ups');
+          console.log('Follow-up synced to Google Calendar');
+        } catch (error) {
+          console.error('Failed to sync follow-up to Google Calendar:', error);
+          showToast('Follow-up saved but Google Calendar sync failed', 'warning');
         }
       }
 
@@ -1537,12 +1679,27 @@ export default function IndustrialCRM() {
       'Delete Follow-up',
       'Are you sure you want to delete this follow-up? This action cannot be undone.',
       async () => {
+        // Find the follow-up to get google_event_id before deletion
+        const followUpToDelete = followUps.find(f => f.id === id);
+        const googleEventId = followUpToDelete?.google_event_id;
+
         setFollowUps(followUps.filter(f => f.id !== id));
 
         if (isSupabaseConfigured()) {
           const success = await supabaseService.delete('follow_ups', id);
           if (!success) {
             showToast('Deleted locally but Supabase sync failed', 'warning');
+          }
+        }
+
+        // Delete from Google Calendar if synced
+        if (googleEventId && isGoogleCalendarReady()) {
+          try {
+            await deleteGoogleCalendarEvent(googleEventId);
+            console.log('Follow-up deleted from Google Calendar');
+          } catch (error) {
+            console.error('Failed to delete from Google Calendar:', error);
+            showToast('Deleted locally but Google Calendar sync failed', 'warning');
           }
         }
       },
@@ -2366,6 +2523,39 @@ export default function IndustrialCRM() {
 
         {/* Bottom Actions */}
         <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-white'} space-y-2`}>
+          {/* Google Calendar Sync Status */}
+          {user && (
+            <div className={`px-3 py-2 rounded-lg text-xs ${
+              darkMode ? 'bg-slate-700' : 'bg-slate-100'
+            }`}>
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar size={14} className={
+                  googleCalendarReady
+                    ? 'text-green-500'
+                    : 'text-slate-400'
+                } />
+                <span className={`font-semibold ${textClass}`}>
+                  {googleCalendarReady ? 'Calendar Sync' : 'Calendar Offline'}
+                </span>
+              </div>
+              {googleCalendarReady && lastSyncTime && (
+                <div className={`${textSecondaryClass} text-[10px]`}>
+                  Last sync: {new Date(lastSyncTime).toLocaleTimeString()}
+                </div>
+              )}
+              {syncStatus.message && (
+                <div className={`mt-1 text-[10px] ${
+                  syncStatus.type === 'success' ? 'text-green-500' :
+                  syncStatus.type === 'error' ? 'text-red-500' :
+                  syncStatus.type === 'warning' ? 'text-yellow-500' :
+                  textSecondaryClass
+                }`}>
+                  {isSyncing && '🔄 '}
+                  {syncStatus.message}
+                </div>
+              )}
+            </div>
+          )}
           <button
             onClick={() => setDarkMode(!darkMode)}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${hoverBgClass} transition`}
