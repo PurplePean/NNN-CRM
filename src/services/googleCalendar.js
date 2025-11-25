@@ -8,14 +8,15 @@ import { supabase } from './supabase';
 // - CRM → Google Calendar: Immediate sync on create/update/delete
 // - Google Calendar → CRM: Periodic sync every 5 minutes
 // - CRM is source of truth on conflicts
+//
+// Authentication: Uses Supabase OAuth token (user authenticates via Supabase)
+// No separate Google auth required - we use the provider_token from Supabase
 // ============================================================================
 
 // Google Calendar configuration
 const CALENDAR_ID = 'c_c6da83c28bffd2cb7bb374dc8376bbc54d31eac404f3b26023d82e42dffae709@group.calendar.google.com';
 const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
-const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'];
-const SCOPES = 'https://www.googleapis.com/auth/calendar';
 
 // State management
 let gapiInitialized = false;
@@ -52,45 +53,35 @@ export const initGoogleCalendar = async () => {
       setTimeout(() => reject(new Error('gapi failed to load')), 10000);
     });
 
-    // Load the calendar API
+    // Load only the client library (not auth2 - we use Supabase OAuth)
     await new Promise((resolve, reject) => {
-      gapi.load('client:auth2', {
+      gapi.load('client', {
         callback: resolve,
         onerror: reject,
       });
     });
 
-    // Initialize the client
+    // Initialize the client with API key and discovery docs
     await gapi.client.init({
       apiKey: API_KEY,
-      clientId: CLIENT_ID,
       discoveryDocs: DISCOVERY_DOCS,
-      scope: SCOPES,
     });
 
-    // Check if user is already signed in via Supabase
+    // Get the OAuth token from Supabase session
     const { data: { session } } = await supabase.auth.getSession();
 
-    if (session?.provider_token) {
-      // Use the existing Google OAuth token from Supabase
-      gapi.client.setToken({
-        access_token: session.provider_token,
-      });
-      isSignedIn = true;
-      console.log('Google Calendar API initialized with Supabase token');
-    } else {
-      // Fallback: trigger sign-in flow
-      const authInstance = gapi.auth2.getAuthInstance();
-      if (authInstance.isSignedIn.get()) {
-        isSignedIn = true;
-        console.log('Google Calendar API initialized (already signed in)');
-      } else {
-        console.warn('Google Calendar API initialized but user not signed in');
-        isSignedIn = false;
-      }
+    if (!session?.provider_token) {
+      throw new Error('No Google OAuth token found. Please sign in with Google via Supabase.');
     }
 
+    // Set the OAuth token from Supabase
+    gapi.client.setToken({
+      access_token: session.provider_token,
+    });
+
+    isSignedIn = true;
     gapiInitialized = true;
+    console.log('Google Calendar API initialized with Supabase OAuth token');
     return true;
   } catch (error) {
     console.error('Error initializing Google Calendar API:', error);
@@ -108,37 +99,31 @@ export const isGoogleCalendarReady = () => {
 };
 
 /**
- * Sign in to Google (if not using Supabase OAuth)
+ * Sign in to Google
+ * Note: User should sign in via Supabase OAuth flow
+ * This function is kept for compatibility but delegates to Supabase
  */
 export const signInToGoogle = async () => {
-  try {
-    if (!gapiInitialized) {
-      await initGoogleCalendar();
-    }
-
-    const authInstance = gapi.auth2.getAuthInstance();
-    await authInstance.signIn();
-    isSignedIn = true;
-    return true;
-  } catch (error) {
-    console.error('Error signing in to Google:', error);
-    return false;
-  }
+  console.warn('Please use Supabase OAuth flow to sign in with Google');
+  return false;
 };
 
 /**
  * Sign out from Google
+ * Note: User should sign out via Supabase
+ * This function clears the local gapi token
  */
 export const signOutFromGoogle = async () => {
   try {
-    if (!gapiInitialized) return;
-
-    const authInstance = gapi.auth2.getAuthInstance();
-    await authInstance.signOut();
+    if (gapiInitialized && window.gapi?.client?.setToken) {
+      gapi.client.setToken(null);
+    }
     isSignedIn = false;
+    gapiInitialized = false;
+    console.log('Google Calendar API token cleared');
     return true;
   } catch (error) {
-    console.error('Error signing out from Google:', error);
+    console.error('Error clearing Google token:', error);
     return false;
   }
 };
