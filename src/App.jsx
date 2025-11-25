@@ -7,7 +7,11 @@ import CustomSelect from './components/CustomSelect';
 import { supabaseService, isSupabaseConfigured, supabase } from './services/supabase';
 import {
   initGoogleCalendar,
+  initGoogleOAuth,
   isGoogleCalendarReady,
+  isGoogleCalendarConnected,
+  connectGoogleCalendar,
+  disconnectGoogleCalendar,
   syncEventToGoogle,
   deleteGoogleCalendarEvent,
   syncFromGoogleCalendar,
@@ -271,6 +275,59 @@ export default function IndustrialCRM() {
     if (error) console.error('Error signing out:', error);
   };
 
+  /**
+   * Connect to Google Calendar
+   * Initiates OAuth flow for calendar access
+   * @async
+   * @returns {Promise<void>}
+   */
+  const handleConnectCalendar = async () => {
+    try {
+      setSyncStatus({ message: 'Connecting to Google Calendar...', type: '' });
+      await connectGoogleCalendar();
+      setGoogleCalendarReady(true);
+      setSyncStatus({ message: 'Google Calendar connected', type: 'success' });
+      showToast('Google Calendar connected successfully', 'success');
+
+      // Perform initial sync
+      if (user) {
+        const result = await syncFromGoogleCalendar();
+        if (result.success) {
+          setLastSyncTime(new Date());
+          // Reload events and follow-ups after sync
+          const [dbEvents, dbFollowUps] = await Promise.all([
+            supabaseService.getAll('events'),
+            supabaseService.getAll('follow_ups')
+          ]);
+          if (dbEvents) setEvents(dbEvents);
+          if (dbFollowUps) setFollowUps(dbFollowUps);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to connect Google Calendar:', error);
+      setSyncStatus({ message: `Connection failed: ${error.message}`, type: 'error' });
+      showToast('Failed to connect Google Calendar', 'error');
+    }
+  };
+
+  /**
+   * Disconnect from Google Calendar
+   * Revokes OAuth token and clears stored credentials
+   * @async
+   * @returns {Promise<void>}
+   */
+  const handleDisconnectCalendar = async () => {
+    try {
+      await disconnectGoogleCalendar();
+      setGoogleCalendarReady(false);
+      setSyncStatus({ message: 'Google Calendar disconnected', type: '' });
+      showToast('Google Calendar disconnected', 'success');
+    } catch (error) {
+      console.error('Failed to disconnect Google Calendar:', error);
+      showToast('Failed to disconnect Google Calendar', 'error');
+    }
+  };
+
   // ==================
   // INITIALIZATION & EFFECTS
   // ==================
@@ -357,19 +414,24 @@ export default function IndustrialCRM() {
     localStorage.setItem('dashboardView', dashboardView);
   }, [dashboardView]);
 
-  // Initialize Google Calendar API
+  // Initialize Google Calendar API and OAuth client
   useEffect(() => {
     const initCalendar = async () => {
-      if (user && isSupabaseConfigured()) {
-        try {
-          const initialized = await initGoogleCalendar();
-          setGoogleCalendarReady(initialized);
+      try {
+        // Initialize gapi client (no auth required yet)
+        await initGoogleCalendar();
 
-          if (initialized) {
-            console.log('Google Calendar initialized successfully');
-            setSyncStatus({ message: 'Google Calendar connected', type: 'success' });
+        // Initialize OAuth client
+        await initGoogleOAuth();
 
-            // Perform initial sync
+        // Check if user already has a calendar token
+        if (isGoogleCalendarConnected()) {
+          setGoogleCalendarReady(true);
+          console.log('Google Calendar already connected');
+          setSyncStatus({ message: 'Google Calendar connected', type: 'success' });
+
+          // Perform initial sync if user is logged in
+          if (user) {
             const result = await syncFromGoogleCalendar();
             if (result.success) {
               setLastSyncTime(new Date());
@@ -381,14 +443,15 @@ export default function IndustrialCRM() {
               if (dbEvents) setEvents(dbEvents);
               if (dbFollowUps) setFollowUps(dbFollowUps);
             }
-          } else {
-            setSyncStatus({ message: 'Google Calendar initialization failed', type: 'error' });
           }
-        } catch (error) {
-          console.error('Failed to initialize Google Calendar:', error);
+        } else {
           setGoogleCalendarReady(false);
-          setSyncStatus({ message: `Calendar error: ${error.message}`, type: 'error' });
+          setSyncStatus({ message: 'Connect Google Calendar to enable sync', type: '' });
         }
+      } catch (error) {
+        console.error('Failed to initialize Google Calendar:', error);
+        setGoogleCalendarReady(false);
+        setSyncStatus({ message: `Calendar initialization error: ${error.message}`, type: 'error' });
       }
     };
 
@@ -2555,6 +2618,25 @@ export default function IndustrialCRM() {
                 </div>
               )}
             </div>
+          )}
+          {/* Google Calendar Connect/Disconnect Button */}
+          {user && (
+            <button
+              onClick={googleCalendarReady ? handleDisconnectCalendar : handleConnectCalendar}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                googleCalendarReady
+                  ? darkMode
+                    ? 'bg-green-900/30 hover:bg-green-900/40 text-green-400 border border-green-700'
+                    : 'bg-green-50 hover:bg-green-100 text-green-700 border border-green-200'
+                  : darkMode
+                    ? 'bg-indigo-900/30 hover:bg-indigo-900/40 text-indigo-400 border border-indigo-700'
+                    : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+              }`}
+              title={googleCalendarReady ? 'Disconnect Google Calendar' : 'Connect Google Calendar'}
+            >
+              <Calendar size={16} />
+              {googleCalendarReady ? 'Disconnect Calendar' : 'Connect Calendar'}
+            </button>
           )}
           <button
             onClick={() => setDarkMode(!darkMode)}
