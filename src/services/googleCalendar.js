@@ -170,6 +170,36 @@ const convertCRMEventToGoogleEvent = (crmEvent) => {
 };
 
 /**
+ * Ensure we have a valid OAuth token from Supabase
+ * This refreshes the token before each API call to prevent 403 errors
+ */
+const ensureValidToken = async () => {
+  try {
+    // Get the current session from Supabase (automatically refreshes if needed)
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error) {
+      throw new Error(`Failed to get Supabase session: ${error.message}`);
+    }
+
+    if (!session?.provider_token) {
+      throw new Error('No Google OAuth token found. Please sign in with Google via Supabase.');
+    }
+
+    // Set the fresh OAuth token on gapi.client
+    gapi.client.setToken({
+      access_token: session.provider_token,
+    });
+
+    console.log('Google Calendar token refreshed from Supabase session');
+    return true;
+  } catch (error) {
+    console.error('Error refreshing Google Calendar token:', error);
+    throw error;
+  }
+};
+
+/**
  * Retry logic for API calls
  */
 const retryWithBackoff = async (fn, attempt = 0) => {
@@ -200,6 +230,9 @@ export const createGoogleCalendarEvent = async (crmEvent, table = 'events') => {
   }
 
   try {
+    // Ensure we have a valid token before making the API call
+    await ensureValidToken();
+
     const googleEvent = convertCRMEventToGoogleEvent(crmEvent);
 
     const response = await retryWithBackoff(() =>
@@ -254,6 +287,9 @@ export const updateGoogleCalendarEvent = async (crmEvent, table = 'events') => {
       return await createGoogleCalendarEvent(crmEvent, table);
     }
 
+    // Ensure we have a valid token before making the API call
+    await ensureValidToken();
+
     const googleEvent = convertCRMEventToGoogleEvent(crmEvent);
 
     await retryWithBackoff(() =>
@@ -301,6 +337,9 @@ export const deleteGoogleCalendarEvent = async (googleEventId) => {
   }
 
   try {
+    // Ensure we have a valid token before making the API call
+    await ensureValidToken();
+
     await retryWithBackoff(() =>
       gapi.client.calendar.events.delete({
         calendarId: CALENDAR_ID,
@@ -356,6 +395,9 @@ export const fetchGoogleCalendarEvents = async (timeMin, timeMax) => {
   }
 
   try {
+    // Ensure we have a valid token before making the API call
+    await ensureValidToken();
+
     const response = await retryWithBackoff(() =>
       gapi.client.calendar.events.list({
         calendarId: CALENDAR_ID,
