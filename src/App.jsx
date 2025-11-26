@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, LogOut } from 'lucide-react';
+import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, LogOut } from 'lucide-react';
 import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
 import FollowUpForm from './components/FollowUpForm';
@@ -81,8 +81,7 @@ export default function IndustrialCRM() {
   const [gatekeepers, setGatekeepers] = useState([]);
   const [events, setEvents] = useState([]);
   const [followUps, setFollowUps] = useState([]);
-  const [partnersInDeal, setPartnersInDeal] = useState([]);
-  const [propertyNotes, setPropertyNotes] = useState([]);
+  const [partnerDeals, setPartnerDeals] = useState([]);
 
   // ==================
   // UI NAVIGATION STATE
@@ -172,18 +171,6 @@ export default function IndustrialCRM() {
   const [propertyGatekeeperSearch, setPropertyGatekeeperSearch] = useState('');
 
   // ==================
-  // PARTNER RETURNS STATE
-  // ==================
-  const [showPartnerSelectionModal, setShowPartnerSelectionModal] = useState(false);
-  const [selectedPropertyForPartner, setSelectedPropertyForPartner] = useState(null);
-  const [partnerSelectionData, setPartnerSelectionData] = useState({
-    partnerId: '',
-    investmentAmount: ''
-  });
-  const [expandedPartnerReturns, setExpandedPartnerReturns] = useState({});
-  const [propertyNoteText, setPropertyNoteText] = useState({});
-
-  // ==================
   // NOTE-TAKING STATE
   // ==================
   const [noteContent, setNoteContent] = useState({});
@@ -192,6 +179,14 @@ export default function IndustrialCRM() {
   const [editingNoteContent, setEditingNoteContent] = useState('');
   const [expandedNotes, setExpandedNotes] = useState({});
   const [collapsedNoteSections, setCollapsedNoteSections] = useState({});
+
+  // ==================
+  // PARTNER RETURNS STATE
+  // ==================
+  const [showPartnerDealModal, setShowPartnerDealModal] = useState(false);
+  const [selectedPropertyForDeal, setSelectedPropertyForDeal] = useState(null);
+  const [partnerDealData, setPartnerDealData] = useState({ partnerId: '', investmentAmount: '' });
+  const [expandedPartnerDeals, setExpandedPartnerDeals] = useState({});
 
   // ==================
   // ACTIVITY FEED FILTERS
@@ -387,15 +382,14 @@ export default function IndustrialCRM() {
         }
 
         // Load from Supabase
-        const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbFollowUps, dbPartnersInDeal, dbPropertyNotes] = await Promise.all([
+        const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbFollowUps, dbPartnerDeals] = await Promise.all([
           supabaseService.getAll('properties'),
           supabaseService.getAll('brokers'),
           supabaseService.getAll('partners'),
           supabaseService.getAll('gatekeepers'),
           supabaseService.getAll('events'),
           supabaseService.getAll('follow_ups'),
-          supabaseService.getAll('partners_in_deal'),
-          supabaseService.getAll('property_notes')
+          supabaseService.getAll('partner_deals')
         ]);
 
         if (dbProperties) setProperties(dbProperties);
@@ -404,8 +398,7 @@ export default function IndustrialCRM() {
         if (dbGatekeepers) setGatekeepers(dbGatekeepers);
         if (dbEvents) setEvents(dbEvents);
         if (dbFollowUps) setFollowUps(dbFollowUps);
-        if (dbPartnersInDeal) setPartnersInDeal(dbPartnersInDeal);
-        if (dbPropertyNotes) setPropertyNotes(dbPropertyNotes);
+        if (dbPartnerDeals) setPartnerDeals(dbPartnerDeals);
 
         // Always load UI preferences from localStorage
         const savedDarkMode = localStorage.getItem('darkMode');
@@ -1081,48 +1074,48 @@ export default function IndustrialCRM() {
   };
 
   // ==================
-  // PARTNER IN DEAL MANAGEMENT OPERATIONS
+  // PARTNER DEAL OPERATIONS
   // ==================
 
   /**
-   * Open partner selection modal for a property
+   * Open partner deal modal for a property
    * @param {string|number} propertyId - Property ID
    */
-  const handleAddPartnerToDeal = (propertyId) => {
-    setSelectedPropertyForPartner(propertyId);
-    setPartnerSelectionData({ partnerId: '', investmentAmount: '' });
-    setShowPartnerSelectionModal(true);
+  const handleOpenPartnerDealModal = (propertyId) => {
+    setSelectedPropertyForDeal(propertyId);
+    setPartnerDealData({ partnerId: '', investmentAmount: '' });
+    setShowPartnerDealModal(true);
   };
 
   /**
-   * Save partner to deal
+   * Save partner deal
    * @async
    */
-  const handleSavePartnerToDeal = async () => {
-    if (!partnerSelectionData.partnerId || !partnerSelectionData.investmentAmount) {
+  const handleSavePartnerDeal = async () => {
+    if (!partnerDealData.partnerId || !partnerDealData.investmentAmount) {
       showToast('Please select a partner and enter investment amount', 'error');
       return;
     }
 
     const dealData = {
-      property_id: selectedPropertyForPartner,
-      partner_id: partnerSelectionData.partnerId,
-      investment_amount: parseFloat(partnerSelectionData.investmentAmount)
+      property_id: selectedPropertyForDeal,
+      partner_id: partnerDealData.partnerId,
+      investment_amount: parseFloat(partnerDealData.investmentAmount)
     };
 
     try {
       if (isSupabaseConfigured()) {
-        const savedDeal = await supabaseService.create('partners_in_deal', dealData);
+        const savedDeal = await supabaseService.create('partner_deals', dealData);
         if (savedDeal) {
-          setPartnersInDeal([...partnersInDeal, savedDeal]);
+          setPartnerDeals([...partnerDeals, savedDeal]);
         }
       } else {
-        setPartnersInDeal([...partnersInDeal, { ...dealData, id: Date.now() }]);
+        setPartnerDeals([...partnerDeals, { ...dealData, id: Date.now() }]);
       }
 
-      setShowPartnerSelectionModal(false);
-      setSelectedPropertyForPartner(null);
-      setPartnerSelectionData({ partnerId: '', investmentAmount: '' });
+      setShowPartnerDealModal(false);
+      setSelectedPropertyForDeal(null);
+      setPartnerDealData({ partnerId: '', investmentAmount: '' });
       showToast('Partner added to deal', 'success');
     } catch (error) {
       console.error('Error adding partner to deal:', error);
@@ -1131,18 +1124,18 @@ export default function IndustrialCRM() {
   };
 
   /**
-   * Remove partner from deal
+   * Remove partner deal
    * @param {string|number} dealId - Deal ID to remove
    */
-  const handleRemovePartnerFromDeal = (dealId) => {
+  const handleRemovePartnerDeal = (dealId) => {
     showConfirmDialog(
       'Remove Partner',
       'Are you sure you want to remove this partner from the deal?',
       async () => {
-        setPartnersInDeal(partnersInDeal.filter(d => d.id !== dealId));
+        setPartnerDeals(partnerDeals.filter(d => d.id !== dealId));
 
         if (isSupabaseConfigured()) {
-          await supabaseService.delete('partners_in_deal', dealId);
+          await supabaseService.delete('partner_deals', dealId);
         }
 
         showToast('Partner removed from deal', 'success');
@@ -1152,55 +1145,60 @@ export default function IndustrialCRM() {
   };
 
   /**
-   * Add a note to a property
-   * @param {string|number} propertyId - Property ID
-   * @param {string} noteText - Note content
+   * Calculate partner-specific returns based on their investment amount
+   * @param {Object} property - Property object with all metrics
+   * @param {number} partnerInvestmentAmount - Partner's investment amount
+   * @returns {Object} Partner return metrics
    */
-  const handleAddPropertyNote = async (propertyId, noteText) => {
-    if (!noteText.trim()) return;
+  const calculatePartnerReturns = (property, partnerInvestmentAmount) => {
+    const metrics = calculateMetrics(property);
+    const investmentAmount = parseFloat(partnerInvestmentAmount) || 0;
 
-    const noteData = {
-      property_id: propertyId,
-      note_text: noteText.trim()
-    };
-
-    try {
-      if (isSupabaseConfigured()) {
-        const savedNote = await supabaseService.create('property_notes', noteData);
-        if (savedNote) {
-          setPropertyNotes([...propertyNotes, savedNote]);
-        }
-      } else {
-        setPropertyNotes([...propertyNotes, { ...noteData, id: Date.now(), created_at: new Date().toISOString() }]);
-      }
-
-      setPropertyNoteText({ ...propertyNoteText, [propertyId]: '' });
-      showToast('Note added', 'success');
-    } catch (error) {
-      console.error('Error adding property note:', error);
-      showToast('Error adding note', 'error');
+    if (investmentAmount <= 0 || metrics.equityRequired <= 0) {
+      return {
+        ownership_percent: 0,
+        annual_cash_flow: 0,
+        cash_on_cash: 0,
+        exit_proceeds: 0,
+        total_return: 0,
+        irr: 0,
+        equity_multiple: 0
+      };
     }
-  };
 
-  /**
-   * Delete a property note
-   * @param {string|number} noteId - Note ID
-   */
-  const handleDeletePropertyNote = (noteId) => {
-    showConfirmDialog(
-      'Delete Note',
-      'Are you sure you want to delete this note?',
-      async () => {
-        setPropertyNotes(propertyNotes.filter(n => n.id !== noteId));
+    const holdingPeriodMonths = parseFloat(property.holdingPeriodMonths) || 0;
+    const holdingPeriodYears = holdingPeriodMonths / 12;
 
-        if (isSupabaseConfigured()) {
-          await supabaseService.delete('property_notes', noteId);
-        }
+    // Calculate ownership percentage
+    const ownership_percent = (investmentAmount / metrics.equityRequired) * 100;
 
-        showToast('Note deleted', 'success');
-      },
-      'danger'
-    );
+    // Calculate pro-rata annual cash flow
+    const annual_cash_flow = (ownership_percent / 100) * metrics.annualCashFlow;
+
+    // Calculate cash-on-cash return
+    const cash_on_cash = investmentAmount > 0 ? (annual_cash_flow / investmentAmount) * 100 : 0;
+
+    // Calculate pro-rata exit proceeds
+    const exit_proceeds = (ownership_percent / 100) * metrics.netProceedsAtExit;
+
+    // Calculate total return over holding period
+    const total_return = (annual_cash_flow * holdingPeriodYears) + exit_proceeds;
+
+    // IRR is same as deal IRR (pro-rata basis)
+    const irr = metrics.irr;
+
+    // Calculate equity multiple
+    const equity_multiple = investmentAmount > 0 ? total_return / investmentAmount : 0;
+
+    return {
+      ownership_percent,
+      annual_cash_flow,
+      cash_on_cash,
+      exit_proceeds,
+      total_return,
+      irr,
+      equity_multiple
+    };
   };
 
   // ==================
@@ -2429,63 +2427,6 @@ export default function IndustrialCRM() {
       netProceedsAtExit,
       equityMultiple,
       irr
-    };
-  };
-
-  /**
-   * Calculate partner-specific returns based on their investment amount
-   * @param {Object} property - Property object with all metrics
-   * @param {number} partnerInvestmentAmount - Partner's investment amount
-   * @returns {Object} Partner return metrics
-   */
-  const calculatePartnerReturns = (property, partnerInvestmentAmount) => {
-    const metrics = calculateMetrics(property);
-    const investmentAmount = parseFloat(partnerInvestmentAmount) || 0;
-
-    if (investmentAmount <= 0 || metrics.equityRequired <= 0) {
-      return {
-        ownership_percent: 0,
-        annual_cash_flow: 0,
-        cash_on_cash: 0,
-        exit_proceeds: 0,
-        total_return: 0,
-        irr: 0,
-        equity_multiple: 0
-      };
-    }
-
-    const holdingPeriodMonths = parseFloat(property.holdingPeriodMonths) || 0;
-    const holdingPeriodYears = holdingPeriodMonths / 12;
-
-    // Calculate ownership percentage
-    const ownership_percent = (investmentAmount / metrics.equityRequired) * 100;
-
-    // Calculate pro-rata annual cash flow
-    const annual_cash_flow = (ownership_percent / 100) * metrics.annualCashFlow;
-
-    // Calculate cash-on-cash return
-    const cash_on_cash = investmentAmount > 0 ? (annual_cash_flow / investmentAmount) * 100 : 0;
-
-    // Calculate pro-rata exit proceeds
-    const exit_proceeds = (ownership_percent / 100) * metrics.netProceedsAtExit;
-
-    // Calculate total return over holding period
-    const total_return = (annual_cash_flow * holdingPeriodYears) + exit_proceeds;
-
-    // IRR is same as deal IRR (pro-rata basis)
-    const irr = metrics.irr;
-
-    // Calculate equity multiple
-    const equity_multiple = investmentAmount > 0 ? total_return / investmentAmount : 0;
-
-    return {
-      ownership_percent,
-      annual_cash_flow,
-      cash_on_cash,
-      exit_proceeds,
-      total_return,
-      irr,
-      equity_multiple
     };
   };
 
@@ -4595,113 +4536,6 @@ export default function IndustrialCRM() {
                         </div>
                       </div>
                     )}
-
-                    {/* Partner Returns Section */}
-                    {(() => {
-                      const propertyPartnersInDeal = partnersInDeal.filter(d => d.property_id === property.id);
-                      return (
-                        <div className={`p-4 rounded-lg mb-6 ${darkMode ? 'bg-purple-900 bg-opacity-20' : 'bg-purple-50'}`}>
-                          <div className="flex justify-between items-center mb-4">
-                            <div className={`text-sm font-bold ${textSecondaryClass} uppercase`}>Partner Returns</div>
-                            <button
-                              onClick={() => handleAddPartnerToDeal(property.id)}
-                              className="flex items-center gap-1 text-sm bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 transition"
-                            >
-                              <Plus size={16} /> Add Partner
-                            </button>
-                          </div>
-
-                          {propertyPartnersInDeal.length > 0 ? (
-                          <div className="space-y-3">
-                            {propertyPartnersInDeal.map(deal => {
-                              const partner = partners.find(p => p.id === deal.partner_id);
-                              if (!partner) return null;
-
-                              const partnerReturns = calculatePartnerReturns(property, deal.investment_amount);
-                              const isExpanded = expandedPartnerReturns[deal.id];
-
-                              return (
-                                <div key={deal.id} className={`${darkMode ? 'bg-slate-800' : 'bg-white'} rounded-lg border ${borderClass} overflow-hidden`}>
-                                  {/* Header */}
-                                  <div
-                                    className="flex justify-between items-center p-4 cursor-pointer hover:bg-opacity-80 transition"
-                                    onClick={() => setExpandedPartnerReturns({ ...expandedPartnerReturns, [deal.id]: !isExpanded })}
-                                  >
-                                    <div>
-                                      <div className={`font-semibold ${textClass}`}>{partner.name}</div>
-                                      <div className={`text-sm ${textSecondaryClass}`}>
-                                        Investment: {formatCurrency(deal.investment_amount)} • {partnerReturns.ownership_percent.toFixed(2)}% Ownership
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <div className={`text-right mr-2`}>
-                                        <div className={`text-xs ${textSecondaryClass} uppercase`}>Cash-on-Cash</div>
-                                        <div className={`text-xl font-bold ${
-                                          partnerReturns.cash_on_cash >= 10
-                                            ? 'text-green-500'
-                                            : partnerReturns.cash_on_cash >= 7
-                                              ? 'text-yellow-500'
-                                              : 'text-red-500'
-                                        }`}>
-                                          {partnerReturns.cash_on_cash.toFixed(2)}%
-                                        </div>
-                                      </div>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRemovePartnerFromDeal(deal.id);
-                                        }}
-                                        className="p-1 text-red-600 hover:bg-red-50 rounded transition"
-                                      >
-                                        <X size={18} />
-                                      </button>
-                                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                    </div>
-                                  </div>
-
-                                  {/* Expanded Metrics Grid */}
-                                  {isExpanded && (
-                                    <div className={`p-4 border-t ${borderClass} ${darkMode ? 'bg-slate-700 bg-opacity-50' : 'bg-slate-50'}`}>
-                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        <div>
-                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Ownership %</div>
-                                          <div className={`text-lg font-semibold ${textClass}`}>{partnerReturns.ownership_percent.toFixed(2)}%</div>
-                                        </div>
-                                        <div>
-                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Annual Cash Flow</div>
-                                          <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(partnerReturns.annual_cash_flow)}</div>
-                                        </div>
-                                        <div>
-                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Exit Proceeds</div>
-                                          <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(partnerReturns.exit_proceeds)}</div>
-                                        </div>
-                                        <div>
-                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Return</div>
-                                          <div className={`text-lg font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{formatCurrency(partnerReturns.total_return)}</div>
-                                        </div>
-                                        <div>
-                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>IRR</div>
-                                          <div className={`text-lg font-semibold ${textClass}`}>{partnerReturns.irr > 0 ? `${partnerReturns.irr.toFixed(2)}%` : 'N/A'}</div>
-                                        </div>
-                                        <div>
-                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Equity Multiple</div>
-                                          <div className={`text-lg font-semibold ${textClass}`}>{partnerReturns.equity_multiple > 0 ? `${partnerReturns.equity_multiple.toFixed(2)}x` : 'N/A'}</div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                          ) : (
-                            <p className={`text-sm ${textSecondaryClass} italic text-center py-4`}>
-                              No partners added yet. Click "Add Partner" to get started.
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })()}
 
                     {/* Exit Metrics */}
                     {property.holdingPeriodMonths && (
@@ -9370,6 +9204,157 @@ export default function IndustrialCRM() {
                   </div>
                 )}
 
+                {/* Lease Terms */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                  <h2 className={`text-xl font-bold ${textClass} mb-4`}>Lease Terms</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Initial Lease Term</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>
+                        {profileProperty.initial_lease_term_years || profileProperty.initialLeaseTermYears ? `${profileProperty.initial_lease_term_years || profileProperty.initialLeaseTermYears} years` : 'N/A'}
+                      </div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Renewal Options</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>
+                        {profileProperty.renewal_option_count || profileProperty.renewalOptionCount || 'N/A'}
+                      </div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Renewal Term</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>
+                        {profileProperty.renewal_term_years || profileProperty.renewalTermYears ? `${profileProperty.renewal_term_years || profileProperty.renewalTermYears} years` : 'N/A'}
+                      </div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Annual Escalator</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>
+                        {profileProperty.annual_rent_escalator || profileProperty.annualRentEscalator ? `${profileProperty.annual_rent_escalator || profileProperty.annualRentEscalator}%` : 'N/A'}
+                      </div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Option Escalator</div>
+                      <div className={`text-lg font-semibold ${textClass}`}>
+                        {profileProperty.option_rent_escalator || profileProperty.optionRentEscalator ? `${profileProperty.option_rent_escalator || profileProperty.optionRentEscalator}%` : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Partner Returns */}
+                {(() => {
+                  const propertyDeals = partnerDeals.filter(d => d.property_id === profileProperty.id);
+                  return (
+                    <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className={`text-xl font-bold ${textClass}`}>Partner Returns</h2>
+                        <button
+                          onClick={() => handleOpenPartnerDealModal(profileProperty.id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold"
+                        >
+                          <Plus size={18} />
+                          Add Partner
+                        </button>
+                      </div>
+
+                      {propertyDeals.length > 0 ? (
+                        <div className="space-y-4">
+                          {propertyDeals.map(deal => {
+                            const partner = partners.find(p => p.id === deal.partner_id);
+                            if (!partner) return null;
+
+                            const partnerReturns = calculatePartnerReturns(profileProperty, deal.investment_amount);
+                            const isExpanded = expandedPartnerDeals[deal.id];
+
+                            return (
+                              <div key={deal.id} className={`rounded-lg border ${borderClass} overflow-hidden ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                                {/* Header */}
+                                <div
+                                  className="flex justify-between items-center p-4 cursor-pointer hover:bg-opacity-80 transition"
+                                  onClick={() => setExpandedPartnerDeals({ ...expandedPartnerDeals, [deal.id]: !isExpanded })}
+                                >
+                                  <div>
+                                    <div className={`font-bold ${textClass} text-lg`}>{partner.name}</div>
+                                    <div className={`text-sm ${textSecondaryClass}`}>
+                                      Investment: {formatCurrency(deal.investment_amount)} • {partnerReturns.ownership_percent.toFixed(2)}% Ownership
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-right">
+                                      <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Cash-on-Cash</div>
+                                      <div className={`text-2xl font-bold ${
+                                        partnerReturns.cash_on_cash >= 10
+                                          ? 'text-green-500'
+                                          : partnerReturns.cash_on_cash >= 7
+                                            ? 'text-yellow-500'
+                                            : 'text-red-500'
+                                      }`}>
+                                        {partnerReturns.cash_on_cash.toFixed(2)}%
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemovePartnerDeal(deal.id);
+                                      }}
+                                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition"
+                                    >
+                                      <X size={20} />
+                                    </button>
+                                    {isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+                                  </div>
+                                </div>
+
+                                {/* Expanded Metrics Grid */}
+                                {isExpanded && (
+                                  <div className={`p-4 border-t ${borderClass} ${darkMode ? 'bg-slate-700 bg-opacity-50' : 'bg-slate-50'}`}>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                      <div>
+                                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Ownership %</div>
+                                        <div className={`text-xl font-bold ${textClass}`}>{partnerReturns.ownership_percent.toFixed(2)}%</div>
+                                      </div>
+                                      <div>
+                                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Annual Cash Flow</div>
+                                        <div className={`text-xl font-bold ${textClass}`}>{formatCurrency(partnerReturns.annual_cash_flow)}</div>
+                                      </div>
+                                      <div>
+                                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Exit Proceeds</div>
+                                        <div className={`text-xl font-bold ${textClass}`}>{formatCurrency(partnerReturns.exit_proceeds)}</div>
+                                      </div>
+                                      <div>
+                                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Return</div>
+                                        <div className={`text-xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{formatCurrency(partnerReturns.total_return)}</div>
+                                      </div>
+                                      <div>
+                                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>IRR</div>
+                                        <div className={`text-xl font-bold ${textClass}`}>{partnerReturns.irr > 0 ? `${partnerReturns.irr.toFixed(2)}%` : 'N/A'}</div>
+                                      </div>
+                                      <div>
+                                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Equity Multiple</div>
+                                        <div className={`text-xl font-bold ${textClass}`}>{partnerReturns.equity_multiple > 0 ? `${partnerReturns.equity_multiple.toFixed(2)}x` : 'N/A'}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center border-2 border-dashed ${borderClass}`}>
+                          <DollarSign size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
+                          <p className={`text-sm ${textSecondaryClass} font-medium`}>
+                            No partners added yet
+                          </p>
+                          <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                            Click "Add Partner" to calculate partner-specific returns
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* Sensitivity Analysis */}
                 {profileProperty.holdingPeriodMonths && (
                   <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
@@ -10028,6 +10013,78 @@ export default function IndustrialCRM() {
           </div>
         ))}
       </div>
+
+      {/* Partner Deal Modal */}
+      {showPartnerDealModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`${darkMode ? 'bg-slate-800' : 'bg-white'} rounded-xl shadow-2xl max-w-md w-full p-6`}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-2xl font-bold ${textClass}`}>Add Partner to Deal</h2>
+              <button
+                onClick={() => setShowPartnerDealModal(false)}
+                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'} transition`}
+              >
+                <X size={24} className={textClass} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Partner Selection */}
+              <div>
+                <label className={`block text-sm font-semibold ${textClass} mb-2`}>
+                  Select Partner
+                </label>
+                <select
+                  value={partnerDealData.partnerId}
+                  onChange={(e) => setPartnerDealData({ ...partnerDealData, partnerId: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                >
+                  <option value="">-- Select Partner --</option>
+                  {partners.map(partner => (
+                    <option key={partner.id} value={partner.id}>
+                      {partner.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Investment Amount */}
+              <div>
+                <label className={`block text-sm font-semibold ${textClass} mb-2`}>
+                  Investment Amount
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g., 100000"
+                  value={partnerDealData.investmentAmount}
+                  onChange={(e) => setPartnerDealData({ ...partnerDealData, investmentAmount: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowPartnerDealModal(false)}
+                  className={`flex-1 px-4 py-3 rounded-lg font-semibold transition ${
+                    darkMode
+                      ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSavePartnerDeal}
+                  className="flex-1 px-4 py-3 rounded-lg font-semibold transition bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  Add Partner
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Dialog */}
       <ConfirmDialog
