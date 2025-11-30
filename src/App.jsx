@@ -1499,6 +1499,16 @@ export default function IndustrialCRM() {
    * Open modal to add a new lease (property-specific)
    */
   const handleAddLease = (propertyId) => {
+    // DEBUG: Verify property ID and ownership
+    console.log('Opening lease modal for property_id:', propertyId);
+    const property = properties.find(p => p.id === propertyId);
+    if (property) {
+      console.log('Property found:', property.name);
+      console.log('Property user_id:', property.user_id);
+    } else {
+      console.warn('Property not found in properties array!');
+    }
+
     setLeaseFormData({ name: '', pricePerSfMonth: '', termYears: '' });
     setEditingLeaseId(null);
     setEditingPropertyId(propertyId);
@@ -1540,6 +1550,11 @@ export default function IndustrialCRM() {
         term_years: parseInt(leaseFormData.termYears),
         property_id: editingPropertyId
       };
+
+      // DEBUG: Log lease creation data
+      console.log('Creating lease with property_id:', editingPropertyId);
+      console.log('Full lease data:', leaseData);
+      console.log('Current user ID:', (await supabase.auth.getUser())?.data?.user?.id);
 
       if (editingLeaseId) {
         // Update existing lease
