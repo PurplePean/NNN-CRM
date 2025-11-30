@@ -201,6 +201,7 @@ export default function IndustrialCRM() {
   // ==================
   const [showLeaseModal, setShowLeaseModal] = useState(false);
   const [editingLeaseId, setEditingLeaseId] = useState(null);
+  const [editingPropertyId, setEditingPropertyId] = useState(null);
   const [leaseFormData, setLeaseFormData] = useState({ name: '', pricePerSfMonth: '', termYears: '' });
 
   // ==================
@@ -1495,29 +1496,31 @@ export default function IndustrialCRM() {
   // ==================
 
   /**
-   * Open modal to add a new lease
+   * Open modal to add a new lease (property-specific)
    */
-  const handleAddLease = () => {
+  const handleAddLease = (propertyId) => {
     setLeaseFormData({ name: '', pricePerSfMonth: '', termYears: '' });
     setEditingLeaseId(null);
+    setEditingPropertyId(propertyId);
     setShowLeaseModal(true);
   };
 
   /**
-   * Open modal to edit an existing lease
+   * Open modal to edit an existing lease (property-specific)
    */
-  const handleEditLease = (lease) => {
+  const handleEditLease = (lease, propertyId) => {
     setLeaseFormData({
-      name: lease.name,
+      name: lease.lease_name || lease.name,
       pricePerSfMonth: lease.price_per_sf_month,
       termYears: lease.term_years
     });
     setEditingLeaseId(lease.id);
+    setEditingPropertyId(propertyId);
     setShowLeaseModal(true);
   };
 
   /**
-   * Save lease (create or update)
+   * Save lease (create or update) - Property-specific
    */
   const handleSaveLease = async () => {
     if (!leaseFormData.name || !leaseFormData.pricePerSfMonth || !leaseFormData.termYears) {
@@ -1525,17 +1528,22 @@ export default function IndustrialCRM() {
       return;
     }
 
+    if (!editingPropertyId) {
+      showToast('Property ID is required', 'error');
+      return;
+    }
+
     try {
       const leaseData = {
-        name: leaseFormData.name,
+        lease_name: leaseFormData.name,
         price_per_sf_month: parseFloat(leaseFormData.pricePerSfMonth),
         term_years: parseInt(leaseFormData.termYears),
-        user_id: user?.id
+        property_id: editingPropertyId
       };
 
       if (editingLeaseId) {
         // Update existing lease
-        setLeases(leases.map(l => l.id === editingLeaseId ? { ...leaseData, id: editingLeaseId } : l));
+        setLeases(leases.map(l => l.id === editingLeaseId ? { ...l, ...leaseData, id: editingLeaseId } : l));
 
         if (isSupabaseConfigured()) {
           await supabaseService.update('leases', editingLeaseId, leaseData);
@@ -1548,7 +1556,7 @@ export default function IndustrialCRM() {
           const savedLease = await supabaseService.create('leases', leaseData);
           setLeases([...leases, savedLease]);
         } else {
-          setLeases([...leases, { ...leaseData, id: Date.now() }]);
+          setLeases([...leases, { ...leaseData, id: Date.now().toString() }]);
         }
 
         showToast('Lease created successfully', 'success');
@@ -1557,6 +1565,7 @@ export default function IndustrialCRM() {
       setShowLeaseModal(false);
       setLeaseFormData({ name: '', pricePerSfMonth: '', termYears: '' });
       setEditingLeaseId(null);
+      setEditingPropertyId(null);
     } catch (error) {
       console.error('Error saving lease:', error);
       showToast('Failed to save lease', 'error');
@@ -2963,25 +2972,6 @@ export default function IndustrialCRM() {
                 : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
             }`}>
               {brokers.length + gatekeepers.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('leases')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
-              activeTab === 'leases'
-                ? 'bg-blue-600 text-white'
-                : `${textSecondaryClass} ${hoverBgClass}`
-            }`}
-          >
-            <Database size={20} />
-            <div className="flex-1 text-left">Lease Options</div>
-            <span className={`text-xs px-2 py-1 rounded-full ${
-              activeTab === 'leases'
-                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
-                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
-            }`}>
-              {leases.length}
             </span>
           </button>
         </nav>
@@ -6669,166 +6659,6 @@ export default function IndustrialCRM() {
           </div>
         )}
 
-        {/* Lease Options Tab */}
-        {activeTab === 'leases' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className={`text-2xl font-bold ${textClass}`}>Lease Options</h2>
-                <p className={textSecondaryClass}>Manage user-defined lease options for property calculations</p>
-              </div>
-              <button
-                onClick={handleAddLease}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
-              >
-                <Plus size={20} />
-                Create Lease Option
-              </button>
-            </div>
-
-            {/* Lease Form Modal */}
-            {showLeaseModal && (
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
-                <h3 className={`text-xl font-bold ${textClass} mb-6`}>
-                  {editingLeaseId ? 'Edit Lease Option' : 'Create New Lease Option'}
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="col-span-3">
-                    <label className={`block text-sm font-medium ${textClass} mb-2`}>
-                      Lease Name *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., Triple Net, Lease Option 1, Standard NNN"
-                      value={leaseFormData.name}
-                      onChange={(e) => setLeaseFormData({ ...leaseFormData, name: e.target.value })}
-                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textClass} mb-2`}>
-                      Price per SF/Month * (e.g., 0.70, 1.00, 1.10)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="1.00"
-                      value={leaseFormData.pricePerSfMonth}
-                      onChange={(e) => setLeaseFormData({ ...leaseFormData, pricePerSfMonth: e.target.value })}
-                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={`block text-sm font-medium ${textClass} mb-2`}>
-                      Term (Years) * (e.g., 3, 5, 7, 10)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="5"
-                      value={leaseFormData.termYears}
-                      onChange={(e) => setLeaseFormData({ ...leaseFormData, termYears: e.target.value })}
-                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleSaveLease}
-                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-                  >
-                    {editingLeaseId ? 'Update Lease' : 'Create Lease'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowLeaseModal(false);
-                      setEditingLeaseId(null);
-                      setLeaseFormData({ name: '', pricePerSfMonth: '', termYears: '' });
-                    }}
-                    className={`px-6 py-3 rounded-lg font-semibold transition ${
-                      darkMode
-                        ? 'bg-slate-700 text-slate-200 hover:bg-slate-600'
-                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                    }`}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Leases List */}
-            {leases.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {leases.map(lease => (
-                  <div
-                    key={lease.id}
-                    className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass} hover:shadow-xl transition`}
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className={`text-xl font-bold ${textClass}`}>{lease.name}</h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditLease(lease)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded transition"
-                          aria-label="Edit lease"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteLease(lease.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition"
-                          aria-label="Delete lease"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Price per SF/Month</div>
-                        <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                          ${parseFloat(lease.price_per_sf_month).toFixed(2)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Lease Term</div>
-                        <div className={`text-lg font-bold ${textClass}`}>
-                          {lease.term_years} {lease.term_years === 1 ? 'Year' : 'Years'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={`mt-4 pt-4 border-t ${borderClass}`}>
-                      <div className={`text-xs ${textSecondaryClass}`}>
-                        Created {new Date(lease.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-12 text-center border-2 border-dashed ${borderClass}`}>
-                <Database size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
-                <h3 className={`text-lg font-semibold ${textClass} mb-2`}>No Lease Options Yet</h3>
-                <p className={`${textSecondaryClass} mb-4`}>
-                  Create your first lease option to use in property calculations
-                </p>
-                <button
-                  onClick={handleAddLease}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition inline-flex items-center gap-2"
-                >
-                  <Plus size={20} />
-                  Create Lease Option
-                </button>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Total Contacts Tab */}
 
@@ -9442,34 +9272,185 @@ export default function IndustrialCRM() {
                   </div>
                 )}
 
-                {/* Lease Selection */}
+                {/* Lease Options - Property-Specific */}
                 <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                  <h2 className={`text-xl font-bold ${textClass} mb-4`}>Lease Selection</h2>
-                  <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
                     <div>
-                      <label className={`block text-sm font-semibold ${textClass} mb-2`}>
-                        Select Lease Option
-                      </label>
-                      <select
-                        value={profileProperty.selected_lease_id || ''}
-                        onChange={(e) => handlePropertyLeaseChange(profileProperty.id, e.target.value || null)}
-                        className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      >
-                        <option value="">No lease selected (use property base rent)</option>
-                        {leases.map(lease => (
-                          <option key={lease.id} value={lease.id}>
-                            {lease.name} - ${parseFloat(lease.price_per_sf_month).toFixed(2)} /SF /Month - {lease.term_years} Year Term
-                          </option>
-                        ))}
-                      </select>
+                      <h2 className={`text-xl font-bold ${textClass}`}>Lease Options</h2>
+                      <p className={`text-sm ${textSecondaryClass}`}>Manage lease scenarios for this property</p>
                     </div>
+                    <button
+                      onClick={() => handleAddLease(profileProperty.id)}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+                    >
+                      <Plus size={18} />
+                      Add Lease Option
+                    </button>
+                  </div>
+
+                  {/* Lease Form Modal */}
+                  {showLeaseModal && editingPropertyId === profileProperty.id && (
+                    <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-xl p-6 border ${borderClass} mb-4`}>
+                      <h3 className={`text-lg font-bold ${textClass} mb-4`}>
+                        {editingLeaseId ? 'Edit Lease Option' : 'Create New Lease Option'}
+                      </h3>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="col-span-3">
+                          <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                            Lease Name *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g., Triple Net, 5-Year Base, 10-Year Premium"
+                            value={leaseFormData.name}
+                            onChange={(e) => setLeaseFormData({ ...leaseFormData, name: e.target.value })}
+                            className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          />
+                        </div>
+
+                        <div>
+                          <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                            Price per SF/Month *
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="1.00"
+                            value={leaseFormData.pricePerSfMonth}
+                            onChange={(e) => setLeaseFormData({ ...leaseFormData, pricePerSfMonth: e.target.value })}
+                            className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          />
+                        </div>
+
+                        <div>
+                          <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                            Term (Years) *
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="5"
+                            value={leaseFormData.termYears}
+                            onChange={(e) => setLeaseFormData({ ...leaseFormData, termYears: e.target.value })}
+                            className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleSaveLease}
+                          className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                        >
+                          {editingLeaseId ? 'Update Lease' : 'Create Lease'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowLeaseModal(false);
+                            setEditingLeaseId(null);
+                            setEditingPropertyId(null);
+                            setLeaseFormData({ name: '', pricePerSfMonth: '', termYears: '' });
+                          }}
+                          className={`px-6 py-3 rounded-lg font-semibold transition ${
+                            darkMode
+                              ? 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+                              : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                          }`}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Property Leases List */}
+                  {(() => {
+                    const propertyLeases = leases.filter(l => l.property_id === profileProperty.id);
+
+                    if (propertyLeases.length > 0) {
+                      return (
+                        <div className="space-y-4 mb-4">
+                          {propertyLeases.map(lease => (
+                            <div
+                              key={lease.id}
+                              className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-4 border ${borderClass} hover:shadow-md transition`}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h3 className={`text-lg font-bold ${textClass} mb-2`}>{lease.lease_name || lease.name}</h3>
+                                  <div className="flex gap-6">
+                                    <div>
+                                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Price/SF/Month</div>
+                                      <div className={`text-xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                        ${parseFloat(lease.price_per_sf_month).toFixed(2)}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Term</div>
+                                      <div className={`text-xl font-bold ${textClass}`}>
+                                        {lease.term_years} {lease.term_years === 1 ? 'Year' : 'Years'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleEditLease(lease, profileProperty.id)}
+                                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded transition"
+                                    aria-label="Edit lease"
+                                  >
+                                    <Edit2 size={18} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteLease(lease.id)}
+                                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition"
+                                    aria-label="Delete lease"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center border-2 border-dashed ${borderClass} mb-4`}>
+                        <Database size={40} className={`mx-auto mb-2 ${textSecondaryClass} opacity-50`} />
+                        <p className={`text-sm ${textSecondaryClass}`}>
+                          No lease options yet. Click "Add Lease Option" to create your first scenario.
+                        </p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Select Lease for Underwriting */}
+                  <div className={`pt-4 border-t ${borderClass}`}>
+                    <label className={`block text-sm font-semibold ${textClass} mb-2`}>
+                      Select Lease for Underwriting
+                    </label>
+                    <select
+                      value={profileProperty.selected_lease_id || ''}
+                      onChange={(e) => handlePropertyLeaseChange(profileProperty.id, e.target.value || null)}
+                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    >
+                      <option value="">No lease selected (use property base rent)</option>
+                      {leases.filter(l => l.property_id === profileProperty.id).map(lease => (
+                        <option key={lease.id} value={lease.id}>
+                          {lease.lease_name || lease.name} - ${parseFloat(lease.price_per_sf_month).toFixed(2)} /SF /Month - {lease.term_years} Year Term
+                        </option>
+                      ))}
+                    </select>
+
                     {profileProperty.selected_lease_id && (() => {
                       const selectedLease = leases.find(l => l.id === profileProperty.selected_lease_id);
                       if (selectedLease) {
                         return (
-                          <div className={`p-4 rounded-lg ${darkMode ? 'bg-blue-900 bg-opacity-20 border-blue-700' : 'bg-blue-50 border-blue-200'} border-2`}>
+                          <div className={`mt-3 p-4 rounded-lg ${darkMode ? 'bg-blue-900 bg-opacity-20 border-blue-700' : 'bg-blue-50 border-blue-200'} border-2`}>
                             <div className={`text-sm font-semibold ${darkMode ? 'text-blue-300' : 'text-blue-700'} mb-2`}>
-                              Using: {selectedLease.name}
+                              ✓ Using: {selectedLease.lease_name || selectedLease.name}
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div>
