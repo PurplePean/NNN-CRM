@@ -416,10 +416,7 @@ export default function IndustrialCRM() {
         if (dbGatekeepers) setGatekeepers(dbGatekeepers);
         if (dbEvents) setEvents(dbEvents);
         if (dbFollowUps) setFollowUps(dbFollowUps);
-
-        console.log('🔄 Loading partners_in_deal from database:', dbPartnersInDeal);
         if (dbPartnersInDeal) setPartnersInDeal(dbPartnersInDeal);
-
         if (dbPropertyNotes) setPropertyNotes(dbPropertyNotes);
         if (dbLeases) setLeases(dbLeases);
 
@@ -1294,9 +1291,6 @@ export default function IndustrialCRM() {
    * @async
    */
   const handleSavePartnerDeal = async () => {
-    console.log('💾 handleSavePartnerDeal called with form data:', partnerDealFormData);
-    console.log('🏢 Selected property for deal:', selectedPropertyForDeal);
-
     if (!partnerDealFormData.partnerId || !partnerDealFormData.investmentAmount) {
       showToast('Please select a partner and enter investment amount', 'error');
       return;
@@ -1308,31 +1302,22 @@ export default function IndustrialCRM() {
       investment_amount: parseFloat(partnerDealFormData.investmentAmount)
     };
 
-    console.log('📝 Deal data to save:', dealData);
-
     try {
       if (isSupabaseConfigured()) {
-        console.log('☁️ Saving to Supabase...');
         const savedDeal = await supabaseService.create('partners_in_deal', dealData);
-        console.log('✅ Saved deal from Supabase:', savedDeal);
         if (savedDeal) {
           setPartnersInDeal([...partnersInDeal, savedDeal]);
         }
       } else {
-        console.log('💾 Saving locally...');
-        const localDeal = { ...dealData, id: Date.now() };
-        console.log('✅ Saved deal locally:', localDeal);
-        setPartnersInDeal([...partnersInDeal, localDeal]);
+        setPartnersInDeal([...partnersInDeal, { ...dealData, id: Date.now() }]);
       }
-
-      console.log('📊 Updated partnersInDeal state');
 
       setShowPartnerDealModal(false);
       setSelectedPropertyForDeal(null);
       setPartnerDealFormData({ partnerId: '', investmentAmount: '' });
       showToast('Partner added to deal', 'success');
     } catch (error) {
-      console.error('❌ Error adding partner to deal:', error);
+      console.error('Error adding partner to deal:', error);
       showToast('Error adding partner to deal', 'error');
     }
   };
@@ -1365,21 +1350,10 @@ export default function IndustrialCRM() {
    * @returns {Object} Partner return metrics
    */
   const calculatePartnerReturns = (property, partnerInvestmentAmount) => {
-    console.log('🧮 calculatePartnerReturns called with:', {
-      propertyId: property?.id,
-      partnerInvestmentAmount
-    });
-
     const metrics = calculateMetrics(property);
-    console.log('📊 Property metrics:', metrics);
-
     const investmentAmount = parseFloat(partnerInvestmentAmount) || 0;
 
     if (investmentAmount <= 0 || metrics.equityRequired <= 0) {
-      console.warn('⚠️ Invalid investment or equity:', {
-        investmentAmount,
-        equityRequired: metrics.equityRequired
-      });
       return {
         ownership_percent: 0,
         annual_cash_flow: 0,
@@ -1415,7 +1389,7 @@ export default function IndustrialCRM() {
     // Calculate equity multiple
     const equity_multiple = investmentAmount > 0 ? total_return / investmentAmount : 0;
 
-    const results = {
+    return {
       ownership_percent,
       annual_cash_flow,
       cash_on_cash,
@@ -1424,10 +1398,6 @@ export default function IndustrialCRM() {
       irr,
       equity_multiple
     };
-
-    console.log('✅ calculatePartnerReturns results:', results);
-
-    return results;
   };
 
   // ==================
@@ -9706,14 +9676,7 @@ export default function IndustrialCRM() {
 
                     {/* Partner Returns Section */}
                     {(() => {
-                      console.log('🔍 PARTNER RETURNS DEBUG - Section Rendering');
-                      console.log('📊 All partnersInDeal:', partnersInDeal);
-                      console.log('🏢 Current property ID:', profileProperty.id);
-
                       const propertyDeals = partnersInDeal.filter(d => d.property_id === profileProperty.id);
-                      console.log('🎯 Filtered propertyDeals for this property:', propertyDeals);
-                      console.log('👥 Available partners:', partners);
-
                       return (
                         <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
                           <div className="flex justify-between items-center mb-4">
@@ -9730,19 +9693,10 @@ export default function IndustrialCRM() {
                           {propertyDeals.length > 0 ? (
                             <div className="space-y-4">
                               {propertyDeals.map(deal => {
-                                console.log('💼 Processing deal:', deal);
-
                                 const partner = partners.find(p => p.id === deal.partner_id);
-                                console.log('👤 Found partner:', partner);
-
-                                if (!partner) {
-                                  console.warn('⚠️ Partner not found for deal:', deal);
-                                  return null;
-                                }
+                                if (!partner) return null;
 
                                 const partnerReturns = calculatePartnerReturns(profileProperty, deal.investment_amount);
-                                console.log('📈 Calculated partner returns:', partnerReturns);
-
                                 const isExpanded = expandedPartnerDeals[deal.id];
 
                                 return (
