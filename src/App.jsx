@@ -1499,6 +1499,10 @@ export default function IndustrialCRM() {
    * Open modal to add a new lease (property-specific)
    */
   const handleAddLease = (propertyId) => {
+    if (!propertyId) {
+      console.error('Cannot add lease: propertyId is missing');
+      return;
+    }
     setLeaseFormData({ name: '', pricePerSfMonth: '', termYears: '' });
     setEditingLeaseId(null);
     setEditingPropertyId(propertyId);
@@ -1509,6 +1513,10 @@ export default function IndustrialCRM() {
    * Open modal to edit an existing lease (property-specific)
    */
   const handleEditLease = (lease, propertyId) => {
+    if (!propertyId) {
+      console.error('Cannot edit lease: propertyId is missing');
+      return;
+    }
     setLeaseFormData({
       name: lease.lease_name || lease.name,
       pricePerSfMonth: lease.price_per_sf_month,
@@ -9273,23 +9281,30 @@ export default function IndustrialCRM() {
                 )}
 
                 {/* Lease Options - Property-Specific */}
-                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                  <div className="flex justify-between items-center mb-4">
-                    <div>
-                      <h2 className={`text-xl font-bold ${textClass}`}>Lease Options</h2>
-                      <p className={`text-sm ${textSecondaryClass}`}>Manage lease scenarios for this property</p>
+                {!profileProperty || !profileProperty.id ? (
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                    <div className={`text-center ${textSecondaryClass} py-8`}>
+                      Loading property data...
                     </div>
-                    <button
-                      onClick={() => handleAddLease(profileProperty.id)}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
-                    >
-                      <Plus size={18} />
-                      Add Lease Option
-                    </button>
                   </div>
+                ) : (
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <h2 className={`text-xl font-bold ${textClass}`}>Lease Options</h2>
+                        <p className={`text-sm ${textSecondaryClass}`}>Manage lease scenarios for this property</p>
+                      </div>
+                      <button
+                        onClick={() => handleAddLease(profileProperty.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+                      >
+                        <Plus size={18} />
+                        Add Lease Option
+                      </button>
+                    </div>
 
-                  {/* Lease Form Modal */}
-                  {showLeaseModal && editingPropertyId === profileProperty.id && (
+                    {/* Lease Form Modal */}
+                    {showLeaseModal && editingPropertyId === profileProperty.id && (
                     <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-xl p-6 border ${borderClass} mb-4`}>
                       <h3 className={`text-lg font-bold ${textClass} mb-4`}>
                         {editingLeaseId ? 'Edit Lease Option' : 'Create New Lease Option'}
@@ -9473,6 +9488,7 @@ export default function IndustrialCRM() {
                     })()}
                   </div>
                 </div>
+                )}
 
                 {/* Financial Metrics Overview */}
                 <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
