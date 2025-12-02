@@ -192,7 +192,6 @@ export default function IndustrialCRM() {
     partnerName: '',
     investmentAmount: ''
   });
-  const [expandedPartnerDeals, setExpandedPartnerDeals] = useState({});
   const [editingInvestment, setEditingInvestment] = useState({}); // Track which investment is being edited
 
   // ==================
@@ -9766,11 +9765,11 @@ export default function IndustrialCRM() {
                       const propertyDeals = partnersInDeal.filter(d => d.property_id === profileProperty.id);
                       return (
                         <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                          <div className="flex justify-between items-center mb-4">
+                          <div className="flex justify-between items-center mb-6">
                             <h2 className={`text-xl font-bold ${textClass}`}>Partner Returns</h2>
                             <button
                               onClick={() => handleOpenPartnerDealModal(profileProperty.id)}
-                              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold"
+                              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 font-semibold shadow-sm hover:shadow"
                             >
                               <Plus size={18} />
                               Add Partner
@@ -9778,7 +9777,7 @@ export default function IndustrialCRM() {
                           </div>
 
                           {propertyDeals.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                               {propertyDeals.map(deal => {
                                 // Get partner name from either linked partner or custom name
                                 const partner = deal.partner_id ? partners.find(p => p.id === deal.partner_id) : null;
@@ -9792,143 +9791,139 @@ export default function IndustrialCRM() {
                                 const isEditing = editingInvestment[deal.id] !== undefined;
 
                                 const partnerReturns = calculatePartnerReturns(profileProperty, isEditing ? parseFloat(currentAmount) || deal.investment_amount : deal.investment_amount);
-                                const isExpanded = expandedPartnerDeals[deal.id];
 
                                 return (
-                                  <div key={deal.id} className={`rounded-lg border ${borderClass} overflow-hidden ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                                    {/* Header */}
-                                    <div
-                                      className="flex justify-between items-center p-4 cursor-pointer hover:bg-opacity-80 transition"
-                                      onClick={() => !isEditing && setExpandedPartnerDeals({ ...expandedPartnerDeals, [deal.id]: !isExpanded })}
-                                    >
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                          <div className={`font-bold ${textClass} text-lg`}>{partnerName}</div>
-                                          {!isLinkedPartner && (
-                                            <span className={`text-xs px-2 py-1 rounded ${darkMode ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'}`}>
-                                              Custom
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className={`text-sm ${textSecondaryClass} flex items-center gap-2`}>
+                                  <div key={deal.id} className={`rounded-xl border ${borderClass} overflow-hidden ${darkMode ? 'bg-slate-800/60' : 'bg-white'} transition-all duration-200 shadow-sm hover:shadow-md`}>
+                                    {/* Partner Header */}
+                                    <div className={`px-6 py-5 border-b ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-slate-50/50'}`}>
+                                      <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-3 mb-3">
+                                            <h3 className={`text-xl font-bold ${textClass}`}>{partnerName}</h3>
+                                            {!isLinkedPartner && (
+                                              <span className={`text-xs px-2.5 py-1 rounded-full ${darkMode ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600'} font-medium`}>
+                                                Custom
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          {/* Investment Amount Display/Edit */}
                                           {!isEditing ? (
-                                            <>
-                                              <span>Investment: {formatCurrency(deal.investment_amount)}</span>
+                                            <div className="flex items-center gap-3">
+                                              <span className={`text-2xl font-bold ${textClass}`}>
+                                                {formatCurrency(deal.investment_amount)}
+                                              </span>
+                                              <span className={`text-sm ${textSecondaryClass}`}>investment</span>
                                               <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleStartEditInvestment(deal.id, deal.investment_amount);
-                                                }}
-                                                className={`text-xs px-2 py-0.5 rounded ${darkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-100 hover:bg-purple-200 text-purple-700'} transition`}
+                                                onClick={() => handleStartEditInvestment(deal.id, deal.investment_amount)}
+                                                className={`ml-2 p-2 rounded-lg transition-all duration-200 ${darkMode ? 'bg-purple-600/20 hover:bg-purple-600/30 text-purple-400' : 'bg-purple-50 hover:bg-purple-100 text-purple-600'}`}
+                                                title="Edit investment amount"
                                               >
-                                                Edit
+                                                <Edit2 size={16} />
                                               </button>
-                                              <span>• {partnerReturns.ownership_percent.toFixed(2)}% Ownership</span>
-                                            </>
+                                            </div>
                                           ) : (
-                                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                              <input
-                                                type="number"
-                                                value={currentAmount}
-                                                onChange={(e) => setEditingInvestment({ ...editingInvestment, [deal.id]: e.target.value })}
-                                                className={`w-32 px-2 py-1 text-sm rounded border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                                                onClick={(e) => e.stopPropagation()}
-                                              />
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleSaveInvestment(deal.id);
-                                                }}
-                                                className="text-xs px-2 py-1 rounded bg-green-600 hover:bg-green-700 text-white transition"
-                                              >
-                                                Save
-                                              </button>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleCancelEditInvestment(deal.id);
-                                                }}
-                                                className={`text-xs px-2 py-1 rounded ${darkMode ? 'bg-slate-600 hover:bg-slate-700' : 'bg-gray-200 hover:bg-gray-300'} transition`}
-                                              >
-                                                Cancel
-                                              </button>
+                                            <div className="space-y-3">
+                                              <div className="flex items-center gap-2">
+                                                <span className={`text-3xl font-light ${textSecondaryClass}`}>$</span>
+                                                <input
+                                                  type="text"
+                                                  value={currentAmount}
+                                                  onChange={(e) => {
+                                                    // Allow only numbers and format with commas
+                                                    const value = e.target.value.replace(/,/g, '');
+                                                    if (!isNaN(value) || value === '') {
+                                                      setEditingInvestment({ ...editingInvestment, [deal.id]: value });
+                                                    }
+                                                  }}
+                                                  className={`text-3xl font-bold px-4 py-3 rounded-lg border-2 ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 w-64`}
+                                                  placeholder="100000"
+                                                  autoFocus
+                                                />
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <button
+                                                  onClick={() => handleSaveInvestment(deal.id)}
+                                                  className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-all duration-200 font-medium shadow-sm hover:shadow"
+                                                >
+                                                  Save Changes
+                                                </button>
+                                                <button
+                                                  onClick={() => handleCancelEditInvestment(deal.id)}
+                                                  className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                                                >
+                                                  Cancel
+                                                </button>
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {isLinkedPartner && partner?.assetClasses && !isEditing && (
+                                            <div className={`text-xs ${textSecondaryClass} mt-2`}>
+                                              Preferred: {Array.isArray(partner.assetClasses) ? partner.assetClasses.join(', ') : partner.assetClasses}
                                             </div>
                                           )}
                                         </div>
-                                        {isLinkedPartner && partner?.assetClasses && (
-                                          <div className={`text-xs ${textSecondaryClass} mt-1`}>
-                                            Preferred: {Array.isArray(partner.assetClasses) ? partner.assetClasses.join(', ') : partner.assetClasses}
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-3">
-                                        <div className="text-right">
-                                          <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Cash-on-Cash</div>
-                                          <div className={`text-2xl font-bold ${
-                                            partnerReturns.cash_on_cash >= 10
-                                              ? 'text-green-500'
-                                              : partnerReturns.cash_on_cash >= 7
-                                                ? 'text-yellow-500'
-                                                : 'text-red-500'
-                                          }`}>
-                                            {partnerReturns.cash_on_cash.toFixed(2)}%
-                                          </div>
-                                        </div>
+
                                         <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemovePartnerDeal(deal.id);
-                                          }}
-                                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition"
+                                          onClick={() => handleRemovePartnerDeal(deal.id)}
+                                          className={`p-2 rounded-lg transition-all duration-200 ${darkMode ? 'text-red-400 hover:bg-red-900/30' : 'text-red-600 hover:bg-red-50'}`}
+                                          title="Remove partner"
                                         >
                                           <X size={20} />
                                         </button>
-                                        {!isEditing && (isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />)}
                                       </div>
                                     </div>
 
-                                    {/* Expanded Metrics Grid */}
-                                    {isExpanded && !isEditing && (
-                                      <div className={`p-4 border-t ${borderClass} ${darkMode ? 'bg-slate-700 bg-opacity-50' : 'bg-slate-50'}`}>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                          <div>
-                                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Ownership %</div>
-                                            <div className={`text-xl font-bold ${textClass}`}>{partnerReturns.ownership_percent.toFixed(2)}%</div>
-                                          </div>
-                                          <div>
-                                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Annual Cash Flow</div>
-                                            <div className={`text-xl font-bold ${textClass}`}>{formatCurrency(partnerReturns.annual_cash_flow)}</div>
-                                          </div>
-                                          <div>
-                                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Exit Proceeds</div>
-                                            <div className={`text-xl font-bold ${textClass}`}>{formatCurrency(partnerReturns.exit_proceeds)}</div>
-                                          </div>
-                                          <div>
-                                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Return</div>
-                                            <div className={`text-xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{formatCurrency(partnerReturns.total_return)}</div>
-                                          </div>
-                                          <div>
-                                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>IRR</div>
-                                            <div className={`text-xl font-bold ${textClass}`}>{partnerReturns.irr > 0 ? `${partnerReturns.irr.toFixed(2)}%` : 'N/A'}</div>
-                                          </div>
-                                          <div>
-                                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Equity Multiple</div>
-                                            <div className={`text-xl font-bold ${textClass}`}>{partnerReturns.equity_multiple > 0 ? `${partnerReturns.equity_multiple.toFixed(2)}x` : 'N/A'}</div>
-                                          </div>
+                                    {/* Metrics Grid - Always Visible */}
+                                    <div className={`px-6 py-6 ${darkMode ? 'bg-slate-800/40' : 'bg-white'}`}>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {/* Row 1 */}
+                                        <div className="space-y-1">
+                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase tracking-wider`}>Ownership</div>
+                                          <div className={`text-3xl font-bold ${textClass}`}>{partnerReturns.ownership_percent.toFixed(2)}%</div>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase tracking-wider`}>Annual Cash Flow</div>
+                                          <div className={`text-3xl font-bold ${textClass}`}>{formatCurrency(partnerReturns.annual_cash_flow)}</div>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase tracking-wider`}>Cash-on-Cash</div>
+                                          <div className={`text-3xl font-bold ${textClass}`}>{partnerReturns.cash_on_cash.toFixed(2)}%</div>
+                                        </div>
+
+                                        {/* Row 2 */}
+                                        <div className="space-y-1">
+                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase tracking-wider`}>Exit Proceeds</div>
+                                          <div className={`text-3xl font-bold ${textClass}`}>{formatCurrency(partnerReturns.exit_proceeds)}</div>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase tracking-wider`}>Total Return</div>
+                                          <div className={`text-3xl font-bold ${textClass}`}>{formatCurrency(partnerReturns.total_return)}</div>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase tracking-wider`}>IRR</div>
+                                          <div className={`text-3xl font-bold ${textClass}`}>{partnerReturns.irr > 0 ? `${partnerReturns.irr.toFixed(2)}%` : 'N/A'}</div>
+                                        </div>
+
+                                        {/* Row 3 */}
+                                        <div className="space-y-1">
+                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase tracking-wider`}>Equity Multiple</div>
+                                          <div className={`text-3xl font-bold ${textClass}`}>{partnerReturns.equity_multiple > 0 ? `${partnerReturns.equity_multiple.toFixed(2)}x` : 'N/A'}</div>
                                         </div>
                                       </div>
-                                    )}
+                                    </div>
                                   </div>
                                 );
                               })}
                             </div>
                           ) : (
-                            <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center border-2 border-dashed ${borderClass}`}>
-                              <DollarSign size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
-                              <p className={`text-sm ${textSecondaryClass} font-medium`}>
+                            <div className={`${darkMode ? 'bg-slate-800/40' : 'bg-slate-50'} rounded-xl p-12 text-center border-2 border-dashed ${borderClass}`}>
+                              <DollarSign size={56} className={`mx-auto mb-4 ${textSecondaryClass} opacity-40`} />
+                              <p className={`text-base ${textSecondaryClass} font-medium mb-1`}>
                                 No partners added yet
                               </p>
-                              <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                              <p className={`text-sm ${textSecondaryClass}`}>
                                 Click "Add Partner" to calculate partner-specific returns
                               </p>
                             </div>
