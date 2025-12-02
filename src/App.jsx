@@ -186,8 +186,14 @@ export default function IndustrialCRM() {
   // ==================
   const [showPartnerDealModal, setShowPartnerDealModal] = useState(false);
   const [selectedPropertyForDeal, setSelectedPropertyForDeal] = useState(null);
-  const [partnerDealFormData, setPartnerDealFormData] = useState({ partnerId: '', investmentAmount: '' });
+  const [partnerDealFormData, setPartnerDealFormData] = useState({
+    partnerSelectionMode: 'existing', // 'existing' or 'custom'
+    partnerId: '',
+    partnerName: '',
+    investmentAmount: ''
+  });
   const [expandedPartnerDeals, setExpandedPartnerDeals] = useState({});
+  const [editingInvestment, setEditingInvestment] = useState({}); // Track which investment is being edited
 
   // ==================
   // PROPERTY NOTES SIDEBAR STATE
@@ -1282,24 +1288,42 @@ export default function IndustrialCRM() {
    */
   const handleOpenPartnerDealModal = (propertyId) => {
     setSelectedPropertyForDeal(propertyId);
-    setPartnerDealFormData({ partnerId: '', investmentAmount: '' });
+    setPartnerDealFormData({
+      partnerSelectionMode: 'existing',
+      partnerId: '',
+      partnerName: '',
+      investmentAmount: ''
+    });
     setShowPartnerDealModal(true);
   };
 
   /**
-   * Save partner deal
+   * Save partner deal (existing or custom partner)
    * @async
    */
   const handleSavePartnerDeal = async () => {
-    if (!partnerDealFormData.partnerId || !partnerDealFormData.investmentAmount) {
-      showToast('Please select a partner and enter investment amount', 'error');
+    const { partnerSelectionMode, partnerId, partnerName, investmentAmount } = partnerDealFormData;
+
+    // Validate based on selection mode
+    if (partnerSelectionMode === 'existing' && !partnerId) {
+      showToast('Please select a partner', 'error');
+      return;
+    }
+    if (partnerSelectionMode === 'custom' && !partnerName.trim()) {
+      showToast('Please enter a partner name', 'error');
+      return;
+    }
+    if (!investmentAmount) {
+      showToast('Please enter investment amount', 'error');
       return;
     }
 
+    // Build deal data based on selection mode
     const dealData = {
       property_id: selectedPropertyForDeal,
-      partner_id: partnerDealFormData.partnerId,
-      investment_amount: parseFloat(partnerDealFormData.investmentAmount)
+      partner_id: partnerSelectionMode === 'existing' ? partnerId : null,
+      partner_name: partnerSelectionMode === 'custom' ? partnerName.trim() : null,
+      investment_amount: parseFloat(investmentAmount)
     };
 
     try {
@@ -1314,7 +1338,12 @@ export default function IndustrialCRM() {
 
       setShowPartnerDealModal(false);
       setSelectedPropertyForDeal(null);
-      setPartnerDealFormData({ partnerId: '', investmentAmount: '' });
+      setPartnerDealFormData({
+        partnerSelectionMode: 'existing',
+        partnerId: '',
+        partnerName: '',
+        investmentAmount: ''
+      });
       showToast('Partner added to deal', 'success');
     } catch (error) {
       console.error('Error adding partner to deal:', error);
@@ -1341,6 +1370,64 @@ export default function IndustrialCRM() {
       },
       'danger'
     );
+  };
+
+  /**
+   * Start editing investment amount for a partner deal
+   * @param {string|number} dealId - Deal ID
+   * @param {number} currentAmount - Current investment amount
+   */
+  const handleStartEditInvestment = (dealId, currentAmount) => {
+    setEditingInvestment({ ...editingInvestment, [dealId]: currentAmount });
+  };
+
+  /**
+   * Save updated investment amount for a partner deal
+   * @param {string|number} dealId - Deal ID
+   * @async
+   */
+  const handleSaveInvestment = async (dealId) => {
+    const newAmount = parseFloat(editingInvestment[dealId]);
+
+    if (!newAmount || newAmount <= 0) {
+      showToast('Please enter a valid investment amount', 'error');
+      return;
+    }
+
+    try {
+      // Update in state
+      const updatedDeals = partnersInDeal.map(d =>
+        d.id === dealId ? { ...d, investment_amount: newAmount } : d
+      );
+      setPartnersInDeal(updatedDeals);
+
+      // Update in database
+      if (isSupabaseConfigured()) {
+        await supabaseService.update('partners_in_deal', dealId, {
+          investment_amount: newAmount
+        });
+      }
+
+      // Clear editing state
+      const newEditingState = { ...editingInvestment };
+      delete newEditingState[dealId];
+      setEditingInvestment(newEditingState);
+
+      showToast('Investment amount updated', 'success');
+    } catch (error) {
+      console.error('Error updating investment amount:', error);
+      showToast('Error updating investment amount', 'error');
+    }
+  };
+
+  /**
+   * Cancel editing investment amount
+   * @param {string|number} dealId - Deal ID
+   */
+  const handleCancelEditInvestment = (dealId) => {
+    const newEditingState = { ...editingInvestment };
+    delete newEditingState[dealId];
+    setEditingInvestment(newEditingState);
   };
 
   /**
@@ -9693,10 +9780,18 @@ export default function IndustrialCRM() {
                           {propertyDeals.length > 0 ? (
                             <div className="space-y-4">
                               {propertyDeals.map(deal => {
-                                const partner = partners.find(p => p.id === deal.partner_id);
-                                if (!partner) return null;
+                                // Get partner name from either linked partner or custom name
+                                const partner = deal.partner_id ? partners.find(p => p.id === deal.partner_id) : null;
+                                const partnerName = partner ? partner.name : deal.partner_name;
+                                const isLinkedPartner = !!partner;
 
-                                const partnerReturns = calculatePartnerReturns(profileProperty, deal.investment_amount);
+                                // Use editing amount if being edited, otherwise use stored amount
+                                const currentAmount = editingInvestment[deal.id] !== undefined
+                                  ? editingInvestment[deal.id]
+                                  : deal.investment_amount;
+                                const isEditing = editingInvestment[deal.id] !== undefined;
+
+                                const partnerReturns = calculatePartnerReturns(profileProperty, isEditing ? parseFloat(currentAmount) || deal.investment_amount : deal.investment_amount);
                                 const isExpanded = expandedPartnerDeals[deal.id];
 
                                 return (
@@ -9704,13 +9799,67 @@ export default function IndustrialCRM() {
                                     {/* Header */}
                                     <div
                                       className="flex justify-between items-center p-4 cursor-pointer hover:bg-opacity-80 transition"
-                                      onClick={() => setExpandedPartnerDeals({ ...expandedPartnerDeals, [deal.id]: !isExpanded })}
+                                      onClick={() => !isEditing && setExpandedPartnerDeals({ ...expandedPartnerDeals, [deal.id]: !isExpanded })}
                                     >
-                                      <div>
-                                        <div className={`font-bold ${textClass} text-lg`}>{partner.name}</div>
-                                        <div className={`text-sm ${textSecondaryClass}`}>
-                                          Investment: {formatCurrency(deal.investment_amount)} • {partnerReturns.ownership_percent.toFixed(2)}% Ownership
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <div className={`font-bold ${textClass} text-lg`}>{partnerName}</div>
+                                          {!isLinkedPartner && (
+                                            <span className={`text-xs px-2 py-1 rounded ${darkMode ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'}`}>
+                                              Custom
+                                            </span>
+                                          )}
                                         </div>
+                                        <div className={`text-sm ${textSecondaryClass} flex items-center gap-2`}>
+                                          {!isEditing ? (
+                                            <>
+                                              <span>Investment: {formatCurrency(deal.investment_amount)}</span>
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleStartEditInvestment(deal.id, deal.investment_amount);
+                                                }}
+                                                className={`text-xs px-2 py-0.5 rounded ${darkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-100 hover:bg-purple-200 text-purple-700'} transition`}
+                                              >
+                                                Edit
+                                              </button>
+                                              <span>• {partnerReturns.ownership_percent.toFixed(2)}% Ownership</span>
+                                            </>
+                                          ) : (
+                                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                              <input
+                                                type="number"
+                                                value={currentAmount}
+                                                onChange={(e) => setEditingInvestment({ ...editingInvestment, [deal.id]: e.target.value })}
+                                                className={`w-32 px-2 py-1 text-sm rounded border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                                                onClick={(e) => e.stopPropagation()}
+                                              />
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleSaveInvestment(deal.id);
+                                                }}
+                                                className="text-xs px-2 py-1 rounded bg-green-600 hover:bg-green-700 text-white transition"
+                                              >
+                                                Save
+                                              </button>
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleCancelEditInvestment(deal.id);
+                                                }}
+                                                className={`text-xs px-2 py-1 rounded ${darkMode ? 'bg-slate-600 hover:bg-slate-700' : 'bg-gray-200 hover:bg-gray-300'} transition`}
+                                              >
+                                                Cancel
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                        {isLinkedPartner && partner?.assetClasses && (
+                                          <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                                            Preferred: {Array.isArray(partner.assetClasses) ? partner.assetClasses.join(', ') : partner.assetClasses}
+                                          </div>
+                                        )}
                                       </div>
                                       <div className="flex items-center gap-3">
                                         <div className="text-right">
@@ -9734,12 +9883,12 @@ export default function IndustrialCRM() {
                                         >
                                           <X size={20} />
                                         </button>
-                                        {isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+                                        {!isEditing && (isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />)}
                                       </div>
                                     </div>
 
                                     {/* Expanded Metrics Grid */}
-                                    {isExpanded && (
+                                    {isExpanded && !isEditing && (
                                       <div className={`p-4 border-t ${borderClass} ${darkMode ? 'bg-slate-700 bg-opacity-50' : 'bg-slate-50'}`}>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                           <div>
@@ -10557,24 +10706,78 @@ export default function IndustrialCRM() {
             </div>
 
             <div className="space-y-4">
-              {/* Partner Selection */}
+              {/* Partner Selection Mode Toggle */}
               <div>
                 <label className={`block text-sm font-semibold ${textClass} mb-2`}>
-                  Select Partner
+                  Partner Type
                 </label>
-                <select
-                  value={partnerDealFormData.partnerId}
-                  onChange={(e) => setPartnerDealFormData({ ...partnerDealFormData, partnerId: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                >
-                  <option value="">-- Select Partner --</option>
-                  {partners.map(partner => (
-                    <option key={partner.id} value={partner.id}>
-                      {partner.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPartnerDealFormData({ ...partnerDealFormData, partnerSelectionMode: 'existing', partnerId: '', partnerName: '' })}
+                    className={`flex-1 px-4 py-2 rounded-lg font-semibold transition ${
+                      partnerDealFormData.partnerSelectionMode === 'existing'
+                        ? 'bg-purple-600 text-white'
+                        : darkMode
+                          ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                    }`}
+                  >
+                    Existing Partner
+                  </button>
+                  <button
+                    onClick={() => setPartnerDealFormData({ ...partnerDealFormData, partnerSelectionMode: 'custom', partnerId: '', partnerName: '' })}
+                    className={`flex-1 px-4 py-2 rounded-lg font-semibold transition ${
+                      partnerDealFormData.partnerSelectionMode === 'custom'
+                        ? 'bg-purple-600 text-white'
+                        : darkMode
+                          ? 'bg-slate-700 hover:bg-slate-600 text-white'
+                          : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                    }`}
+                  >
+                    Custom Partner
+                  </button>
+                </div>
               </div>
+
+              {/* Partner Selection - Existing */}
+              {partnerDealFormData.partnerSelectionMode === 'existing' && (
+                <div>
+                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>
+                    Select Partner
+                  </label>
+                  <select
+                    value={partnerDealFormData.partnerId}
+                    onChange={(e) => setPartnerDealFormData({ ...partnerDealFormData, partnerId: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                  >
+                    <option value="">-- Select Partner --</option>
+                    {partners.map(partner => (
+                      <option key={partner.id} value={partner.id}>
+                        {partner.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Partner Selection - Custom */}
+              {partnerDealFormData.partnerSelectionMode === 'custom' && (
+                <div>
+                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>
+                    Partner Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter partner name"
+                    value={partnerDealFormData.partnerName}
+                    onChange={(e) => setPartnerDealFormData({ ...partnerDealFormData, partnerName: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                  />
+                  <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                    For one-time use. Not linked to contact list.
+                  </p>
+                </div>
+              )}
 
               {/* Investment Amount */}
               <div>
