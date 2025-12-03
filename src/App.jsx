@@ -207,7 +207,22 @@ export default function IndustrialCRM() {
   const [showLeaseModal, setShowLeaseModal] = useState(false);
   const [editingLeaseId, setEditingLeaseId] = useState(null);
   const [editingPropertyId, setEditingPropertyId] = useState(null);
-  const [leaseFormData, setLeaseFormData] = useState({ name: '', pricePerSfMonth: '', termYears: '' });
+  const [leaseFormData, setLeaseFormData] = useState({
+    name: '',
+    pricePerSfMonth: '',
+    termYears: '',
+    // CAM fields
+    camAmount: '',
+    camType: 'per_month',
+    // Rent increase fields
+    rentIncreaseType: 'none',
+    flatAnnualIncreasePercent: '',
+    rentSteps: [],
+    baseAnnualEscalationPercent: '',
+    // TI and Allowance
+    tenantImprovementAmount: '',
+    tenantAllowanceAmount: ''
+  });
 
   // ==================
   // ACTIVITY FEED FILTERS
@@ -1589,7 +1604,19 @@ export default function IndustrialCRM() {
       console.error('Cannot add lease: propertyId is missing');
       return;
     }
-    setLeaseFormData({ name: '', pricePerSfMonth: '', termYears: '' });
+    setLeaseFormData({
+      name: '',
+      pricePerSfMonth: '',
+      termYears: '',
+      camAmount: '',
+      camType: 'per_month',
+      rentIncreaseType: 'none',
+      flatAnnualIncreasePercent: '',
+      rentSteps: [],
+      baseAnnualEscalationPercent: '',
+      tenantImprovementAmount: '',
+      tenantAllowanceAmount: ''
+    });
     setEditingLeaseId(null);
     setEditingPropertyId(propertyId);
     setShowLeaseModal(true);
@@ -1606,7 +1633,15 @@ export default function IndustrialCRM() {
     setLeaseFormData({
       name: lease.lease_name || lease.name,
       pricePerSfMonth: lease.price_per_sf_month,
-      termYears: lease.term_years
+      termYears: lease.term_years,
+      camAmount: lease.cam_amount || '',
+      camType: lease.cam_type || 'per_month',
+      rentIncreaseType: lease.rent_increase_type || 'none',
+      flatAnnualIncreasePercent: lease.flat_annual_increase_percent || '',
+      rentSteps: lease.rent_steps || [],
+      baseAnnualEscalationPercent: lease.base_annual_escalation_percent || '',
+      tenantImprovementAmount: lease.tenant_improvement_amount || '',
+      tenantAllowanceAmount: lease.tenant_allowance_amount || ''
     });
     setEditingLeaseId(lease.id);
     setEditingPropertyId(propertyId);
@@ -1632,7 +1667,18 @@ export default function IndustrialCRM() {
         lease_name: leaseFormData.name,
         price_per_sf_month: parseFloat(leaseFormData.pricePerSfMonth),
         term_years: parseInt(leaseFormData.termYears),
-        property_id: editingPropertyId
+        property_id: editingPropertyId,
+        // CAM fields
+        cam_amount: leaseFormData.camAmount ? parseFloat(leaseFormData.camAmount) : null,
+        cam_type: leaseFormData.camAmount ? leaseFormData.camType : null,
+        // Rent increase fields
+        rent_increase_type: leaseFormData.rentIncreaseType || 'none',
+        flat_annual_increase_percent: leaseFormData.flatAnnualIncreasePercent ? parseFloat(leaseFormData.flatAnnualIncreasePercent) : 0,
+        rent_steps: leaseFormData.rentSteps || [],
+        base_annual_escalation_percent: leaseFormData.baseAnnualEscalationPercent ? parseFloat(leaseFormData.baseAnnualEscalationPercent) : 0,
+        // TI and Allowance
+        tenant_improvement_amount: leaseFormData.tenantImprovementAmount ? parseFloat(leaseFormData.tenantImprovementAmount) : null,
+        tenant_allowance_amount: leaseFormData.tenantAllowanceAmount ? parseFloat(leaseFormData.tenantAllowanceAmount) : null
       };
 
       if (editingLeaseId) {
@@ -1657,7 +1703,19 @@ export default function IndustrialCRM() {
       }
 
       setShowLeaseModal(false);
-      setLeaseFormData({ name: '', pricePerSfMonth: '', termYears: '' });
+      setLeaseFormData({
+        name: '',
+        pricePerSfMonth: '',
+        termYears: '',
+        camAmount: '',
+        camType: 'per_month',
+        rentIncreaseType: 'none',
+        flatAnnualIncreasePercent: '',
+        rentSteps: [],
+        baseAnnualEscalationPercent: '',
+        tenantImprovementAmount: '',
+        tenantAllowanceAmount: ''
+      });
       setEditingLeaseId(null);
       setEditingPropertyId(null);
     } catch (error) {
@@ -2671,10 +2729,41 @@ export default function IndustrialCRM() {
 
     // Use selected lease if available, otherwise fall back to property's monthlyBaseRentPerSqft
     let monthlyBaseRent = parseFloat(prop.monthlyBaseRentPerSqft) || 0;
+    let selectedLease = null;
+    let camPerSfMonth = 0;
+    let tenantImprovementAmount = 0;
+    let tenantAllowanceAmount = 0;
+    let rentIncreaseType = 'none';
+    let flatAnnualIncreasePercent = 0;
+    let rentSteps = [];
+    let baseAnnualEscalationPercent = 0;
+
     if (prop.selected_lease_id) {
-      const selectedLease = leases.find(l => l.id === prop.selected_lease_id);
+      selectedLease = leases.find(l => l.id === prop.selected_lease_id);
       if (selectedLease) {
         monthlyBaseRent = parseFloat(selectedLease.price_per_sf_month) || 0;
+
+        // CAM charges
+        if (selectedLease.cam_amount && selectedLease.cam_type) {
+          const camAmount = parseFloat(selectedLease.cam_amount);
+          if (selectedLease.cam_type === 'per_month') {
+            camPerSfMonth = camAmount;
+          } else if (selectedLease.cam_type === 'per_year') {
+            camPerSfMonth = camAmount / 12;
+          } else if (selectedLease.cam_type === 'total_annual' && sqft > 0) {
+            camPerSfMonth = (camAmount / sqft) / 12;
+          }
+        }
+
+        // TI and Allowance
+        tenantImprovementAmount = parseFloat(selectedLease.tenant_improvement_amount) || 0;
+        tenantAllowanceAmount = parseFloat(selectedLease.tenant_allowance_amount) || 0;
+
+        // Rent increase structure
+        rentIncreaseType = selectedLease.rent_increase_type || 'none';
+        flatAnnualIncreasePercent = parseFloat(selectedLease.flat_annual_increase_percent) || 0;
+        rentSteps = selectedLease.rent_steps || [];
+        baseAnnualEscalationPercent = parseFloat(selectedLease.base_annual_escalation_percent) || 0;
       }
     }
 
@@ -2688,11 +2777,11 @@ export default function IndustrialCRM() {
     const exitCapRate = parseFloat(prop.exitCapRate) || 0;
     const holdingPeriodMonths = parseFloat(prop.holdingPeriodMonths) || 0;
 
-    // Calculate All-in Cost
-    const allInCost = purchasePrice + improvements + closingCosts;
+    // Calculate All-in Cost (including TI and Allowance)
+    const allInCost = purchasePrice + improvements + closingCosts + tenantImprovementAmount + tenantAllowanceAmount;
 
-    // Calculate Monthly & Annual Rent (NNN - no expenses)
-    const monthlyRent = sqft * monthlyBaseRent;
+    // Calculate Monthly & Annual Rent including CAM (NNN - no expenses)
+    const monthlyRent = sqft * (monthlyBaseRent + camPerSfMonth);
     const annualRent = monthlyRent * 12;
     const noi = annualRent; // NNN: NOI = Rent since tenant pays expenses
 
@@ -2726,7 +2815,7 @@ export default function IndustrialCRM() {
     const netProceedsAtExit = exitValue - remainingLoanBalance;
     const equityMultiple = equityRequired > 0 ? netProceedsAtExit / equityRequired : 0;
 
-    // Calculate IRR (Internal Rate of Return)
+    // Calculate IRR (Internal Rate of Return) with rent increases
     let irr = 0;
     if (holdingPeriodMonths > 0 && equityRequired > 0) {
       const holdingPeriodYears = holdingPeriodMonths / 12;
@@ -2735,17 +2824,74 @@ export default function IndustrialCRM() {
       // Year 0: Initial equity investment (negative)
       cashFlows.push(-equityRequired);
 
-      // Years 1 through N: Annual cash flows
+      // Helper function to calculate rent for a given year based on increase structure
+      const calculateYearRent = (year) => {
+        let yearlyRent = annualRent; // Base rent for Year 1
+
+        if (rentIncreaseType === 'flat_annual' && flatAnnualIncreasePercent > 0) {
+          // Apply flat annual increase: rent * (1 + rate)^(year - 1)
+          yearlyRent = annualRent * Math.pow(1 + (flatAnnualIncreasePercent / 100), year - 1);
+        } else if (rentIncreaseType === 'stepped' && rentSteps.length > 0) {
+          // Apply stepped increases
+          let cumulativeIncrease = 1.0;
+          let lastStepYear = 0;
+
+          // Sort steps by trigger year
+          const sortedSteps = [...rentSteps].sort((a, b) => a.trigger_year - b.trigger_year);
+
+          for (const step of sortedSteps) {
+            if (step.trigger_year <= year) {
+              // Apply the step increase
+              cumulativeIncrease *= (1 + (step.increase_percent / 100));
+
+              // Apply base escalation between steps
+              if (baseAnnualEscalationPercent > 0 && lastStepYear > 0) {
+                const yearsBetween = step.trigger_year - lastStepYear;
+                cumulativeIncrease *= Math.pow(1 + (baseAnnualEscalationPercent / 100), yearsBetween);
+              }
+
+              lastStepYear = step.trigger_year;
+            }
+          }
+
+          // Apply base escalation from last step to current year
+          if (baseAnnualEscalationPercent > 0 && lastStepYear > 0 && year > lastStepYear) {
+            const yearsSinceLastStep = year - lastStepYear;
+            cumulativeIncrease *= Math.pow(1 + (baseAnnualEscalationPercent / 100), yearsSinceLastStep);
+          } else if (baseAnnualEscalationPercent > 0 && lastStepYear === 0) {
+            // No steps triggered yet, just apply base escalation
+            cumulativeIncrease *= Math.pow(1 + (baseAnnualEscalationPercent / 100), year - 1);
+          }
+
+          yearlyRent = annualRent * cumulativeIncrease;
+        }
+
+        return yearlyRent;
+      };
+
+      // Years 1 through N: Annual cash flows with rent increases
       for (let year = 1; year <= Math.floor(holdingPeriodYears); year++) {
-        cashFlows.push(annualCashFlow);
+        const yearRent = calculateYearRent(year);
+        const yearNOI = yearRent; // NNN: NOI = Rent
+        const yearCashFlow = yearNOI - annualDebtService;
+        cashFlows.push(yearCashFlow);
       }
+
+      // Calculate final NOI for exit value (based on last year's rent with increases)
+      const finalYear = Math.ceil(holdingPeriodYears);
+      const finalYearRent = calculateYearRent(finalYear);
+      const finalNOI = finalYearRent;
+      const adjustedExitValue = exitCapRate > 0 ? finalNOI / (exitCapRate / 100) : 0;
 
       // Final year: Add exit proceeds to final cash flow
       if (cashFlows.length > 1) {
-        cashFlows[cashFlows.length - 1] += netProceedsAtExit;
+        cashFlows[cashFlows.length - 1] += (adjustedExitValue - remainingLoanBalance);
       } else {
         // If holding period < 1 year, still calculate with single period
-        cashFlows.push(annualCashFlow * (holdingPeriodMonths / 12) + netProceedsAtExit);
+        const yearRent = calculateYearRent(1);
+        const yearNOI = yearRent;
+        const yearCashFlow = yearNOI - annualDebtService;
+        cashFlows.push(yearCashFlow * (holdingPeriodMonths / 12) + (adjustedExitValue - remainingLoanBalance));
       }
 
       irr = calculateIRR(cashFlows);
@@ -9438,6 +9584,212 @@ export default function IndustrialCRM() {
                         </div>
                       </div>
 
+                      {/* CAM Charges Section */}
+                      <div className={`${darkMode ? 'bg-slate-700/50' : 'bg-white'} rounded-lg p-4 border ${borderClass} mb-4`}>
+                        <h4 className={`text-md font-bold ${textClass} mb-3`}>CAM Charges (Optional)</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                              CAM Input Method
+                            </label>
+                            <select
+                              value={leaseFormData.camType}
+                              onChange={(e) => setLeaseFormData({ ...leaseFormData, camType: e.target.value })}
+                              className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            >
+                              <option value="per_month">Per SF/Month</option>
+                              <option value="per_year">Per SF/Year</option>
+                              <option value="total_annual">Total Annual Amount</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                              {leaseFormData.camType === 'per_month' && 'CAM per SF/Month ($)'}
+                              {leaseFormData.camType === 'per_year' && 'CAM per SF/Year ($)'}
+                              {leaseFormData.camType === 'total_annual' && 'Total Annual CAM ($)'}
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder={
+                                leaseFormData.camType === 'per_month' ? '0.25' :
+                                leaseFormData.camType === 'per_year' ? '3.00' :
+                                '15000'
+                              }
+                              value={leaseFormData.camAmount}
+                              onChange={(e) => setLeaseFormData({ ...leaseFormData, camAmount: e.target.value })}
+                              className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            />
+                          </div>
+                        </div>
+                        {leaseFormData.camType === 'total_annual' && leaseFormData.camAmount && (
+                          <div className={`mt-3 p-3 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-slate-50'} border ${borderClass}`}>
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>
+                              Auto-Calculated Rates (will be shown in property details)
+                            </div>
+                            <div className="text-sm">
+                              <span className={textSecondaryClass}>Based on property square footage</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Rent Increase Structure Section */}
+                      <div className={`${darkMode ? 'bg-slate-700/50' : 'bg-white'} rounded-lg p-4 border ${borderClass} mb-4`}>
+                        <h4 className={`text-md font-bold ${textClass} mb-3`}>Rent Increase Structure</h4>
+                        <div className="mb-4">
+                          <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                            Increase Type
+                          </label>
+                          <select
+                            value={leaseFormData.rentIncreaseType}
+                            onChange={(e) => setLeaseFormData({ ...leaseFormData, rentIncreaseType: e.target.value })}
+                            className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          >
+                            <option value="none">No Rent Increases</option>
+                            <option value="flat_annual">Flat Annual Increase</option>
+                            <option value="stepped">Stepped Increases</option>
+                          </select>
+                        </div>
+
+                        {leaseFormData.rentIncreaseType === 'flat_annual' && (
+                          <div>
+                            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                              Annual Rent Increase (%)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="3.00"
+                              value={leaseFormData.flatAnnualIncreasePercent}
+                              onChange={(e) => setLeaseFormData({ ...leaseFormData, flatAnnualIncreasePercent: e.target.value })}
+                              className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            />
+                            <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                              Example: 3% every year (Year 1: $1.00, Year 2: $1.03, Year 3: $1.06, etc)
+                            </p>
+                          </div>
+                        )}
+
+                        {leaseFormData.rentIncreaseType === 'stepped' && (
+                          <div className="space-y-3">
+                            {leaseFormData.rentSteps.map((step, index) => (
+                              <div key={index} className={`flex gap-3 items-end p-3 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-slate-50'} border ${borderClass}`}>
+                                <div className="flex-1">
+                                  <label className={`block text-xs font-medium ${textClass} mb-1`}>
+                                    Trigger Year
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    placeholder="2"
+                                    value={step.trigger_year}
+                                    onChange={(e) => {
+                                      const newSteps = [...leaseFormData.rentSteps];
+                                      newSteps[index].trigger_year = parseInt(e.target.value) || 0;
+                                      setLeaseFormData({ ...leaseFormData, rentSteps: newSteps });
+                                    }}
+                                    className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <label className={`block text-xs font-medium ${textClass} mb-1`}>
+                                    Increase (%)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="10"
+                                    value={step.increase_percent}
+                                    onChange={(e) => {
+                                      const newSteps = [...leaseFormData.rentSteps];
+                                      newSteps[index].increase_percent = parseFloat(e.target.value) || 0;
+                                      setLeaseFormData({ ...leaseFormData, rentSteps: newSteps });
+                                    }}
+                                    className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    const newSteps = leaseFormData.rentSteps.filter((_, i) => i !== index);
+                                    setLeaseFormData({ ...leaseFormData, rentSteps: newSteps });
+                                  }}
+                                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => {
+                                setLeaseFormData({
+                                  ...leaseFormData,
+                                  rentSteps: [...leaseFormData.rentSteps, { trigger_year: 0, increase_percent: 0 }]
+                                });
+                              }}
+                              className={`w-full px-4 py-2 rounded-lg border-2 border-dashed ${
+                                darkMode ? 'border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-300' : 'border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-700'
+                              } transition font-medium`}
+                            >
+                              + Add Rent Increase Step
+                            </button>
+
+                            <div className="mt-3">
+                              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                                Base Annual Escalation Between Steps (%) - Optional
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                placeholder="0"
+                                value={leaseFormData.baseAnnualEscalationPercent}
+                                onChange={(e) => setLeaseFormData({ ...leaseFormData, baseAnnualEscalationPercent: e.target.value })}
+                                className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                              />
+                              <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                                Applied annually between step increases (e.g., 2% between Year 2 and Year 4)
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* TI and Tenant Allowance Section */}
+                      <div className={`${darkMode ? 'bg-slate-700/50' : 'bg-white'} rounded-lg p-4 border ${borderClass} mb-4`}>
+                        <h4 className={`text-md font-bold ${textClass} mb-3`}>Tenant Improvement & Allowance</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                              Tenant Improvement (TI) Amount ($)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="50000"
+                              value={leaseFormData.tenantImprovementAmount}
+                              onChange={(e) => setLeaseFormData({ ...leaseFormData, tenantImprovementAmount: e.target.value })}
+                              className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            />
+                            <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                              One-time landlord cost upfront
+                            </p>
+                          </div>
+                          <div>
+                            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                              Tenant Allowance Amount ($)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="25000"
+                              value={leaseFormData.tenantAllowanceAmount}
+                              onChange={(e) => setLeaseFormData({ ...leaseFormData, tenantAllowanceAmount: e.target.value })}
+                              className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="flex gap-3">
                         <button
                           onClick={handleSaveLease}
@@ -9450,7 +9802,19 @@ export default function IndustrialCRM() {
                             setShowLeaseModal(false);
                             setEditingLeaseId(null);
                             setEditingPropertyId(null);
-                            setLeaseFormData({ name: '', pricePerSfMonth: '', termYears: '' });
+                            setLeaseFormData({
+                              name: '',
+                              pricePerSfMonth: '',
+                              termYears: '',
+                              camAmount: '',
+                              camType: 'per_month',
+                              rentIncreaseType: 'none',
+                              flatAnnualIncreasePercent: '',
+                              rentSteps: [],
+                              baseAnnualEscalationPercent: '',
+                              tenantImprovementAmount: '',
+                              tenantAllowanceAmount: ''
+                            });
                           }}
                           className={`px-6 py-3 rounded-lg font-semibold transition ${
                             darkMode
@@ -9471,48 +9835,111 @@ export default function IndustrialCRM() {
                     if (propertyLeases.length > 0) {
                       return (
                         <div className="space-y-4 mb-4">
-                          {propertyLeases.map(lease => (
-                            <div
-                              key={lease.id}
-                              className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-4 border ${borderClass} hover:shadow-md transition`}
-                            >
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <h3 className={`text-lg font-bold ${textClass} mb-2`}>{lease.lease_name || lease.name}</h3>
-                                  <div className="flex gap-6">
-                                    <div>
-                                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Price/SF/Month</div>
-                                      <div className={`text-xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                                        ${parseFloat(lease.price_per_sf_month).toFixed(2)}
+                          {propertyLeases.map(lease => {
+                            // Calculate CAM display values
+                            let camDisplay = null;
+                            if (lease.cam_amount && lease.cam_type) {
+                              const sqft = parseFloat(stripCommas(profileProperty.squareFeet)) || 0;
+                              if (lease.cam_type === 'per_month') {
+                                camDisplay = `$${parseFloat(lease.cam_amount).toFixed(2)}/SF/Mo`;
+                              } else if (lease.cam_type === 'per_year') {
+                                camDisplay = `$${parseFloat(lease.cam_amount).toFixed(2)}/SF/Yr`;
+                              } else if (lease.cam_type === 'total_annual') {
+                                camDisplay = `$${parseFloat(lease.cam_amount).toLocaleString()}/Yr`;
+                                if (sqft > 0) {
+                                  const perSfMonth = (parseFloat(lease.cam_amount) / sqft) / 12;
+                                  camDisplay += ` ($${perSfMonth.toFixed(2)}/SF/Mo)`;
+                                }
+                              }
+                            }
+
+                            // Rent increase display
+                            let rentIncreaseDisplay = null;
+                            if (lease.rent_increase_type === 'flat_annual' && lease.flat_annual_increase_percent) {
+                              rentIncreaseDisplay = `${parseFloat(lease.flat_annual_increase_percent).toFixed(1)}% annual`;
+                            } else if (lease.rent_increase_type === 'stepped' && lease.rent_steps && lease.rent_steps.length > 0) {
+                              rentIncreaseDisplay = `${lease.rent_steps.length} step increases`;
+                            }
+
+                            return (
+                              <div
+                                key={lease.id}
+                                className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-4 border ${borderClass} hover:shadow-md transition`}
+                              >
+                                <div className="flex justify-between items-start mb-3">
+                                  <div className="flex-1">
+                                    <h3 className={`text-lg font-bold ${textClass} mb-3`}>{lease.lease_name || lease.name}</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                      <div>
+                                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Base Rent</div>
+                                        <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                          ${parseFloat(lease.price_per_sf_month).toFixed(2)}/SF
+                                        </div>
                                       </div>
-                                    </div>
-                                    <div>
-                                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Term</div>
-                                      <div className={`text-xl font-bold ${textClass}`}>
-                                        {lease.term_years} {lease.term_years === 1 ? 'Year' : 'Years'}
+                                      <div>
+                                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Term</div>
+                                        <div className={`text-lg font-bold ${textClass}`}>
+                                          {lease.term_years} {lease.term_years === 1 ? 'Year' : 'Years'}
+                                        </div>
                                       </div>
+                                      {camDisplay && (
+                                        <div>
+                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>CAM</div>
+                                          <div className={`text-sm font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                                            {camDisplay}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {rentIncreaseDisplay && (
+                                        <div>
+                                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Increases</div>
+                                          <div className={`text-sm font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                                            {rentIncreaseDisplay}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
+                                    {(lease.tenant_improvement_amount || lease.tenant_allowance_amount) && (
+                                      <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-300 dark:border-slate-600">
+                                        {lease.tenant_improvement_amount && (
+                                          <div>
+                                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>TI Amount</div>
+                                            <div className={`text-sm font-bold ${textClass}`}>
+                                              ${parseFloat(lease.tenant_improvement_amount).toLocaleString()}
+                                            </div>
+                                          </div>
+                                        )}
+                                        {lease.tenant_allowance_amount && (
+                                          <div>
+                                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Allowance</div>
+                                            <div className={`text-sm font-bold ${textClass}`}>
+                                              ${parseFloat(lease.tenant_allowance_amount).toLocaleString()}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2 ml-4">
+                                    <button
+                                      onClick={() => handleEditLease(lease, profileProperty.id)}
+                                      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded transition"
+                                      aria-label="Edit lease"
+                                    >
+                                      <Edit2 size={18} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteLease(lease.id)}
+                                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition"
+                                      aria-label="Delete lease"
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
                                   </div>
                                 </div>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleEditLease(lease, profileProperty.id)}
-                                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded transition"
-                                    aria-label="Edit lease"
-                                  >
-                                    <Edit2 size={18} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteLease(lease.id)}
-                                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition"
-                                    aria-label="Delete lease"
-                                  >
-                                    <Trash2 size={18} />
-                                  </button>
-                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       );
                     }
@@ -9548,16 +9975,65 @@ export default function IndustrialCRM() {
                     {profileProperty.selected_lease_id && (() => {
                       const selectedLease = leases.find(l => l.id === profileProperty.selected_lease_id);
                       if (selectedLease) {
+                        const sqft = parseFloat(stripCommas(profileProperty.squareFeet)) || 0;
+
+                        // Calculate CAM display
+                        let camDisplay = null;
+                        let camPerSfMonth = 0;
+                        if (selectedLease.cam_amount && selectedLease.cam_type) {
+                          const camAmount = parseFloat(selectedLease.cam_amount);
+                          if (selectedLease.cam_type === 'per_month') {
+                            camDisplay = `$${camAmount.toFixed(2)}/SF/Mo`;
+                            camPerSfMonth = camAmount;
+                          } else if (selectedLease.cam_type === 'per_year') {
+                            camDisplay = `$${camAmount.toFixed(2)}/SF/Yr`;
+                            camPerSfMonth = camAmount / 12;
+                          } else if (selectedLease.cam_type === 'total_annual') {
+                            camDisplay = `$${camAmount.toLocaleString()}/Yr`;
+                            if (sqft > 0) {
+                              camPerSfMonth = (camAmount / sqft) / 12;
+                              camDisplay += ` ($${camPerSfMonth.toFixed(2)}/SF/Mo)`;
+                            }
+                          }
+                        }
+
+                        // Rent increase display
+                        let rentIncreaseDisplay = null;
+                        if (selectedLease.rent_increase_type === 'flat_annual' && selectedLease.flat_annual_increase_percent) {
+                          rentIncreaseDisplay = `${parseFloat(selectedLease.flat_annual_increase_percent).toFixed(1)}% annually`;
+                        } else if (selectedLease.rent_increase_type === 'stepped' && selectedLease.rent_steps && selectedLease.rent_steps.length > 0) {
+                          const sortedSteps = [...selectedLease.rent_steps].sort((a, b) => a.trigger_year - b.trigger_year);
+                          rentIncreaseDisplay = sortedSteps.map(s => `Yr ${s.trigger_year}: +${s.increase_percent}%`).join(', ');
+                        }
+
+                        // Calculate total rent including CAM
+                        const baseRent = parseFloat(selectedLease.price_per_sf_month);
+                        const totalRentPerSf = baseRent + camPerSfMonth;
+
                         return (
                           <div className={`mt-3 p-4 rounded-lg ${darkMode ? 'bg-blue-900 bg-opacity-20 border-blue-700' : 'bg-blue-50 border-blue-200'} border-2`}>
-                            <div className={`text-sm font-semibold ${darkMode ? 'text-blue-300' : 'text-blue-700'} mb-2`}>
+                            <div className={`text-sm font-semibold ${darkMode ? 'text-blue-300' : 'text-blue-700'} mb-3`}>
                               ✓ Using: {selectedLease.lease_name || selectedLease.name}
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
                               <div>
-                                <div className={`text-xs ${textSecondaryClass} uppercase`}>Price/SF/Month</div>
+                                <div className={`text-xs ${textSecondaryClass} uppercase`}>Base Rent</div>
                                 <div className={`text-lg font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                                  ${parseFloat(selectedLease.price_per_sf_month).toFixed(2)}
+                                  ${baseRent.toFixed(2)}/SF/Mo
+                                </div>
+                              </div>
+                              {camDisplay && (
+                                <div>
+                                  <div className={`text-xs ${textSecondaryClass} uppercase`}>CAM Charges</div>
+                                  <div className={`text-sm font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                                    {camDisplay}
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <div className={`text-xs ${textSecondaryClass} uppercase`}>Total Rent{camDisplay ? ' (w/ CAM)' : ''}</div>
+                                <div className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                                  ${totalRentPerSf.toFixed(2)}/SF/Mo
                                 </div>
                               </div>
                               <div>
@@ -9566,7 +10042,35 @@ export default function IndustrialCRM() {
                                   {selectedLease.term_years} Years
                                 </div>
                               </div>
+                              {rentIncreaseDisplay && (
+                                <div className="col-span-2">
+                                  <div className={`text-xs ${textSecondaryClass} uppercase`}>Rent Increases</div>
+                                  <div className={`text-sm font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                                    {rentIncreaseDisplay}
+                                  </div>
+                                </div>
+                              )}
                             </div>
+                            {(selectedLease.tenant_improvement_amount || selectedLease.tenant_allowance_amount) && (
+                              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-blue-300 dark:border-blue-700">
+                                {selectedLease.tenant_improvement_amount && (
+                                  <div>
+                                    <div className={`text-xs ${textSecondaryClass} uppercase`}>TI Amount</div>
+                                    <div className={`text-sm font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                                      ${parseFloat(selectedLease.tenant_improvement_amount).toLocaleString()}
+                                    </div>
+                                  </div>
+                                )}
+                                {selectedLease.tenant_allowance_amount && (
+                                  <div>
+                                    <div className={`text-xs ${textSecondaryClass} uppercase`}>Tenant Allowance</div>
+                                    <div className={`text-sm font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                                      ${parseFloat(selectedLease.tenant_allowance_amount).toLocaleString()}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       }
