@@ -6,12 +6,11 @@ import {
   Mail,
   Scale,
   FileText,
-  Handshake,
+  Users2,
   TrendingUp,
   CheckCircle,
   CheckSquare,
   Activity,
-  CheckCircle2,
   MessageCircle
 } from 'lucide-react';
 
@@ -110,7 +109,7 @@ export const NOTE_CATEGORIES = {
     {
       value: 'partner_discussion',
       label: 'Partner Discussion',
-      icon: Handshake,
+      icon: Users2,
       color: 'text-teal-500',
       bgColor: 'bg-teal-500/10',
       borderColor: 'border-teal-500/20'
@@ -247,7 +246,7 @@ export const NOTE_CATEGORIES = {
     {
       value: 'completion_notes',
       label: 'Completion Notes',
-      icon: CheckCircle2,
+      icon: CheckCircle,
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
       borderColor: 'border-green-500/20'
