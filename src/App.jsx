@@ -9763,11 +9763,15 @@ export default function IndustrialCRM() {
                               Tenant Improvement (TI) Amount ($)
                             </label>
                             <input
-                              type="number"
-                              step="0.01"
-                              placeholder="50000"
-                              value={leaseFormData.tenantImprovementAmount}
-                              onChange={(e) => setLeaseFormData({ ...leaseFormData, tenantImprovementAmount: e.target.value })}
+                              type="text"
+                              placeholder="50,000"
+                              value={formatNumberInput(leaseFormData.tenantImprovementAmount)}
+                              onChange={(e) => {
+                                const value = stripCommas(e.target.value);
+                                if (!isNaN(value) || value === '') {
+                                  setLeaseFormData({ ...leaseFormData, tenantImprovementAmount: value });
+                                }
+                              }}
                               className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                             />
                             <p className={`text-xs ${textSecondaryClass} mt-1`}>
@@ -9779,11 +9783,15 @@ export default function IndustrialCRM() {
                               Tenant Allowance Amount ($)
                             </label>
                             <input
-                              type="number"
-                              step="0.01"
-                              placeholder="25000"
-                              value={leaseFormData.tenantAllowanceAmount}
-                              onChange={(e) => setLeaseFormData({ ...leaseFormData, tenantAllowanceAmount: e.target.value })}
+                              type="text"
+                              placeholder="25,000"
+                              value={formatNumberInput(leaseFormData.tenantAllowanceAmount)}
+                              onChange={(e) => {
+                                const value = stripCommas(e.target.value);
+                                if (!isNaN(value) || value === '') {
+                                  setLeaseFormData({ ...leaseFormData, tenantAllowanceAmount: value });
+                                }
+                              }}
                               className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                             />
                           </div>
@@ -9845,7 +9853,7 @@ export default function IndustrialCRM() {
                               } else if (lease.cam_type === 'per_year') {
                                 camDisplay = `$${parseFloat(lease.cam_amount).toFixed(2)}/SF/Yr`;
                               } else if (lease.cam_type === 'total_annual') {
-                                camDisplay = `$${parseFloat(lease.cam_amount).toLocaleString()}/Yr`;
+                                camDisplay = `$${formatNumber(parseFloat(lease.cam_amount))}/Yr`;
                                 if (sqft > 0) {
                                   const perSfMonth = (parseFloat(lease.cam_amount) / sqft) / 12;
                                   camDisplay += ` ($${perSfMonth.toFixed(2)}/SF/Mo)`;
@@ -9905,7 +9913,7 @@ export default function IndustrialCRM() {
                                           <div>
                                             <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>TI Amount</div>
                                             <div className={`text-sm font-bold ${textClass}`}>
-                                              ${parseFloat(lease.tenant_improvement_amount).toLocaleString()}
+                                              {formatCurrency(parseFloat(lease.tenant_improvement_amount))}
                                             </div>
                                           </div>
                                         )}
@@ -9913,7 +9921,7 @@ export default function IndustrialCRM() {
                                           <div>
                                             <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Allowance</div>
                                             <div className={`text-sm font-bold ${textClass}`}>
-                                              ${parseFloat(lease.tenant_allowance_amount).toLocaleString()}
+                                              {formatCurrency(parseFloat(lease.tenant_allowance_amount))}
                                             </div>
                                           </div>
                                         )}
@@ -9989,7 +9997,7 @@ export default function IndustrialCRM() {
                             camDisplay = `$${camAmount.toFixed(2)}/SF/Yr`;
                             camPerSfMonth = camAmount / 12;
                           } else if (selectedLease.cam_type === 'total_annual') {
-                            camDisplay = `$${camAmount.toLocaleString()}/Yr`;
+                            camDisplay = `$${formatNumber(camAmount)}/Yr`;
                             if (sqft > 0) {
                               camPerSfMonth = (camAmount / sqft) / 12;
                               camDisplay += ` ($${camPerSfMonth.toFixed(2)}/SF/Mo)`;
@@ -10057,7 +10065,7 @@ export default function IndustrialCRM() {
                                   <div>
                                     <div className={`text-xs ${textSecondaryClass} uppercase`}>TI Amount</div>
                                     <div className={`text-sm font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                                      ${parseFloat(selectedLease.tenant_improvement_amount).toLocaleString()}
+                                      ${formatNumber(parseFloat(selectedLease.tenant_improvement_amount))}
                                     </div>
                                   </div>
                                 )}
@@ -10065,7 +10073,7 @@ export default function IndustrialCRM() {
                                   <div>
                                     <div className={`text-xs ${textSecondaryClass} uppercase`}>Tenant Allowance</div>
                                     <div className={`text-sm font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                                      ${parseFloat(selectedLease.tenant_allowance_amount).toLocaleString()}
+                                      ${formatNumber(parseFloat(selectedLease.tenant_allowance_amount))}
                                     </div>
                                   </div>
                                 )}
@@ -10332,16 +10340,16 @@ export default function IndustrialCRM() {
                                                 <span className={`text-3xl font-light ${textSecondaryClass}`}>$</span>
                                                 <input
                                                   type="text"
-                                                  value={currentAmount}
+                                                  value={formatNumberInput(currentAmount)}
                                                   onChange={(e) => {
-                                                    // Allow only numbers and format with commas
-                                                    const value = e.target.value.replace(/,/g, '');
+                                                    // Allow only numbers and strip commas for storage
+                                                    const value = stripCommas(e.target.value);
                                                     if (!isNaN(value) || value === '') {
                                                       setEditingInvestment({ ...editingInvestment, [deal.id]: value });
                                                     }
                                                   }}
                                                   className={`text-3xl font-bold px-4 py-3 rounded-lg border-2 ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 w-64`}
-                                                  placeholder="100000"
+                                                  placeholder="100,000"
                                                   autoFocus
                                                 />
                                               </div>
@@ -11284,10 +11292,15 @@ export default function IndustrialCRM() {
                   Investment Amount
                 </label>
                 <input
-                  type="number"
-                  placeholder="e.g., 100000"
-                  value={partnerDealFormData.investmentAmount}
-                  onChange={(e) => setPartnerDealFormData({ ...partnerDealFormData, investmentAmount: e.target.value })}
+                  type="text"
+                  placeholder="e.g., 100,000"
+                  value={formatNumberInput(partnerDealFormData.investmentAmount)}
+                  onChange={(e) => {
+                    const value = stripCommas(e.target.value);
+                    if (!isNaN(value) || value === '') {
+                      setPartnerDealFormData({ ...partnerDealFormData, investmentAmount: value });
+                    }
+                  }}
                   className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
                 />
               </div>
