@@ -4,7 +4,8 @@ import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
 import FollowUpForm from './components/FollowUpForm';
 import CustomSelect from './components/CustomSelect';
-import { supabaseService, isSupabaseConfigured, supabase } from './services/supabase';
+import NotesSection from './components/NotesSection';
+import { supabaseService, notesService, isSupabaseConfigured, supabase } from './services/supabase';
 import {
   initGoogleCalendar,
   initGoogleOAuth,
@@ -84,6 +85,7 @@ export default function IndustrialCRM() {
   const [partnersInDeal, setPartnersInDeal] = useState([]);
   const [propertyNotes, setPropertyNotes] = useState([]);
   const [leases, setLeases] = useState([]);
+  const [notes, setNotes] = useState([]); // Categorized notes for all entities
 
   // ==================
   // UI NAVIGATION STATE
@@ -418,7 +420,7 @@ export default function IndustrialCRM() {
         }
 
         // Load from Supabase
-        const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbFollowUps, dbPartnersInDeal, dbPropertyNotes, dbLeases] = await Promise.all([
+        const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbFollowUps, dbPartnersInDeal, dbPropertyNotes, dbLeases, dbNotes] = await Promise.all([
           supabaseService.getAll('properties'),
           supabaseService.getAll('brokers'),
           supabaseService.getAll('partners'),
@@ -427,7 +429,8 @@ export default function IndustrialCRM() {
           supabaseService.getAll('follow_ups'),
           supabaseService.getAll('partners_in_deal'),
           supabaseService.getAll('property_notes'),
-          supabaseService.getAll('leases')
+          supabaseService.getAll('leases'),
+          notesService.getAllNotes()
         ]);
 
         if (dbProperties) setProperties(dbProperties);
@@ -439,6 +442,7 @@ export default function IndustrialCRM() {
         if (dbPartnersInDeal) setPartnersInDeal(dbPartnersInDeal);
         if (dbPropertyNotes) setPropertyNotes(dbPropertyNotes);
         if (dbLeases) setLeases(dbLeases);
+        if (dbNotes) setNotes(dbNotes);
 
         // Always load UI preferences from localStorage
         const savedDarkMode = localStorage.getItem('darkMode');
@@ -1094,6 +1098,62 @@ export default function IndustrialCRM() {
       'Are you sure you want to delete this note? This action cannot be undone.',
       deleteNote,
       'danger'
+    );
+  };
+
+  // ==================
+  // NEW CATEGORIZED NOTES HANDLERS
+  // ==================
+
+  /**
+   * Add a new categorized note
+   */
+  const handleAddCategorizedNote = async (noteData) => {
+    try {
+      const newNote = await notesService.createNote(noteData);
+      if (newNote) {
+        setNotes([newNote, ...notes]);
+      }
+    } catch (error) {
+      console.error('Error adding note:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Edit an existing categorized note
+   */
+  const handleEditCategorizedNote = async (noteId, updates) => {
+    try {
+      const updatedNote = await notesService.updateNote(noteId, updates);
+      if (updatedNote) {
+        setNotes(notes.map(note => note.id === noteId ? updatedNote : note));
+      }
+    } catch (error) {
+      console.error('Error editing note:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Delete a categorized note
+   */
+  const handleDeleteCategorizedNote = async (noteId) => {
+    try {
+      await notesService.deleteNote(noteId);
+      setNotes(notes.filter(note => note.id !== noteId));
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Get notes for a specific entity
+   */
+  const getNotesForEntity = (entityType, entityId) => {
+    return notes.filter(note =>
+      note.entity_type === entityType && note.entity_id === entityId
     );
   };
 
@@ -9269,107 +9329,15 @@ export default function IndustrialCRM() {
               </div>
 
               {/* Notes Section - Full Width */}
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                <div className={`text-xl font-bold ${textClass} mb-4 flex items-center justify-between`}>
-                  <span className="flex items-center gap-2">
-                    <MessageSquare size={24} />
-                    Notes & Activity
-                  </span>
-                  <span className={`text-sm ${textSecondaryClass} normal-case font-normal`}>
-                    {(profileContact.noteHistory || []).length} note{(profileContact.noteHistory || []).length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-
-                <div className="mb-6">
-                  <div className="flex gap-2 mb-2">
-                    <select
-                      value={noteCategory[`${profileContact.contactType}-${profileContact.id}`] || 'general'}
-                      onChange={(e) => setNoteCategory({ ...noteCategory, [`${profileContact.contactType}-${profileContact.id}`]: e.target.value })}
-                      className={`px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    >
-                      <option value="general">General</option>
-                      <option value="call">Call</option>
-                      <option value="meeting">Meeting</option>
-                      <option value="email">Email</option>
-                      <option value="site-visit">Site Visit</option>
-                      <option value="due-diligence">Due Diligence</option>
-                      <option value="follow-up">Follow-up</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <textarea
-                      id={`note-input-profile-${profileContact.contactType}-${profileContact.id}`}
-                      placeholder="Add a note..."
-                      value={noteContent[`${profileContact.contactType}-${profileContact.id}`] || ''}
-                      onChange={(e) => setNoteContent({ ...noteContent, [`${profileContact.contactType}-${profileContact.id}`]: e.target.value })}
-                      className={`flex-1 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
-                      rows="3"
-                    />
-                    <button
-                      onClick={() => {
-                        handleAddNote(profileContact.contactType, profileContact.id, noteContent[`${profileContact.contactType}-${profileContact.id}`], noteCategory[`${profileContact.contactType}-${profileContact.id}`] || 'general');
-                        setNoteContent({ ...noteContent, [`${profileContact.contactType}-${profileContact.id}`]: '' });
-                        setTimeout(() => {
-                          const updatedContact =
-                            profileContact.contactType === 'broker' ? brokers.find(b => b.id === profileContact.id) :
-                            profileContact.contactType === 'gatekeeper' ? gatekeepers.find(g => g.id === profileContact.id) :
-                            partners.find(p => p.id === profileContact.id);
-                          if (updatedContact) {
-                            setProfileContact({ ...updatedContact, contactType: profileContact.contactType, displayName: updatedContact.name, company: profileContact.company });
-                          }
-                        }, 100);
-                      }}
-                      className="px-6 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                    >
-                      Add Note
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {(profileContact.noteHistory || []).length === 0 && (
-                    <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} rounded-lg p-12 text-center border-2 border-dashed ${borderClass}`}>
-                      <MessageSquare size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
-                      <p className={`text-lg ${textClass} font-semibold mb-2`}>No notes yet</p>
-                      <p className={`text-sm ${textSecondaryClass}`}>Add your first note above</p>
-                    </div>
-                  )}
-                  {(profileContact.noteHistory || []).slice().reverse().map(note => {
-                    const categoryColors = {
-                      general: 'border-l-gray-500',
-                      call: 'border-l-green-500',
-                      meeting: 'border-l-blue-500',
-                      email: 'border-l-purple-500',
-                      'site-visit': 'border-l-orange-500',
-                      'due-diligence': 'border-l-red-500',
-                      'follow-up': 'border-l-yellow-500'
-                    };
-                    const isLongNote = note.content.length > 300;
-                    const isExpanded = expandedNotes[note.id];
-                    return (
-                      <div key={note.id} className={`p-4 rounded-lg border-l-4 ${categoryColors[note.category || 'general']} ${darkMode ? 'bg-slate-700' : 'bg-white'} ${borderClass}`}>
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <span className={`text-sm font-semibold ${textClass}`}>{note.category || 'general'}</span>
-                            <span className={`text-xs ${textSecondaryClass} ml-2`}>{formatRelativeTime(note.timestamp)}</span>
-                          </div>
-                        </div>
-                        <p className={`text-sm ${textClass} whitespace-pre-wrap leading-relaxed`}>
-                          {isLongNote && !isExpanded ? note.content.slice(0, 300) + '...' : note.content}
-                        </p>
-                        {isLongNote && (
-                          <button
-                            onClick={() => setExpandedNotes({ ...expandedNotes, [note.id]: !isExpanded })}
-                            className="text-sm text-blue-600 hover:text-blue-700 mt-2 font-semibold"
-                          >
-                            {isExpanded ? 'Show less' : 'Show more'}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <NotesSection
+                entityType={profileContact.contactType}
+                entityId={profileContact.id}
+                notes={getNotesForEntity(profileContact.contactType, profileContact.id)}
+                onAddNote={handleAddCategorizedNote}
+                onEditNote={handleEditCategorizedNote}
+                onDeleteNote={handleDeleteCategorizedNote}
+                isCollapsed={false}
+              />
             </div>
           </div>
         </div>
@@ -10447,95 +10415,15 @@ export default function IndustrialCRM() {
 
                   {/* RIGHT COLUMN (30%) - Notes Sidebar (Sticky) */}
                   <div className="lg:sticky lg:top-6 lg:self-start">
-                    <div className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} overflow-hidden`}>
-                      {/* Collapsible Header */}
-                      <div
-                        className={`p-4 flex justify-between items-center cursor-pointer ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'} transition`}
-                        onClick={() => setNotesSidebarCollapsed(!notesSidebarCollapsed)}
-                      >
-                        <h3 className={`font-bold ${textClass} text-lg`}>Notes</h3>
-                        {notesSidebarCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-                      </div>
-
-                      {/* Notes Content */}
-                      {!notesSidebarCollapsed && (
-                        <div className="p-4">
-                          {/* Add Note Form */}
-                          <div className="mb-4">
-                            <textarea
-                              placeholder="Add a note..."
-                              value={editingPropertyNoteId ? propertyNoteContent : propertyNoteContent}
-                              onChange={(e) => setPropertyNoteContent(e.target.value)}
-                              className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
-                              rows={3}
-                            />
-                            {editingPropertyNoteId ? (
-                              <div className="flex gap-2 mt-2">
-                                <button
-                                  onClick={() => handleUpdatePropertyNote(editingPropertyNoteId, propertyNoteContent)}
-                                  className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold text-sm"
-                                >
-                                  Update
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingPropertyNoteId(null);
-                                    setPropertyNoteContent('');
-                                  }}
-                                  className={`flex-1 px-3 py-2 rounded-lg font-semibold text-sm transition ${darkMode ? 'bg-slate-600 hover:bg-slate-500 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => handleAddPropertyNote(profileProperty.id, propertyNoteContent)}
-                                className="w-full mt-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold text-sm"
-                              >
-                                Add Note
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Notes List */}
-                          <div className="space-y-3 max-h-96 overflow-y-auto">
-                            {propertyNotes
-                              .filter(note => note.property_id === profileProperty.id)
-                              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                              .map(note => (
-                                <div key={note.id} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} border ${borderClass}`}>
-                                  <div className="flex justify-between items-start mb-2">
-                                    <p className={`text-xs ${textSecondaryClass}`}>
-                                      {new Date(note.created_at).toLocaleDateString()} {new Date(note.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                    </p>
-                                    <div className="flex gap-1">
-                                      <button
-                                        onClick={() => {
-                                          setEditingPropertyNoteId(note.id);
-                                          setPropertyNoteContent(note.content);
-                                        }}
-                                        className={`p-1 rounded ${darkMode ? 'hover:bg-slate-600' : 'hover:bg-slate-200'}`}
-                                      >
-                                        <Edit2 size={14} className={textSecondaryClass} />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeletePropertyNote(note.id)}
-                                        className={`p-1 rounded ${darkMode ? 'hover:bg-red-900' : 'hover:bg-red-100'}`}
-                                      >
-                                        <Trash2 size={14} className="text-red-600" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <p className={`text-sm ${textClass} whitespace-pre-wrap`}>{note.content}</p>
-                                </div>
-                              ))}
-                            {propertyNotes.filter(note => note.property_id === profileProperty.id).length === 0 && (
-                              <p className={`text-sm ${textSecondaryClass} text-center py-4`}>No notes yet</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <NotesSection
+                      entityType="property"
+                      entityId={profileProperty.id}
+                      notes={getNotesForEntity('property', profileProperty.id)}
+                      onAddNote={handleAddCategorizedNote}
+                      onEditNote={handleEditCategorizedNote}
+                      onDeleteNote={handleDeleteCategorizedNote}
+                      isCollapsed={notesSidebarCollapsed}
+                    />
                   </div>
                 </div>
 

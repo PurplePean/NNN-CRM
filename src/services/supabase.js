@@ -112,3 +112,122 @@ export const supabaseService = {
     return data;
   }
 };
+
+// ============================================================================
+// NOTES SERVICE - Categorized notes for all entity types
+// ============================================================================
+export const notesService = {
+  /**
+   * Get all notes for a specific entity
+   * @param {string} entityType - The entity type (property, broker, partner, etc.)
+   * @param {string} entityId - The entity ID
+   * @returns {Array} Array of notes
+   */
+  async getNotesByEntity(entityType, entityId) {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .eq('entity_type', entityType)
+      .eq('entity_id', entityId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error(`Error fetching notes for ${entityType} ${entityId}:`, error);
+      return [];
+    }
+    return data || [];
+  },
+
+  /**
+   * Create a new note
+   * @param {Object} noteData - Note data { entity_type, entity_id, category, content }
+   * @returns {Object|null} Created note object
+   */
+  async createNote(noteData) {
+    if (!supabase) return null;
+
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from('notes')
+      .insert([{
+        ...noteData,
+        user_id: user?.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating note:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  /**
+   * Update an existing note
+   * @param {string} noteId - The note ID
+   * @param {Object} updates - Fields to update { content, category }
+   * @returns {Object|null} Updated note object
+   */
+  async updateNote(noteId, updates) {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('notes')
+      .update({
+        ...updates,
+        edited: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', noteId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating note:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  /**
+   * Delete a note
+   * @param {string} noteId - The note ID
+   * @returns {boolean} Success status
+   */
+  async deleteNote(noteId) {
+    if (!supabase) return false;
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', noteId);
+
+    if (error) {
+      console.error('Error deleting note:', error);
+      throw error;
+    }
+    return true;
+  },
+
+  /**
+   * Get all notes (for initial load)
+   * @returns {Array} Array of all notes
+   */
+  async getAllNotes() {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all notes:', error);
+      return [];
+    }
+    return data || [];
+  }
+};
