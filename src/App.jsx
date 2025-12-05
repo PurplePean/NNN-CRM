@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, LogOut } from 'lucide-react';
+import InlineEditField from './components/InlineEditField';
 import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
 import FollowUpForm from './components/FollowUpForm';
@@ -969,6 +970,126 @@ export default function IndustrialCRM() {
       },
       'danger'
     );
+  };
+
+  // ==================
+  // INLINE FIELD UPDATE OPERATIONS
+  // ==================
+
+  /**
+   * Update a single field on a property inline
+   * @param {string} propertyId - Property ID
+   * @param {string} field - Field name
+   * @param {string} value - New value
+   */
+  const updatePropertyField = async (propertyId, field, value) => {
+    const updates = { [field]: value };
+
+    // Update local state
+    setProperties(properties.map(p =>
+      p.id === propertyId ? { ...p, ...updates } : p
+    ));
+
+    // Sync to Supabase if configured
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseService.update('properties', propertyId, updates);
+        showToast('Field updated', 'success');
+      } catch (error) {
+        console.error('Error updating property field:', error);
+        showToast('Error updating field', 'error');
+        throw error;
+      }
+    } else {
+      showToast('Field updated (local only)', 'success');
+    }
+  };
+
+  /**
+   * Update a single field on a broker inline
+   * @param {string} brokerId - Broker ID
+   * @param {string} field - Field name
+   * @param {string} value - New value
+   */
+  const updateBrokerField = async (brokerId, field, value) => {
+    const updates = { [field]: value };
+
+    // Update local state
+    setBrokers(brokers.map(b =>
+      b.id === brokerId ? { ...b, ...updates } : b
+    ));
+
+    // Sync to Supabase if configured
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseService.update('brokers', brokerId, updates);
+        showToast('Field updated', 'success');
+      } catch (error) {
+        console.error('Error updating broker field:', error);
+        showToast('Error updating field', 'error');
+        throw error;
+      }
+    } else {
+      showToast('Field updated (local only)', 'success');
+    }
+  };
+
+  /**
+   * Update a single field on a partner inline
+   * @param {string} partnerId - Partner ID
+   * @param {string} field - Field name
+   * @param {string} value - New value
+   */
+  const updatePartnerField = async (partnerId, field, value) => {
+    const updates = { [field]: value };
+
+    // Update local state
+    setPartners(partners.map(p =>
+      p.id === partnerId ? { ...p, ...updates } : p
+    ));
+
+    // Sync to Supabase if configured
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseService.update('partners', partnerId, updates);
+        showToast('Field updated', 'success');
+      } catch (error) {
+        console.error('Error updating partner field:', error);
+        showToast('Error updating field', 'error');
+        throw error;
+      }
+    } else {
+      showToast('Field updated (local only)', 'success');
+    }
+  };
+
+  /**
+   * Update a single field on a gatekeeper inline
+   * @param {string} gatekeeperId - Gatekeeper ID
+   * @param {string} field - Field name
+   * @param {string} value - New value
+   */
+  const updateGatekeeperField = async (gatekeeperId, field, value) => {
+    const updates = { [field]: value };
+
+    // Update local state
+    setGatekeepers(gatekeepers.map(g =>
+      g.id === gatekeeperId ? { ...g, ...updates } : g
+    ));
+
+    // Sync to Supabase if configured
+    if (isSupabaseConfigured()) {
+      try {
+        await supabaseService.update('gatekeepers', gatekeeperId, updates);
+        showToast('Field updated', 'success');
+      } catch (error) {
+        console.error('Error updating gatekeeper field:', error);
+        showToast('Error updating field', 'error');
+        throw error;
+      }
+    } else {
+      showToast('Field updated (local only)', 'success');
+    }
   };
 
   // ==================
@@ -4627,13 +4748,26 @@ export default function IndustrialCRM() {
                 return (
                   <div key={property.id} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
                     <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <h3
-                          onClick={() => openPropertyProfile(property.id)}
-                          className={`text-2xl font-bold ${textClass} cursor-pointer hover:text-blue-600 transition`}
-                        >
-                          {property.address}
-                        </h3>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <InlineEditField
+                              value={property.address}
+                              onSave={(newValue) => updatePropertyField(property.id, 'address', newValue)}
+                              label=""
+                              type="text"
+                              darkMode={darkMode}
+                              placeholder="Property address"
+                            />
+                          </div>
+                          <button
+                            onClick={() => openPropertyProfile(property.id)}
+                            className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition flex-shrink-0`}
+                            title="View property profile"
+                          >
+                            <ExternalLink size={18} />
+                          </button>
+                        </div>
                         {property.crexi && (
                           <a href={property.crexi} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm mt-1 block">
                             View on Crexi →
@@ -5028,50 +5162,96 @@ export default function IndustrialCRM() {
                     <div className={`p-4 rounded-lg mb-4 ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                       <div className={`text-sm font-bold ${textSecondaryClass} uppercase mb-3`}>Property Details</div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Square Feet</div>
-                          <div className={`text-sm font-semibold ${textClass}`}>{formatNumber(property.squareFeet)}</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Monthly Base Rent/SF</div>
-                          <div className={`text-sm font-semibold ${textClass}`}>${property.monthlyBaseRentPerSqft || 'N/A'}</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Purchase Price</div>
-                          <div className={`text-sm font-semibold ${textClass}`}>{property.purchasePrice ? formatCurrency(stripCommas(property.purchasePrice)) : 'N/A'}</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Improvements</div>
-                          <div className={`text-sm font-semibold ${textClass}`}>{property.improvements ? formatCurrency(stripCommas(property.improvements)) : 'N/A'}</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Closing Costs</div>
-                          <div className={`text-sm font-semibold ${textClass}`}>{property.closingCosts ? formatCurrency(stripCommas(property.closingCosts)) : '$0'}</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>LTV %</div>
-                          <div className={`text-sm font-semibold ${textClass}`}>{property.ltvPercent ? `${property.ltvPercent}%` : 'N/A'}</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Interest Rate</div>
-                          <div className={`text-sm font-semibold ${textClass}`}>{property.interestRate ? `${property.interestRate}%` : 'N/A'}</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Loan Term</div>
-                          <div className={`text-sm font-semibold ${textClass}`}>{property.loanTerm ? `${property.loanTerm} yrs` : 'N/A'}</div>
-                        </div>
-                        {property.exitCapRate && (
-                          <div>
-                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Exit Cap Rate</div>
-                            <div className={`text-sm font-semibold ${textClass}`}>{property.exitCapRate}%</div>
-                          </div>
-                        )}
-                        {property.holdingPeriodMonths && (
-                          <div>
-                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Holding Period</div>
-                            <div className={`text-sm font-semibold ${textClass}`}>{property.holdingPeriodMonths} months ({(property.holdingPeriodMonths / 12).toFixed(1)} yrs)</div>
-                          </div>
-                        )}
+                        <InlineEditField
+                          value={property.squareFeet}
+                          onSave={(newValue) => updatePropertyField(property.id, 'squareFeet', newValue)}
+                          label="Square Feet"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => formatNumber(val)}
+                        />
+                        <InlineEditField
+                          value={property.monthlyBaseRentPerSqft}
+                          onSave={(newValue) => updatePropertyField(property.id, 'monthlyBaseRentPerSqft', newValue)}
+                          label="Monthly Base Rent/SF"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0.00"
+                          displayFormat={(val) => val ? `$${val}` : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.purchasePrice}
+                          onSave={(newValue) => updatePropertyField(property.id, 'purchasePrice', newValue)}
+                          label="Purchase Price"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? formatCurrency(stripCommas(val)) : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.improvements}
+                          onSave={(newValue) => updatePropertyField(property.id, 'improvements', newValue)}
+                          label="Improvements"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? formatCurrency(stripCommas(val)) : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.closingCosts}
+                          onSave={(newValue) => updatePropertyField(property.id, 'closingCosts', newValue)}
+                          label="Closing Costs"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? formatCurrency(stripCommas(val)) : '$0'}
+                        />
+                        <InlineEditField
+                          value={property.ltvPercent}
+                          onSave={(newValue) => updatePropertyField(property.id, 'ltvPercent', newValue)}
+                          label="LTV %"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? `${val}%` : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.interestRate}
+                          onSave={(newValue) => updatePropertyField(property.id, 'interestRate', newValue)}
+                          label="Interest Rate"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? `${val}%` : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.loanTerm}
+                          onSave={(newValue) => updatePropertyField(property.id, 'loanTerm', newValue)}
+                          label="Loan Term"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="30"
+                          displayFormat={(val) => val ? `${val} yrs` : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.exitCapRate}
+                          onSave={(newValue) => updatePropertyField(property.id, 'exitCapRate', newValue)}
+                          label="Exit Cap Rate"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? `${val}%` : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.holdingPeriodMonths}
+                          onSave={(newValue) => updatePropertyField(property.id, 'holdingPeriodMonths', newValue)}
+                          label="Holding Period"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? `${val} months (${(val / 12).toFixed(1)} yrs)` : 'N/A'}
+                        />
                       </div>
                     </div>
 
@@ -5224,22 +5404,37 @@ export default function IndustrialCRM() {
 
                       {/* Name and Title */}
                       <div className="flex-1 min-w-0">
-                        <h3
-                          onClick={() => openContactProfile('broker', broker.id)}
-                          className={`text-2xl font-bold ${textClass} mb-1 cursor-pointer hover:text-blue-500 transition`}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => e.key === 'Enter' && openContactProfile('broker', broker.id)}
-                          aria-label={`View ${broker.name} profile`}
-                        >
-                          {broker.name}
-                        </h3>
-                        {broker.firmName && (
-                          <p className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
-                            <Building2 size={14} />
-                            {broker.firmName}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <InlineEditField
+                              value={broker.name}
+                              onSave={(newValue) => updateBrokerField(broker.id, 'name', newValue)}
+                              label=""
+                              type="text"
+                              darkMode={darkMode}
+                              placeholder="Broker name"
+                            />
+                          </div>
+                          <button
+                            onClick={() => openContactProfile('broker', broker.id)}
+                            className={`p-1.5 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition flex-shrink-0`}
+                            title="View broker profile"
+                            aria-label={`View ${broker.name} profile`}
+                          >
+                            <ExternalLink size={14} />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Building2 size={14} className={textSecondaryClass} />
+                          <InlineEditField
+                            value={broker.firmName}
+                            onSave={(newValue) => updateBrokerField(broker.id, 'firmName', newValue)}
+                            label=""
+                            type="text"
+                            darkMode={darkMode}
+                            placeholder="Firm name"
+                          />
+                        </div>
                       </div>
 
                       {/* Edit/Delete Buttons */}
@@ -5297,32 +5492,36 @@ export default function IndustrialCRM() {
                   {/* Contact Information */}
                   <div className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      {broker.email && (
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
-                            <Mail size={18} className="text-blue-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Email</div>
-                            <a href={`mailto:${broker.email}`} className="text-sm text-blue-600 hover:text-blue-700 truncate block">
-                              {broker.email}
-                            </a>
-                          </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} flex-shrink-0`}>
+                          <Mail size={18} className="text-blue-500" />
                         </div>
-                      )}
-                      {broker.phone && (
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
-                            <Phone size={18} className="text-green-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Phone</div>
-                            <a href={`tel:${broker.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
-                              {broker.phone}
-                            </a>
-                          </div>
+                        <div className="flex-1 min-w-0">
+                          <InlineEditField
+                            value={broker.email}
+                            onSave={(newValue) => updateBrokerField(broker.id, 'email', newValue)}
+                            label="Email"
+                            type="email"
+                            darkMode={darkMode}
+                            placeholder="email@example.com"
+                          />
                         </div>
-                      )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} flex-shrink-0`}>
+                          <Phone size={18} className="text-green-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <InlineEditField
+                            value={broker.phone}
+                            onSave={(newValue) => updateBrokerField(broker.id, 'phone', newValue)}
+                            label="Phone"
+                            type="tel"
+                            darkMode={darkMode}
+                            placeholder="(555) 123-4567"
+                          />
+                        </div>
+                      </div>
                       {broker.firmWebsite && (
                         <div className="flex items-center gap-3">
                           <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
@@ -5432,6 +5631,13 @@ export default function IndustrialCRM() {
                     placeholder="Phone"
                     value={formData.phone || ''}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="url"
+                    placeholder="Website"
+                    value={formData.website || ''}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                     className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   />
 
@@ -5605,22 +5811,37 @@ export default function IndustrialCRM() {
 
                       {/* Name and Entity */}
                       <div className="flex-1 min-w-0">
-                        <h3
-                          onClick={() => openContactProfile('partner', partner.id)}
-                          className={`text-2xl font-bold ${textClass} mb-1 cursor-pointer hover:text-green-500 transition`}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => e.key === 'Enter' && openContactProfile('partner', partner.id)}
-                          aria-label={`View ${partner.name} profile`}
-                        >
-                          {partner.name}
-                        </h3>
-                        {partner.entityName && (
-                          <p className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
-                            <Building2 size={14} />
-                            {partner.entityName}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <InlineEditField
+                              value={partner.name}
+                              onSave={(newValue) => updatePartnerField(partner.id, 'name', newValue)}
+                              label=""
+                              type="text"
+                              darkMode={darkMode}
+                              placeholder="Partner name"
+                            />
+                          </div>
+                          <button
+                            onClick={() => openContactProfile('partner', partner.id)}
+                            className={`p-1.5 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition flex-shrink-0`}
+                            title="View partner profile"
+                            aria-label={`View ${partner.name} profile`}
+                          >
+                            <ExternalLink size={14} />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Building2 size={14} className={textSecondaryClass} />
+                          <InlineEditField
+                            value={partner.entityName}
+                            onSave={(newValue) => updatePartnerField(partner.id, 'entityName', newValue)}
+                            label=""
+                            type="text"
+                            darkMode={darkMode}
+                            placeholder="Entity/Company name"
+                          />
+                        </div>
                       </div>
 
                       {/* Edit/Delete */}
@@ -5679,28 +5900,45 @@ export default function IndustrialCRM() {
                   <div className="p-6">
                     {/* Contact Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 pb-4 border-b ${borderClass}">
-                      {partner.email && (
-                        <div className="flex items-center gap-2">
-                          <Mail size={16} className={textSecondaryClass} />
-                          <div className="flex-1 min-w-0">
-                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold mb-0.5`}>Email</div>
-                            <a href={`mailto:${partner.email}`} className="text-sm text-blue-600 hover:text-blue-700 truncate block">
-                              {partner.email}
-                            </a>
-                          </div>
+                      <div className="flex items-center gap-2">
+                        <Mail size={16} className={textSecondaryClass} />
+                        <div className="flex-1 min-w-0">
+                          <InlineEditField
+                            value={partner.email}
+                            onSave={(newValue) => updatePartnerField(partner.id, 'email', newValue)}
+                            label="Email"
+                            type="email"
+                            darkMode={darkMode}
+                            placeholder="email@example.com"
+                          />
                         </div>
-                      )}
-                      {partner.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone size={16} className={textSecondaryClass} />
-                          <div className="flex-1 min-w-0">
-                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold mb-0.5`}>Phone</div>
-                            <a href={`tel:${partner.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
-                              {partner.phone}
-                            </a>
-                          </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone size={16} className={textSecondaryClass} />
+                        <div className="flex-1 min-w-0">
+                          <InlineEditField
+                            value={partner.phone}
+                            onSave={(newValue) => updatePartnerField(partner.id, 'phone', newValue)}
+                            label="Phone"
+                            type="tel"
+                            darkMode={darkMode}
+                            placeholder="(555) 123-4567"
+                          />
                         </div>
-                      )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Globe size={16} className={textSecondaryClass} />
+                        <div className="flex-1 min-w-0">
+                          <InlineEditField
+                            value={partner.website}
+                            onSave={(newValue) => updatePartnerField(partner.id, 'website', newValue)}
+                            label="Website"
+                            type="url"
+                            darkMode={darkMode}
+                            placeholder="https://example.com"
+                          />
+                        </div>
+                      </div>
                     </div>
 
                   {/* Investment Profile */}
@@ -5839,6 +6077,13 @@ export default function IndustrialCRM() {
                     className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   />
                   <input
+                    type="url"
+                    placeholder="Firm Website"
+                    value={formData.firmWebsite || ''}
+                    onChange={(e) => setFormData({ ...formData, firmWebsite: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
                     type="text"
                     placeholder="Related To (optional - broker or contact they gate for)"
                     value={formData.relatedTo || ''}
@@ -5893,25 +6138,45 @@ export default function IndustrialCRM() {
 
                       {/* Name and Title */}
                       <div className="flex-1 min-w-0">
-                        <h3
-                          onClick={() => openContactProfile('gatekeeper', gatekeeper.id)}
-                          className={`text-2xl font-bold ${textClass} mb-1 cursor-pointer hover:text-purple-500 transition`}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => e.key === 'Enter' && openContactProfile('gatekeeper', gatekeeper.id)}
-                          aria-label={`View ${gatekeeper.name} profile`}
-                        >
-                          {gatekeeper.name}
-                        </h3>
-                        {gatekeeper.title && (
-                          <p className={`text-sm ${textSecondaryClass}`}>{gatekeeper.title}</p>
-                        )}
-                        {gatekeeper.company && (
-                          <p className={`text-sm ${textSecondaryClass} flex items-center gap-1 mt-1`}>
-                            <Building2 size={14} />
-                            {gatekeeper.company}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <InlineEditField
+                              value={gatekeeper.name}
+                              onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'name', newValue)}
+                              label=""
+                              type="text"
+                              darkMode={darkMode}
+                              placeholder="Gatekeeper name"
+                            />
+                          </div>
+                          <button
+                            onClick={() => openContactProfile('gatekeeper', gatekeeper.id)}
+                            className={`p-1.5 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition flex-shrink-0`}
+                            title="View gatekeeper profile"
+                            aria-label={`View ${gatekeeper.name} profile`}
+                          >
+                            <ExternalLink size={14} />
+                          </button>
+                        </div>
+                        <InlineEditField
+                          value={gatekeeper.title}
+                          onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'title', newValue)}
+                          label=""
+                          type="text"
+                          darkMode={darkMode}
+                          placeholder="Title"
+                        />
+                        <div className="flex items-center gap-1 mt-1">
+                          <Building2 size={14} className={textSecondaryClass} />
+                          <InlineEditField
+                            value={gatekeeper.company}
+                            onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'company', newValue)}
+                            label=""
+                            type="text"
+                            darkMode={darkMode}
+                            placeholder="Company/Firm"
+                          />
+                        </div>
                       </div>
 
                       {/* Edit/Delete */}
@@ -5959,32 +6224,51 @@ export default function IndustrialCRM() {
                   {/* Contact Information */}
                   <div className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {gatekeeper.email && (
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
-                            <Mail size={18} className="text-blue-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Email</div>
-                            <a href={`mailto:${gatekeeper.email}`} className="text-sm text-blue-600 hover:text-blue-700 truncate block">
-                              {gatekeeper.email}
-                            </a>
-                          </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} flex-shrink-0`}>
+                          <Mail size={18} className="text-blue-500" />
                         </div>
-                      )}
-                      {gatekeeper.phone && (
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
-                            <Phone size={18} className="text-green-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Phone</div>
-                            <a href={`tel:${gatekeeper.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
-                              {gatekeeper.phone}
-                            </a>
-                          </div>
+                        <div className="flex-1 min-w-0">
+                          <InlineEditField
+                            value={gatekeeper.email}
+                            onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'email', newValue)}
+                            label="Email"
+                            type="email"
+                            darkMode={darkMode}
+                            placeholder="email@example.com"
+                          />
                         </div>
-                      )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} flex-shrink-0`}>
+                          <Phone size={18} className="text-green-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <InlineEditField
+                            value={gatekeeper.phone}
+                            onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'phone', newValue)}
+                            label="Phone"
+                            type="tel"
+                            darkMode={darkMode}
+                            placeholder="(555) 123-4567"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} flex-shrink-0`}>
+                          <Globe size={18} className="text-purple-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <InlineEditField
+                            value={gatekeeper.firmWebsite}
+                            onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'firmWebsite', newValue)}
+                            label="Firm Website"
+                            type="url"
+                            darkMode={darkMode}
+                            placeholder="https://example.com"
+                          />
+                        </div>
+                      </div>
                       {gatekeeper.relatedTo && (
                         <div className="flex items-center gap-3">
                           <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
