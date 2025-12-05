@@ -5366,7 +5366,8 @@ export default function IndustrialCRM() {
                       )}
                     </div>
 
-              );
+                  </div>
+                );
               })}
             </div>
 
