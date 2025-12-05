@@ -4,7 +4,6 @@ import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
 import FollowUpForm from './components/FollowUpForm';
 import CustomSelect from './components/CustomSelect';
-import NotesSection from './components/NotesSection';
 import NotesSidebar from './components/NotesSidebar';
 import { supabaseService, notesService, isSupabaseConfigured, supabase } from './services/supabase';
 import {
@@ -84,7 +83,6 @@ export default function IndustrialCRM() {
   const [events, setEvents] = useState([]);
   const [followUps, setFollowUps] = useState([]);
   const [partnersInDeal, setPartnersInDeal] = useState([]);
-  const [propertyNotes, setPropertyNotes] = useState([]);
   const [leases, setLeases] = useState([]);
   const [notes, setNotes] = useState([]); // Categorized notes for all entities
 
@@ -176,15 +174,6 @@ export default function IndustrialCRM() {
   const [propertyGatekeeperSearch, setPropertyGatekeeperSearch] = useState('');
 
   // ==================
-  // NOTE-TAKING STATE
-  // ==================
-  const [noteContent, setNoteContent] = useState({});
-  const [noteCategory, setNoteCategory] = useState({});
-  const [editingNoteId, setEditingNoteId] = useState(null);
-  const [editingNoteContent, setEditingNoteContent] = useState('');
-  const [expandedNotes, setExpandedNotes] = useState({});
-
-  // ==================
   // PARTNER RETURNS STATE
   // ==================
   const [showPartnerDealModal, setShowPartnerDealModal] = useState(false);
@@ -196,13 +185,6 @@ export default function IndustrialCRM() {
     investmentAmount: ''
   });
   const [editingInvestment, setEditingInvestment] = useState({}); // Track which investment is being edited
-
-  // ==================
-  // PROPERTY NOTES SIDEBAR STATE
-  // ==================
-  const [notesSidebarCollapsed, setNotesSidebarCollapsed] = useState(false);
-  const [editingPropertyNoteId, setEditingPropertyNoteId] = useState(null);
-  const [propertyNoteContent, setPropertyNoteContent] = useState('');
 
   // ==================
   // LEASE MANAGEMENT STATE
@@ -421,7 +403,7 @@ export default function IndustrialCRM() {
         }
 
         // Load from Supabase
-        const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbFollowUps, dbPartnersInDeal, dbPropertyNotes, dbLeases, dbNotes] = await Promise.all([
+        const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbFollowUps, dbPartnersInDeal, dbLeases, dbNotes] = await Promise.all([
           supabaseService.getAll('properties'),
           supabaseService.getAll('brokers'),
           supabaseService.getAll('partners'),
@@ -429,7 +411,6 @@ export default function IndustrialCRM() {
           supabaseService.getAll('events'),
           supabaseService.getAll('follow_ups'),
           supabaseService.getAll('partners_in_deal'),
-          supabaseService.getAll('property_notes'),
           supabaseService.getAll('leases'),
           notesService.getAllNotes()
         ]);
@@ -441,7 +422,6 @@ export default function IndustrialCRM() {
         if (dbEvents) setEvents(dbEvents);
         if (dbFollowUps) setFollowUps(dbFollowUps);
         if (dbPartnersInDeal) setPartnersInDeal(dbPartnersInDeal);
-        if (dbPropertyNotes) setPropertyNotes(dbPropertyNotes);
         if (dbLeases) setLeases(dbLeases);
         if (dbNotes) setNotes(dbNotes);
 
@@ -992,189 +972,6 @@ export default function IndustrialCRM() {
   };
 
   // ==================
-  // NOTE MANAGEMENT OPERATIONS
-  // ==================
-
-  /**
-   * Add note to property or contact
-   * @param {string} entityType - Type of entity (property, broker, partner, gatekeeper)
-   * @param {string|number} entityId - Entity ID
-   * @param {string} content - Note content
-   * @param {string} category - Note category
-   */
-  const handleAddNote = (entityType, entityId, content, category = 'general') => {
-    if (!content.trim()) return;
-
-    const newNote = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      content: content.trim(),
-      category: category
-    };
-
-    if (entityType === 'property') {
-      setProperties(properties.map(p => {
-        if (p.id === entityId) {
-          return {
-            ...p,
-            noteHistory: [...(p.noteHistory || []), newNote]
-          };
-        }
-        return p;
-      }));
-    } else if (entityType === 'broker') {
-      setBrokers(brokers.map(b => {
-        if (b.id === entityId) {
-          return {
-            ...b,
-            noteHistory: [...(b.noteHistory || []), newNote]
-          };
-        }
-        return b;
-      }));
-    }
-  };
-
-  const handleEditNote = (entityType, entityId, noteId, newContent) => {
-    if (!newContent.trim()) return;
-
-    if (entityType === 'property') {
-      setProperties(properties.map(p => {
-        if (p.id === entityId) {
-          return {
-            ...p,
-            noteHistory: (p.noteHistory || []).map(note =>
-              note.id === noteId
-                ? { ...note, content: newContent.trim(), edited: true, editedAt: new Date().toISOString() }
-                : note
-            )
-          };
-        }
-        return p;
-      }));
-    } else if (entityType === 'broker') {
-      setBrokers(brokers.map(b => {
-        if (b.id === entityId) {
-          return {
-            ...b,
-            noteHistory: (b.noteHistory || []).map(note =>
-              note.id === noteId
-                ? { ...note, content: newContent.trim(), edited: true, editedAt: new Date().toISOString() }
-                : note
-            )
-          };
-        }
-        return b;
-      }));
-    }
-  };
-
-  const handleDeleteNote = (entityType, entityId, noteId) => {
-    const deleteNote = () => {
-      if (entityType === 'property') {
-        setProperties(properties.map(p => {
-          if (p.id === entityId) {
-            return {
-              ...p,
-              noteHistory: (p.noteHistory || []).filter(note => note.id !== noteId)
-            };
-          }
-          return p;
-        }));
-      } else if (entityType === 'broker') {
-        setBrokers(brokers.map(b => {
-          if (b.id === entityId) {
-            return {
-              ...b,
-              noteHistory: (b.noteHistory || []).filter(note => note.id !== noteId)
-            };
-          }
-          return b;
-        }));
-      }
-    };
-
-    showConfirmDialog(
-      'Delete Note',
-      'Are you sure you want to delete this note? This action cannot be undone.',
-      deleteNote,
-      'danger'
-    );
-  };
-
-  // ==================
-  // NEW CATEGORIZED NOTES HANDLERS
-  // ==================
-
-  /**
-   * Add a new categorized note
-   */
-  const handleAddCategorizedNote = async (noteData) => {
-    try {
-      const newNote = await notesService.createNote(noteData);
-      if (newNote) {
-        setNotes([newNote, ...notes]);
-      }
-    } catch (error) {
-      console.error('Error adding note:', error);
-      throw error;
-    }
-  };
-
-  /**
-   * Edit an existing categorized note
-   */
-  const handleEditCategorizedNote = async (noteId, updates) => {
-    try {
-      const updatedNote = await notesService.updateNote(noteId, updates);
-      if (updatedNote) {
-        setNotes(notes.map(note => note.id === noteId ? updatedNote : note));
-      }
-    } catch (error) {
-      console.error('Error editing note:', error);
-      throw error;
-    }
-  };
-
-  /**
-   * Delete a categorized note
-   */
-  const handleDeleteCategorizedNote = async (noteId) => {
-    try {
-      await notesService.deleteNote(noteId);
-      setNotes(notes.filter(note => note.id !== noteId));
-    } catch (error) {
-      console.error('Error deleting note:', error);
-      throw error;
-    }
-  };
-
-  /**
-   * Get notes for a specific entity
-   */
-  const getNotesForEntity = (entityType, entityId) => {
-    return notes.filter(note =>
-      note.entity_type === entityType && note.entity_id === entityId
-    );
-  };
-
-  // Format relative time
-  const formatRelativeTime = (timestamp) => {
-    const now = new Date();
-    const then = new Date(timestamp);
-    const diffMs = now - then;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    return then.toLocaleDateString();
-  };
-
-  // ==================
   // PHOTO MANAGEMENT OPERATIONS
   // ==================
 
@@ -1560,97 +1357,6 @@ export default function IndustrialCRM() {
       irr,
       equity_multiple
     };
-  };
-
-  // ==================
-  // PROPERTY NOTES OPERATIONS
-  // ==================
-
-  /**
-   * Add a new property note
-   * @param {string|number} propertyId - Property ID
-   * @param {string} content - Note content
-   * @async
-   */
-  const handleAddPropertyNote = async (propertyId, content) => {
-    if (!content || content.trim() === '') {
-      showToast('Please enter note content', 'error');
-      return;
-    }
-
-    const noteData = {
-      property_id: propertyId,
-      content: content.trim()
-    };
-
-    try {
-      if (isSupabaseConfigured()) {
-        const savedNote = await supabaseService.create('property_notes', noteData);
-        if (savedNote) {
-          setPropertyNotes([...propertyNotes, savedNote]);
-        }
-      } else {
-        setPropertyNotes([...propertyNotes, { ...noteData, id: Date.now(), created_at: new Date().toISOString() }]);
-      }
-
-      setPropertyNoteContent('');
-      showToast('Note added', 'success');
-    } catch (error) {
-      console.error('Error adding property note:', error);
-      showToast('Error adding note', 'error');
-    }
-  };
-
-  /**
-   * Update an existing property note
-   * @param {string|number} noteId - Note ID
-   * @param {string} content - Updated note content
-   * @async
-   */
-  const handleUpdatePropertyNote = async (noteId, content) => {
-    if (!content || content.trim() === '') {
-      showToast('Note content cannot be empty', 'error');
-      return;
-    }
-
-    try {
-      if (isSupabaseConfigured()) {
-        await supabaseService.update('property_notes', noteId, { content: content.trim() });
-      }
-
-      setPropertyNotes(propertyNotes.map(note =>
-        note.id === noteId ? { ...note, content: content.trim(), updated_at: new Date().toISOString() } : note
-      ));
-
-      setEditingPropertyNoteId(null);
-      setPropertyNoteContent('');
-      showToast('Note updated', 'success');
-    } catch (error) {
-      console.error('Error updating property note:', error);
-      showToast('Error updating note', 'error');
-    }
-  };
-
-  /**
-   * Delete a property note
-   * @param {string|number} noteId - Note ID to delete
-   * @async
-   */
-  const handleDeletePropertyNote = (noteId) => {
-    showConfirmDialog(
-      'Delete Note',
-      'Are you sure you want to delete this note?',
-      async () => {
-        setPropertyNotes(propertyNotes.filter(note => note.id !== noteId));
-
-        if (isSupabaseConfigured()) {
-          await supabaseService.delete('property_notes', noteId);
-        }
-
-        showToast('Note deleted', 'success');
-      },
-      'danger'
-    );
   };
 
   // ==================
