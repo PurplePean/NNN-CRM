@@ -19,7 +19,7 @@ import { suggestCategory, getCategoriesList, getCategoryData } from '../utils/ke
 import { notesService } from '../services/supabase';
 
 /**
- * NotesSidebar Component
+ * NotesSidebar Component - Redesigned with clean, consistent styling
  * A comprehensive notes sidebar with auto-categorization, tabs, and full CRUD operations
  *
  * @param {string} entityType - Entity type (property, broker, partner)
@@ -49,14 +49,52 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
   // Get categories for this entity type
   const categories = getCategoriesList(entityType);
 
-  // Theme classes
-  const bgClass = darkMode ? 'bg-gray-800' : 'bg-white';
-  const borderClass = darkMode ? 'border-gray-700' : 'border-gray-200';
-  const textClass = darkMode ? 'text-gray-100' : 'text-gray-900';
-  const textSecondaryClass = darkMode ? 'text-gray-400' : 'text-gray-600';
-  const hoverClass = darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50';
-  const inputBgClass = darkMode ? 'bg-gray-700' : 'bg-gray-50';
-  const inputBorderClass = darkMode ? 'border-gray-600' : 'border-gray-300';
+  // Enhanced theme classes with consistent color palette
+  const theme = {
+    // Backgrounds
+    bg: darkMode ? 'bg-slate-800' : 'bg-white',
+    bgSecondary: darkMode ? 'bg-slate-900' : 'bg-slate-50',
+    bgHover: darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100',
+    bgCard: darkMode ? 'bg-slate-800' : 'bg-white',
+
+    // Borders
+    border: darkMode ? 'border-slate-700' : 'border-slate-200',
+    borderLight: darkMode ? 'border-slate-600' : 'border-slate-300',
+
+    // Text
+    text: darkMode ? 'text-slate-100' : 'text-slate-900',
+    textSecondary: darkMode ? 'text-slate-400' : 'text-slate-600',
+    textMuted: darkMode ? 'text-slate-500' : 'text-slate-500',
+
+    // Inputs
+    input: {
+      bg: darkMode ? 'bg-slate-700' : 'bg-slate-50',
+      border: darkMode ? 'border-slate-600' : 'border-slate-300',
+      focus: 'focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+      text: darkMode ? 'text-slate-100' : 'text-slate-900'
+    },
+
+    // Buttons
+    button: {
+      primary: 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-slate-600 disabled:cursor-not-allowed',
+      secondary: darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700',
+      ghost: darkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-600',
+      danger: 'hover:text-red-500',
+      success: 'hover:text-green-500'
+    },
+
+    // Header
+    header: {
+      bg: darkMode ? 'bg-slate-900/50' : 'bg-slate-100/50',
+      text: darkMode ? 'text-slate-100' : 'text-slate-900'
+    },
+
+    // Tabs
+    tab: {
+      active: 'bg-blue-600 text-white shadow-sm',
+      inactive: darkMode ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+    }
+  };
 
   // Load notes on mount and when entity changes
   useEffect(() => {
@@ -203,53 +241,56 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
         {!isAdding ? (
           <button
             onClick={() => setIsAdding(true)}
-            className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg border ${borderClass} ${hoverClass} ${textClass} transition-colors`}
+            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed ${theme.border} ${theme.bgHover} ${theme.text} transition-all hover:border-blue-500 hover:text-blue-500`}
           >
             <Plus size={18} />
             <span className="font-medium">Add Note</span>
           </button>
         ) : (
-          <div className={`border ${borderClass} rounded-lg p-4 space-y-3`}>
-            <textarea
-              value={newNoteContent}
-              onChange={(e) => setNewNoteContent(e.target.value)}
-              placeholder="Type your note here..."
-              className={`w-full px-3 py-2 ${inputBgClass} border ${inputBorderClass} rounded-lg ${textClass} placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
-              rows={4}
-              autoFocus
-            />
+          <div className={`border ${theme.border} rounded-lg p-4 ${theme.bgCard} shadow-sm space-y-3`}>
+            <div className="space-y-2">
+              <label className={`text-sm font-medium ${theme.text}`}>
+                Note Content
+              </label>
+              <textarea
+                value={newNoteContent}
+                onChange={(e) => setNewNoteContent(e.target.value)}
+                placeholder="Type your note here..."
+                className={`w-full px-3 py-2 ${theme.input.bg} border ${theme.input.border} rounded-lg ${theme.input.text} placeholder-slate-500 ${theme.input.focus} resize-none transition-shadow`}
+                rows={4}
+                autoFocus
+              />
+            </div>
 
-            {/* Suggested Category */}
+            {/* Suggested Category Badge - Only show when suggestion exists */}
             {suggestedCategory && !selectedCategory && (
               <div className="flex items-center gap-2">
                 <div
                   onClick={() => setSelectedCategory(suggestedCategory.value)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-all hover:opacity-80"
-                  style={{ backgroundColor: suggestedCategory.bgColor }}
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-all ${
+                    darkMode
+                      ? 'bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30'
+                      : 'bg-blue-50 hover:bg-blue-100 border border-blue-200'
+                  }`}
                 >
-                  {React.createElement(suggestedCategory.icon, {
-                    size: 14,
-                    style: { color: suggestedCategory.color }
-                  })}
-                  <span className={textSecondaryClass} style={{ fontSize: '0.875rem' }}>
-                    {suggestedCategory.label}
+                  <AlertCircle size={14} className="text-blue-500" />
+                  <span className={`text-sm font-medium ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>
+                    Suggested: {suggestedCategory.label}
                   </span>
-                  <span className={textSecondaryClass} style={{ fontSize: '0.75rem' }}>
-                    (suggested)
-                  </span>
+                  <Check size={14} className="text-blue-500" />
                 </div>
               </div>
             )}
 
             {/* Category Selector */}
             <div className="space-y-2">
-              <label className={`text-sm font-medium ${textSecondaryClass}`}>
+              <label className={`text-sm font-medium ${theme.text}`}>
                 Category
               </label>
               <select
                 value={selectedCategory || suggestedCategory?.value || 'other'}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className={`w-full px-3 py-2 ${inputBgClass} border ${inputBorderClass} rounded-lg ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                className={`w-full px-3 py-2 ${theme.input.bg} border ${theme.input.border} rounded-lg ${theme.input.text} ${theme.input.focus} transition-shadow`}
               >
                 {categories.map(cat => (
                   <option key={cat.value} value={cat.value}>
@@ -260,14 +301,14 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-2">
               <button
                 onClick={handleAddNote}
                 disabled={!newNoteContent.trim()}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${theme.button.primary}`}
               >
                 <Check size={16} />
-                Save
+                Save Note
               </button>
               <button
                 onClick={() => {
@@ -276,10 +317,9 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
                   setSelectedCategory(null);
                   setSuggestedCategory(null);
                 }}
-                className={`flex items-center gap-2 px-4 py-2 ${inputBgClass} ${hoverClass} ${textClass} rounded-lg font-medium transition-colors`}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${theme.button.secondary}`}
               >
                 <X size={16} />
-                Cancel
               </button>
             </div>
           </div>
@@ -287,14 +327,17 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
 
         {/* Notes List */}
         {isLoading ? (
-          <div className={`text-center py-8 ${textSecondaryClass}`}>
-            Loading notes...
+          <div className={`text-center py-12 ${theme.textSecondary}`}>
+            <div className="animate-pulse">
+              <StickyNote size={48} className="mx-auto mb-3 opacity-50" />
+              <p className="font-medium">Loading notes...</p>
+            </div>
           </div>
         ) : notes.length === 0 ? (
-          <div className={`text-center py-8 ${textSecondaryClass}`}>
-            <StickyNote size={48} className="mx-auto mb-2 opacity-50" />
-            <p>No notes yet</p>
-            <p className="text-sm mt-1">Add your first note to get started</p>
+          <div className={`text-center py-12 ${theme.textSecondary}`}>
+            <StickyNote size={48} className="mx-auto mb-3 opacity-30" />
+            <p className="font-medium">No notes yet</p>
+            <p className="text-sm mt-1">Add one to get started</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -305,50 +348,59 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
               const isExpanded = expandedCategories[category.value] !== false;
 
               return (
-                <div key={category.value} className={`border ${borderClass} rounded-lg overflow-hidden`}>
+                <div key={category.value} className={`border ${theme.border} rounded-lg overflow-hidden ${theme.bgCard} shadow-sm`}>
                   {/* Category Header */}
                   <button
                     onClick={() => toggleCategory(category.value)}
-                    className={`w-full flex items-center justify-between px-4 py-3 ${hoverClass} transition-colors`}
+                    className={`w-full flex items-center justify-between px-4 py-3 ${theme.bgHover} transition-colors`}
                   >
                     <div className="flex items-center gap-2">
                       <div
-                        className="flex items-center gap-2 px-2 py-1 rounded"
-                        style={{ backgroundColor: category.bgColor }}
+                        className="flex items-center gap-2 px-2.5 py-1 rounded-md"
+                        style={{
+                          backgroundColor: darkMode
+                            ? `${category.color}20`
+                            : category.bgColor,
+                          borderWidth: '1px',
+                          borderColor: darkMode ? `${category.color}40` : 'transparent'
+                        }}
                       >
                         {React.createElement(category.icon, {
-                          size: 16,
+                          size: 14,
                           style: { color: category.color }
                         })}
-                        <span className={textClass} style={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                        <span className={`text-sm font-semibold ${theme.text}`}>
                           {category.label}
                         </span>
                       </div>
-                      <span className={textSecondaryClass} style={{ fontSize: '0.875rem' }}>
+                      <span className={`text-sm ${theme.textMuted}`}>
                         ({categoryNotes.length})
                       </span>
                     </div>
-                    {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    {isExpanded ?
+                      <ChevronUp size={18} className={theme.textSecondary} /> :
+                      <ChevronDown size={18} className={theme.textSecondary} />
+                    }
                   </button>
 
                   {/* Category Notes */}
                   {isExpanded && (
-                    <div className="divide-y" style={{ borderColor: darkMode ? '#374151' : '#e5e7eb' }}>
+                    <div className={`divide-y ${theme.border}`}>
                       {categoryNotes.map(note => (
-                        <div key={note.id} className={`px-4 py-3 ${hoverClass}`}>
+                        <div key={note.id} className={`px-4 py-3 ${theme.bgHover} transition-colors`}>
                           {editingNoteId === note.id ? (
                             // Edit Mode
                             <div className="space-y-3">
                               <textarea
                                 value={editContent}
                                 onChange={(e) => setEditContent(e.target.value)}
-                                className={`w-full px-3 py-2 ${inputBgClass} border ${inputBorderClass} rounded-lg ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                                className={`w-full px-3 py-2 ${theme.input.bg} border ${theme.input.border} rounded-lg ${theme.input.text} ${theme.input.focus} resize-none transition-shadow`}
                                 rows={3}
                               />
                               <select
                                 value={editCategory}
                                 onChange={(e) => setEditCategory(e.target.value)}
-                                className={`w-full px-3 py-2 ${inputBgClass} border ${inputBorderClass} rounded-lg ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                className={`w-full px-3 py-2 ${theme.input.bg} border ${theme.input.border} rounded-lg ${theme.input.text} ${theme.input.focus} transition-shadow`}
                               >
                                 {categories.map(cat => (
                                   <option key={cat.value} value={cat.value}>
@@ -359,7 +411,7 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => handleEditNote(note.id)}
-                                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${theme.button.primary}`}
                                 >
                                   <Save size={14} />
                                   Save
@@ -370,7 +422,7 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
                                     setEditContent('');
                                     setEditCategory(null);
                                   }}
-                                  className={`flex items-center gap-2 px-3 py-1.5 ${inputBgClass} ${textClass} rounded text-sm font-medium`}
+                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${theme.button.secondary}`}
                                 >
                                   <X size={14} />
                                   Cancel
@@ -380,11 +432,11 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
                           ) : (
                             // View Mode
                             <div>
-                              <p className={`${textClass} mb-2 whitespace-pre-wrap`}>
+                              <p className={`${theme.text} mb-2 whitespace-pre-wrap leading-relaxed text-sm`}>
                                 {note.content}
                               </p>
-                              <div className="flex items-center justify-between">
-                                <span className={textSecondaryClass} style={{ fontSize: '0.75rem' }}>
+                              <div className="flex items-center justify-between pt-2">
+                                <span className={`text-xs ${theme.textMuted}`}>
                                   {formatDate(note.created_at)}
                                   {note.edited && note.updated_at && (
                                     <span className="ml-2">
@@ -392,20 +444,22 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
                                     </span>
                                   )}
                                 </span>
-                                <div className="flex gap-2">
+                                <div className="flex gap-1">
                                   <button
                                     onClick={() => {
                                       setEditingNoteId(note.id);
                                       setEditContent(note.content);
                                       setEditCategory(note.category);
                                     }}
-                                    className={`p-1.5 rounded ${hoverClass} ${textSecondaryClass} hover:text-blue-500 transition-colors`}
+                                    className={`p-1.5 rounded ${theme.button.ghost} ${theme.button.success} transition-colors`}
+                                    title="Edit note"
                                   >
                                     <Edit2 size={14} />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteNote(note.id)}
-                                    className={`p-1.5 rounded ${hoverClass} ${textSecondaryClass} hover:text-red-500 transition-colors`}
+                                    className={`p-1.5 rounded ${theme.button.ghost} ${theme.button.danger} transition-colors`}
+                                    title="Delete note"
                                   >
                                     <Trash2 size={14} />
                                   </button>
@@ -432,45 +486,70 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
     return (
       <div className="space-y-3">
         {sortedNotes.length === 0 ? (
-          <div className={`text-center py-8 ${textSecondaryClass}`}>
-            <Clock size={48} className="mx-auto mb-2 opacity-50" />
-            <p>No history yet</p>
+          <div className={`text-center py-12 ${theme.textSecondary}`}>
+            <Clock size={48} className="mx-auto mb-3 opacity-30" />
+            <p className="font-medium">No history yet</p>
           </div>
         ) : (
-          sortedNotes.map(note => {
-            const category = getCategoryData(entityType, note.category);
-            return (
-              <div key={note.id} className={`border ${borderClass} rounded-lg p-4`}>
-                <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg`} style={{ backgroundColor: category?.bgColor || '#f3f4f6' }}>
-                    {category && React.createElement(category.icon, {
-                      size: 16,
-                      style: { color: category.color }
-                    })}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-sm font-medium ${textClass}`}>
-                        {category?.label || 'Note'}
-                      </span>
-                      <span className={textSecondaryClass} style={{ fontSize: '0.75rem' }}>
-                        • {formatDate(note.created_at)}
-                      </span>
+          <div className="relative">
+            {/* Timeline line */}
+            <div className={`absolute left-5 top-0 bottom-0 w-0.5 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}></div>
+
+            {sortedNotes.map((note, index) => {
+              const category = getCategoryData(entityType, note.category);
+              return (
+                <div key={note.id} className="relative pl-12 pb-6">
+                  {/* Timeline dot */}
+                  <div
+                    className={`absolute left-3.5 top-2 w-4 h-4 rounded-full border-2 ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}
+                    style={{
+                      backgroundColor: category?.color || (darkMode ? '#1e293b' : '#ffffff'),
+                      borderColor: category?.color || (darkMode ? '#334155' : '#e2e8f0')
+                    }}
+                  ></div>
+
+                  <div className={`border ${theme.border} rounded-lg p-4 ${theme.bgCard} shadow-sm`}>
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="p-2 rounded-lg flex-shrink-0"
+                        style={{
+                          backgroundColor: darkMode
+                            ? `${category?.color || '#64748b'}20`
+                            : category?.bgColor || '#f1f5f9',
+                          borderWidth: '1px',
+                          borderColor: darkMode ? `${category?.color || '#64748b'}40` : 'transparent'
+                        }}
+                      >
+                        {category && React.createElement(category.icon, {
+                          size: 16,
+                          style: { color: category.color }
+                        })}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-sm font-semibold ${theme.text}`}>
+                            {category?.label || 'Note'}
+                          </span>
+                          <span className={`text-xs ${theme.textMuted}`}>
+                            • {formatDate(note.created_at)}
+                          </span>
+                        </div>
+                        <p className={`${theme.textSecondary} text-sm leading-relaxed`}>
+                          {note.content.substring(0, 150)}
+                          {note.content.length > 150 && '...'}
+                        </p>
+                        {note.edited && note.updated_at && (
+                          <p className={`text-xs ${theme.textMuted} mt-2`}>
+                            Edited {formatDate(note.updated_at)}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <p className={`${textSecondaryClass} text-sm`}>
-                      {note.content.substring(0, 100)}
-                      {note.content.length > 100 && '...'}
-                    </p>
-                    {note.edited && note.updated_at && (
-                      <p className={textSecondaryClass} style={{ fontSize: '0.75rem', marginTop: '0.5rem' }}>
-                        Edited {formatDate(note.updated_at)}
-                      </p>
-                    )}
                   </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
     );
@@ -489,27 +568,48 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
 
     return (
       <div className="space-y-3">
-        <h3 className={`text-lg font-semibold ${textClass} mb-4`}>Categories</h3>
-        {categories.map(cat => (
-          <div key={cat.value} className={`border ${borderClass} rounded-lg p-4`}>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: cat.bgColor }}>
-                {React.createElement(cat.icon, {
-                  size: 18,
-                  style: { color: cat.color }
-                })}
-              </div>
-              <div className="flex-1">
-                <h4 className={`font-medium ${textClass}`}>{cat.label}</h4>
-                <p className={textSecondaryClass} style={{ fontSize: '0.75rem' }}>
-                  {cat.keywords?.length || 0} keyword{cat.keywords?.length !== 1 ? 's' : ''}
-                  {' • '}
-                  {categoryStats[cat.value]?.count || 0} note{categoryStats[cat.value]?.count !== 1 ? 's' : ''}
-                </p>
+        <div className={`pb-3 border-b ${theme.border}`}>
+          <h3 className={`text-base font-semibold ${theme.text}`}>Categories</h3>
+          <p className={`text-sm ${theme.textSecondary} mt-1`}>
+            Auto-categorization keyword library
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          {categories.map(cat => (
+            <div key={cat.value} className={`border ${theme.border} rounded-lg p-4 ${theme.bgCard} shadow-sm`}>
+              <div className="flex items-start gap-3">
+                <div
+                  className="p-2.5 rounded-lg flex-shrink-0"
+                  style={{
+                    backgroundColor: darkMode
+                      ? `${cat.color}20`
+                      : cat.bgColor,
+                    borderWidth: '1px',
+                    borderColor: darkMode ? `${cat.color}40` : 'transparent'
+                  }}
+                >
+                  {React.createElement(cat.icon, {
+                    size: 18,
+                    style: { color: cat.color }
+                  })}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className={`font-semibold ${theme.text} mb-1`}>{cat.label}</h4>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className={`${theme.textSecondary}`}>
+                      {cat.keywords?.length || 0} keyword{cat.keywords?.length !== 1 ? 's' : ''}
+                    </span>
+                    <span className={theme.textMuted}>•</span>
+                    <span className={`${theme.textSecondary}`}>
+                      {categoryStats[cat.value]?.count || 0} note{categoryStats[cat.value]?.count !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   };
@@ -534,25 +634,26 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
 
     return (
       <div className="space-y-4">
-        <div className={`border ${borderClass} rounded-lg p-4`}>
-          <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Statistics</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className={textSecondaryClass}>Total Notes:</span>
-              <span className={`font-medium ${textClass}`}>{totalNotes}</span>
+        {/* Statistics Card */}
+        <div className={`border ${theme.border} rounded-lg p-4 ${theme.bgCard} shadow-sm`}>
+          <h3 className={`text-base font-semibold ${theme.text} mb-4`}>Statistics</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className={`text-sm ${theme.textSecondary}`}>Total Notes</span>
+              <span className={`text-2xl font-bold ${theme.text}`}>{totalNotes}</span>
             </div>
             {oldestNote && (
-              <div className="flex justify-between">
-                <span className={textSecondaryClass}>First Note:</span>
-                <span className={`font-medium ${textClass}`}>
+              <div className="flex justify-between items-center pt-3 border-t" style={{ borderColor: darkMode ? '#334155' : '#e2e8f0' }}>
+                <span className={`text-sm ${theme.textSecondary}`}>First Note</span>
+                <span className={`text-sm font-medium ${theme.text}`}>
                   {formatDate(oldestNote.created_at)}
                 </span>
               </div>
             )}
             {newestNote && (
-              <div className="flex justify-between">
-                <span className={textSecondaryClass}>Latest Note:</span>
-                <span className={`font-medium ${textClass}`}>
+              <div className="flex justify-between items-center pt-3 border-t" style={{ borderColor: darkMode ? '#334155' : '#e2e8f0' }}>
+                <span className={`text-sm ${theme.textSecondary}`}>Latest Note</span>
+                <span className={`text-sm font-medium ${theme.text}`}>
                   {formatDate(newestNote.created_at)}
                 </span>
               </div>
@@ -560,106 +661,122 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
           </div>
         </div>
 
-        <div className={`border ${borderClass} rounded-lg p-4`}>
-          <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Notes by Category</h3>
-          <div className="space-y-2">
-            {Object.entries(categoryBreakdown).map(([label, count]) => (
-              count > 0 && (
-                <div key={label} className="flex justify-between items-center">
-                  <span className={textSecondaryClass}>{label}:</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        {/* Category Breakdown Card */}
+        {totalNotes > 0 && (
+          <div className={`border ${theme.border} rounded-lg p-4 ${theme.bgCard} shadow-sm`}>
+            <h3 className={`text-base font-semibold ${theme.text} mb-4`}>Notes by Category</h3>
+            <div className="space-y-3">
+              {Object.entries(categoryBreakdown).map(([label, count]) => (
+                count > 0 && (
+                  <div key={label} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className={`text-sm ${theme.textSecondary}`}>{label}</span>
+                      <span className={`text-sm font-semibold ${theme.text}`}>{count}</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#334155' : '#e2e8f0' }}>
                       <div
-                        className="h-full bg-blue-500"
+                        className="h-full bg-blue-500 transition-all duration-300"
                         style={{ width: `${(count / totalNotes) * 100}%` }}
                       />
                     </div>
-                    <span className={`font-medium ${textClass} w-8 text-right`}>{count}</span>
                   </div>
-                </div>
-              )
-            ))}
+                )
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };
 
+  // Collapsed state
   if (isCollapsed) {
     return (
-      <div className={`${bgClass} border-l ${borderClass} w-12 flex flex-col items-center py-4`}>
+      <div className={`${theme.bg} border-l ${theme.border} w-12 flex flex-col items-center py-4 shadow-lg`}>
         <button
           onClick={() => setIsCollapsed(false)}
-          className={`p-2 rounded ${hoverClass} ${textClass}`}
+          className={`p-2 rounded-lg ${theme.button.ghost} transition-colors`}
+          title="Expand sidebar"
         >
           <ChevronRight size={20} />
         </button>
+        <div className="mt-4 flex flex-col gap-3">
+          <div className={`p-2 rounded-lg ${theme.textMuted}`}>
+            <StickyNote size={18} />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`${bgClass} border-l ${borderClass} w-96 flex flex-col h-full`}>
-      {/* Header */}
-      <div className={`px-4 py-3 border-b ${borderClass} flex items-center justify-between`}>
-        <h2 className={`text-lg font-semibold ${textClass}`}>Notes</h2>
+    <div className={`${theme.bg} border-l ${theme.border} w-96 flex flex-col h-full shadow-lg`}>
+      {/* Header with subtle background */}
+      <div className={`px-6 py-4 ${theme.header.bg} border-b ${theme.border} flex items-center justify-between backdrop-blur-sm`}>
+        <div className="flex items-center gap-2">
+          <StickyNote size={20} className="text-blue-500" />
+          <h2 className={`text-lg font-bold ${theme.header.text}`}>Notes</h2>
+        </div>
         <button
           onClick={() => setIsCollapsed(true)}
-          className={`p-1 rounded ${hoverClass} ${textSecondaryClass}`}
+          className={`p-1.5 rounded-lg ${theme.button.ghost} transition-colors`}
+          title="Collapse sidebar"
         >
-          <X size={18} />
+          <ChevronDown size={18} />
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className={`px-4 py-2 border-b ${borderClass} flex gap-1`}>
-        <button
-          onClick={() => setActiveTab('notes')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'notes'
-              ? 'bg-blue-600 text-white'
-              : `${textSecondaryClass} ${hoverClass}`
-          }`}
-        >
-          <StickyNote size={16} />
-          Notes
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'history'
-              ? 'bg-blue-600 text-white'
-              : `${textSecondaryClass} ${hoverClass}`
-          }`}
-        >
-          <Clock size={16} />
-          History
-        </button>
-        <button
-          onClick={() => setActiveTab('preferences')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'preferences'
-              ? 'bg-blue-600 text-white'
-              : `${textSecondaryClass} ${hoverClass}`
-          }`}
-        >
-          <Settings size={16} />
-          Preferences
-        </button>
-        <button
-          onClick={() => setActiveTab('general')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'general'
-              ? 'bg-blue-600 text-white'
-              : `${textSecondaryClass} ${hoverClass}`
-          }`}
-        >
-          <Info size={16} />
-          General
-        </button>
+      {/* Tab Navigation */}
+      <div className={`px-4 py-3 border-b ${theme.border} ${theme.bgSecondary}`}>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setActiveTab('notes')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'notes'
+                ? theme.tab.active
+                : theme.tab.inactive
+            }`}
+          >
+            <StickyNote size={15} />
+            <span>Notes</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'history'
+                ? theme.tab.active
+                : theme.tab.inactive
+            }`}
+          >
+            <Clock size={15} />
+            <span>History</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('preferences')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'preferences'
+                ? theme.tab.active
+                : theme.tab.inactive
+            }`}
+          >
+            <Settings size={15} />
+            <span>Prefs</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('general')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'general'
+                ? theme.tab.active
+                : theme.tab.inactive
+            }`}
+          >
+            <Info size={15} />
+            <span>Stats</span>
+          </button>
+        </div>
       </div>
 
-      {/* Content */}
+      {/* Content Area */}
       <div className="flex-1 overflow-y-auto p-4">
         {activeTab === 'notes' && renderNotesTab()}
         {activeTab === 'history' && renderHistoryTab()}
