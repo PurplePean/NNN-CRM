@@ -990,6 +990,11 @@ export default function IndustrialCRM() {
       p.id === propertyId ? { ...p, ...updates } : p
     ));
 
+    // Update profile property state if this is the property being viewed
+    if (profileProperty && profileProperty.id === propertyId) {
+      setProfileProperty({ ...profileProperty, ...updates });
+    }
+
     // Sync to Supabase if configured
     if (isSupabaseConfigured()) {
       try {
@@ -1018,6 +1023,11 @@ export default function IndustrialCRM() {
     setBrokers(brokers.map(b =>
       b.id === brokerId ? { ...b, ...updates } : b
     ));
+
+    // Update profile contact state if this is the broker being viewed
+    if (profileContact && profileContact.contactType === 'broker' && profileContact.id === brokerId) {
+      setProfileContact({ ...profileContact, ...updates });
+    }
 
     // Sync to Supabase if configured
     if (isSupabaseConfigured()) {
@@ -1048,6 +1058,11 @@ export default function IndustrialCRM() {
       p.id === partnerId ? { ...p, ...updates } : p
     ));
 
+    // Update profile contact state if this is the partner being viewed
+    if (profileContact && profileContact.contactType === 'partner' && profileContact.id === partnerId) {
+      setProfileContact({ ...profileContact, ...updates });
+    }
+
     // Sync to Supabase if configured
     if (isSupabaseConfigured()) {
       try {
@@ -1076,6 +1091,11 @@ export default function IndustrialCRM() {
     setGatekeepers(gatekeepers.map(g =>
       g.id === gatekeeperId ? { ...g, ...updates } : g
     ));
+
+    // Update profile contact state if this is the gatekeeper being viewed
+    if (profileContact && profileContact.contactType === 'gatekeeper' && profileContact.id === gatekeeperId) {
+      setProfileContact({ ...profileContact, ...updates });
+    }
 
     // Sync to Supabase if configured
     if (isSupabaseConfigured()) {
@@ -7972,7 +7992,22 @@ export default function IndustrialCRM() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <h1 className={`text-4xl font-bold ${textClass}`}>{profileContact.displayName}</h1>
+                      <InlineEditField
+                        value={profileContact.displayName}
+                        onSave={(newValue) => {
+                          if (profileContact.contactType === 'broker') {
+                            updateBrokerField(profileContact.id, 'name', newValue);
+                          } else if (profileContact.contactType === 'partner') {
+                            updatePartnerField(profileContact.id, 'name', newValue);
+                          } else if (profileContact.contactType === 'gatekeeper') {
+                            updateGatekeeperField(profileContact.id, 'name', newValue);
+                          }
+                        }}
+                        label=""
+                        type="text"
+                        darkMode={darkMode}
+                        placeholder="Contact Name"
+                      />
                       <span className={`px-3 py-1 text-sm font-semibold rounded ${
                         profileContact.contactType === 'broker' ? 'bg-blue-100 text-blue-800' :
                         profileContact.contactType === 'gatekeeper' ? 'bg-purple-100 text-purple-800' :
@@ -7981,14 +8016,39 @@ export default function IndustrialCRM() {
                         {profileContact.contactType.toUpperCase()}
                       </span>
                     </div>
-                    {profileContact.title && (
-                      <p className={`text-lg ${textSecondaryClass} mb-2`}>{profileContact.title}</p>
+                    {(profileContact.contactType === 'gatekeeper' || profileContact.title) && (
+                      <InlineEditField
+                        value={profileContact.title}
+                        onSave={(newValue) => {
+                          if (profileContact.contactType === 'gatekeeper') {
+                            updateGatekeeperField(profileContact.id, 'title', newValue);
+                          }
+                        }}
+                        label=""
+                        type="text"
+                        darkMode={darkMode}
+                        placeholder="Title"
+                        className="mb-2"
+                      />
                     )}
                     {profileContact.company && (
-                      <p className={`text-md ${textSecondaryClass} flex items-center gap-2`}>
-                        <Building2 size={18} />
-                        {profileContact.company}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <Building2 size={18} className={textSecondaryClass} />
+                        <InlineEditField
+                          value={profileContact.company}
+                          onSave={(newValue) => {
+                            if (profileContact.contactType === 'broker') {
+                              updateBrokerField(profileContact.id, 'firmName', newValue);
+                            } else if (profileContact.contactType === 'gatekeeper') {
+                              updateGatekeeperField(profileContact.id, 'company', newValue);
+                            }
+                          }}
+                          label=""
+                          type="text"
+                          darkMode={darkMode}
+                          placeholder="Company"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -8095,44 +8155,67 @@ export default function IndustrialCRM() {
               <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
                 <h2 className={`text-xl font-bold ${textClass} mb-4`}>Contact Information</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {profileContact.email && (
-                    <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
-                        <Mail size={20} className="text-blue-500" />
-                      </div>
-                      <div>
-                        <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Email</div>
-                        <a href={`mailto:${profileContact.email}`} className="text-sm text-blue-600 hover:text-blue-700">
-                          {profileContact.email}
-                        </a>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Mail size={20} className="text-blue-500" />
                     </div>
-                  )}
-                  {profileContact.phone && (
-                    <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
-                        <Phone size={20} className="text-green-500" />
-                      </div>
-                      <div>
-                        <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Phone</div>
-                        <a href={`tel:${profileContact.phone}`} className="text-sm text-blue-600 hover:text-blue-700">
-                          {profileContact.phone}
-                        </a>
-                      </div>
+                    <InlineEditField
+                      value={profileContact.email}
+                      onSave={(newValue) => {
+                        if (profileContact.contactType === 'broker') {
+                          updateBrokerField(profileContact.id, 'email', newValue);
+                        } else if (profileContact.contactType === 'partner') {
+                          updatePartnerField(profileContact.id, 'email', newValue);
+                        } else if (profileContact.contactType === 'gatekeeper') {
+                          updateGatekeeperField(profileContact.id, 'email', newValue);
+                        }
+                      }}
+                      label="Email"
+                      type="email"
+                      darkMode={darkMode}
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                      <Phone size={20} className="text-green-500" />
                     </div>
-                  )}
-                  {(profileContact.firmWebsite || profileContact.website) && (
+                    <InlineEditField
+                      value={profileContact.phone}
+                      onSave={(newValue) => {
+                        if (profileContact.contactType === 'broker') {
+                          updateBrokerField(profileContact.id, 'phone', newValue);
+                        } else if (profileContact.contactType === 'partner') {
+                          updatePartnerField(profileContact.id, 'phone', newValue);
+                        } else if (profileContact.contactType === 'gatekeeper') {
+                          updateGatekeeperField(profileContact.id, 'phone', newValue);
+                        }
+                      }}
+                      label="Phone"
+                      type="tel"
+                      darkMode={darkMode}
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                  {(profileContact.contactType === 'partner' || profileContact.contactType === 'gatekeeper') && (
                     <div className="flex items-center gap-3">
                       <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
                         <Globe size={20} className="text-purple-500" />
                       </div>
-                      <div>
-                        <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Website</div>
-                        <a href={profileContact.firmWebsite || profileContact.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                          {(profileContact.firmWebsite || profileContact.website).replace(/^https?:\/\//, '')}
-                          <ExternalLink size={12} />
-                        </a>
-                      </div>
+                      <InlineEditField
+                        value={profileContact.contactType === 'partner' ? profileContact.website : profileContact.firmWebsite}
+                        onSave={(newValue) => {
+                          if (profileContact.contactType === 'partner') {
+                            updatePartnerField(profileContact.id, 'website', newValue);
+                          } else if (profileContact.contactType === 'gatekeeper') {
+                            updateGatekeeperField(profileContact.id, 'firmWebsite', newValue);
+                          }
+                        }}
+                        label={profileContact.contactType === 'partner' ? 'Website' : 'Firm Website'}
+                        type="url"
+                        darkMode={darkMode}
+                        placeholder="https://example.com"
+                      />
                     </div>
                   )}
                   {profileContact.crexiLink && (
@@ -8500,16 +8583,31 @@ export default function IndustrialCRM() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
-                        <h1 className={`text-4xl font-bold ${textClass}`}>{profileProperty.address}</h1>
+                        <InlineEditField
+                          value={profileProperty.address}
+                          onSave={(newValue) => updatePropertyField(profileProperty.id, 'address', newValue)}
+                          label=""
+                          type="text"
+                          darkMode={darkMode}
+                          placeholder="Property Address"
+                        />
                         <span className="px-3 py-1 text-sm font-semibold rounded bg-indigo-100 text-indigo-800">
                           PROPERTY
                         </span>
                       </div>
                       <div className="flex items-center gap-4 flex-wrap">
-                        <p className={`text-lg ${textSecondaryClass} flex items-center gap-2`}>
-                          <TrendingUp size={18} />
-                          {formatNumber(profileProperty.squareFeet)} SF
-                        </p>
+                        <div className={`flex items-center gap-2`}>
+                          <TrendingUp size={18} className={textSecondaryClass} />
+                          <InlineEditField
+                            value={profileProperty.squareFeet?.toString()}
+                            onSave={(newValue) => updatePropertyField(profileProperty.id, 'squareFeet', newValue)}
+                            label=""
+                            type="number"
+                            darkMode={darkMode}
+                            displayFormat={(v) => `${formatNumber(v)} SF`}
+                            placeholder="0 SF"
+                          />
+                        </div>
                         {profileProperty.crexi && (
                           <a href={profileProperty.crexi} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1">
                             View on Crexi
@@ -9214,50 +9312,91 @@ export default function IndustrialCRM() {
                 <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
                   <h2 className={`text-xl font-bold ${textClass} mb-4`}>Property Details</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Square Feet</div>
-                      <div className={`text-sm font-semibold ${textClass}`}>{formatNumber(profileProperty.squareFeet)}</div>
-                    </div>
-                    <div>
-                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Monthly Base Rent/SF</div>
-                      <div className={`text-sm font-semibold ${textClass}`}>${profileProperty.monthlyBaseRentPerSqft || 'N/A'}</div>
-                    </div>
-                    <div>
-                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Purchase Price</div>
-                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.purchasePrice ? formatCurrency(stripCommas(profileProperty.purchasePrice)) : 'N/A'}</div>
-                    </div>
+                    <InlineEditField
+                      value={profileProperty.squareFeet?.toString()}
+                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'squareFeet', newValue)}
+                      label="Square Feet"
+                      type="number"
+                      darkMode={darkMode}
+                      displayFormat={(v) => formatNumber(v)}
+                      placeholder="0"
+                    />
+                    <InlineEditField
+                      value={profileProperty.monthlyBaseRentPerSqft?.toString()}
+                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'monthlyBaseRentPerSqft', newValue)}
+                      label="Monthly Base Rent/SF"
+                      type="number"
+                      darkMode={darkMode}
+                      displayFormat={(v) => `$${v}`}
+                      placeholder="$0"
+                    />
+                    <InlineEditField
+                      value={profileProperty.purchasePrice?.toString()}
+                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'purchasePrice', newValue)}
+                      label="Purchase Price"
+                      type="number"
+                      darkMode={darkMode}
+                      displayFormat={(v) => formatCurrency(stripCommas(v))}
+                      placeholder="$0"
+                    />
                     <div>
                       <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Improvements</div>
                       <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.improvements ? formatCurrency(stripCommas(profileProperty.improvements)) : 'N/A'}</div>
                     </div>
-                    <div>
-                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Closing Costs</div>
-                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.closingCosts ? formatCurrency(stripCommas(profileProperty.closingCosts)) : '$0'}</div>
-                    </div>
-                    <div>
-                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>LTV %</div>
-                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.ltvPercent ? `${profileProperty.ltvPercent}%` : 'N/A'}</div>
-                    </div>
-                    <div>
-                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Interest Rate</div>
-                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.interestRate ? `${profileProperty.interestRate}%` : 'N/A'}</div>
-                    </div>
-                    <div>
-                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Loan Term</div>
-                      <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.loanTerm ? `${profileProperty.loanTerm} yrs` : 'N/A'}</div>
-                    </div>
-                    {profileProperty.exitCapRate && (
-                      <div>
-                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Exit Cap Rate</div>
-                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.exitCapRate}%</div>
-                      </div>
-                    )}
-                    {profileProperty.holdingPeriodMonths && (
-                      <div>
-                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Holding Period</div>
-                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.holdingPeriodMonths} months ({(profileProperty.holdingPeriodMonths / 12).toFixed(1)} yrs)</div>
-                      </div>
-                    )}
+                    <InlineEditField
+                      value={profileProperty.closingCosts?.toString()}
+                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'closingCosts', newValue)}
+                      label="Closing Costs"
+                      type="number"
+                      darkMode={darkMode}
+                      displayFormat={(v) => formatCurrency(stripCommas(v))}
+                      placeholder="$0"
+                    />
+                    <InlineEditField
+                      value={profileProperty.ltvPercent?.toString()}
+                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'ltvPercent', newValue)}
+                      label="LTV %"
+                      type="number"
+                      darkMode={darkMode}
+                      displayFormat={(v) => `${v}%`}
+                      placeholder="0%"
+                    />
+                    <InlineEditField
+                      value={profileProperty.interestRate?.toString()}
+                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'interestRate', newValue)}
+                      label="Interest Rate"
+                      type="number"
+                      darkMode={darkMode}
+                      displayFormat={(v) => `${v}%`}
+                      placeholder="0%"
+                    />
+                    <InlineEditField
+                      value={profileProperty.loanTerm?.toString()}
+                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'loanTerm', newValue)}
+                      label="Loan Term"
+                      type="number"
+                      darkMode={darkMode}
+                      displayFormat={(v) => `${v} yrs`}
+                      placeholder="0 yrs"
+                    />
+                    <InlineEditField
+                      value={profileProperty.exitCapRate?.toString()}
+                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'exitCapRate', newValue)}
+                      label="Exit Cap Rate"
+                      type="number"
+                      darkMode={darkMode}
+                      displayFormat={(v) => `${v}%`}
+                      placeholder="0%"
+                    />
+                    <InlineEditField
+                      value={profileProperty.holdingPeriodMonths?.toString()}
+                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'holdingPeriodMonths', newValue)}
+                      label="Holding Period"
+                      type="number"
+                      darkMode={darkMode}
+                      displayFormat={(v) => `${v} months (${(v / 12).toFixed(1)} yrs)`}
+                      placeholder="0 months"
+                    />
                   </div>
                 </div>
 
