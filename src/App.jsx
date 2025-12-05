@@ -4770,16 +4770,13 @@ export default function IndustrialCRM() {
                     <div className="flex justify-between items-start mb-6">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1">
-                            <InlineEditField
-                              value={property.address}
-                              onSave={(newValue) => updatePropertyField(property.id, 'address', newValue)}
-                              label=""
-                              type="text"
-                              darkMode={darkMode}
-                              placeholder="Property address"
-                            />
-                          </div>
+                          <h2
+                            onClick={() => openPropertyProfile(property.id)}
+                            className={`text-2xl font-bold ${textClass} cursor-pointer hover:text-blue-500 transition flex-1`}
+                            title="Click to view property details"
+                          >
+                            {property.address || 'No address'}
+                          </h2>
                           <button
                             onClick={() => openPropertyProfile(property.id)}
                             className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition flex-shrink-0`}
@@ -8215,6 +8212,24 @@ export default function IndustrialCRM() {
                         type="url"
                         darkMode={darkMode}
                         placeholder="https://example.com"
+                      />
+                    </div>
+                  )}
+                  {profileContact.contactType === 'partner' && (
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                        <DollarSign size={20} className="text-green-500" />
+                      </div>
+                      <InlineEditField
+                        value={profileContact.commitmentAmount?.toString()}
+                        onSave={(newValue) => {
+                          updatePartnerField(profileContact.id, 'commitmentAmount', newValue);
+                        }}
+                        label="Commitment Amount"
+                        type="number"
+                        darkMode={darkMode}
+                        displayFormat={(v) => v ? `$${formatNumber(v)}` : '$0'}
+                        placeholder="$0"
                       />
                     </div>
                   )}
