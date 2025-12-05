@@ -5367,6 +5367,7 @@ export default function IndustrialCRM() {
                     </div>
 
                   </div>
+                </div>
                 );
               })}
             </div>
@@ -5620,8 +5621,6 @@ export default function IndustrialCRM() {
                             {partner.entityName}
                           </p>
                         )}
-                        {lastContact && (
-                        )}
                       </div>
 
                       {/* Edit/Delete */}
@@ -5760,6 +5759,7 @@ export default function IndustrialCRM() {
                     </div>
                   )}
 
+                </div>
                 </div>
               );
               })}
@@ -6274,8 +6274,6 @@ export default function IndustrialCRM() {
                               {contact.phone}
                             </a>
                           </div>
-                        )}
-                        {contact.noteHistory && contact.noteHistory.length > 0 && (
                         )}
                       </div>
                     </div>
