@@ -9,7 +9,7 @@ import {
   Mail,
   DollarSign,
   TrendingUp,
-  Handshake
+  Heart
 } from 'lucide-react';
 
 /**
@@ -197,7 +197,7 @@ export const NOTE_CATEGORIES = {
     {
       label: 'Partner Discussion',
       value: 'partner_discussion',
-      icon: Handshake,
+      icon: Heart,
       color: '#3b82f6',
       bgColor: '#dbeafe',
       borderColor: '#93c5fd',
