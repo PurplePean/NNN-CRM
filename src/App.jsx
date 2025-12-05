@@ -5,6 +5,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import FollowUpForm from './components/FollowUpForm';
 import CustomSelect from './components/CustomSelect';
 import NotesSection from './components/NotesSection';
+import NotesSidebar from './components/NotesSidebar';
 import { supabaseService, notesService, isSupabaseConfigured, supabase } from './services/supabase';
 import {
   initGoogleCalendar,
@@ -9329,14 +9330,14 @@ export default function IndustrialCRM() {
               </div>
 
               {/* Notes Section - Full Width */}
-              <NotesSection
+              <NotesSidebar
                 entityType={profileContact.contactType}
                 entityId={profileContact.id}
-                notes={getNotesForEntity(profileContact.contactType, profileContact.id)}
-                onAddNote={handleAddCategorizedNote}
-                onEditNote={handleEditCategorizedNote}
-                onDeleteNote={handleDeleteCategorizedNote}
-                isCollapsed={false}
+                darkMode={darkMode}
+                onNotesChange={() => {
+                  // Reload notes if needed
+                  notesService.getAllNotes().then(data => setNotes(data || []));
+                }}
               />
             </div>
           </div>
@@ -10415,14 +10416,14 @@ export default function IndustrialCRM() {
 
                   {/* RIGHT COLUMN (30%) - Notes Sidebar (Sticky) */}
                   <div className="lg:sticky lg:top-6 lg:self-start">
-                    <NotesSection
+                    <NotesSidebar
                       entityType="property"
                       entityId={profileProperty.id}
-                      notes={getNotesForEntity('property', profileProperty.id)}
-                      onAddNote={handleAddCategorizedNote}
-                      onEditNote={handleEditCategorizedNote}
-                      onDeleteNote={handleDeleteCategorizedNote}
-                      isCollapsed={notesSidebarCollapsed}
+                      darkMode={darkMode}
+                      onNotesChange={() => {
+                        // Reload notes if needed
+                        notesService.getAllNotes().then(data => setNotes(data || []));
+                      }}
                     />
                   </div>
                 </div>
