@@ -4783,22 +4783,13 @@ export default function IndustrialCRM() {
                   <div key={property.id} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
                     <div className="flex justify-between items-start mb-6">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h2
-                            onClick={() => openPropertyProfile(property.id)}
-                            className={`text-2xl font-bold ${textClass} cursor-pointer hover:text-blue-500 transition flex-1`}
-                            title="Click to view property details"
-                          >
-                            {property.address || 'No address'}
-                          </h2>
-                          <button
-                            onClick={() => openPropertyProfile(property.id)}
-                            className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition flex-shrink-0`}
-                            title="View property profile"
-                          >
-                            <ExternalLink size={18} />
-                          </button>
-                        </div>
+                        <h2
+                          onClick={() => openPropertyProfile(property.id)}
+                          className={`text-2xl font-bold ${textClass} cursor-pointer hover:text-blue-500 transition`}
+                          title="Click to view property details"
+                        >
+                          {property.address || 'No address'}
+                        </h2>
                         {property.crexi && (
                           <a href={property.crexi} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm mt-1 block">
                             View on Crexi →
@@ -5446,19 +5437,15 @@ export default function IndustrialCRM() {
                                 placeholder="Broker name"
                               />
                             ) : (
-                              <h3 className={`text-xl font-bold ${textClass}`}>
+                              <h3
+                                onClick={() => openContactProfile('broker', broker.id)}
+                                className={`text-xl font-bold ${textClass} cursor-pointer hover:text-blue-500 transition`}
+                                title="Click to view broker details"
+                              >
                                 {broker.name || 'No name'}
                               </h3>
                             )}
                           </div>
-                          <button
-                            onClick={() => openContactProfile('broker', broker.id)}
-                            className={`p-1.5 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition flex-shrink-0`}
-                            title="View broker profile"
-                            aria-label={`View ${broker.name} profile`}
-                          >
-                            <ExternalLink size={14} />
-                          </button>
                         </div>
                         <div className="flex items-center gap-1 mt-1">
                           <Building2 size={14} className={textSecondaryClass} />
@@ -5918,19 +5905,15 @@ export default function IndustrialCRM() {
                                 placeholder="Partner name"
                               />
                             ) : (
-                              <h3 className={`text-xl font-bold ${textClass}`}>
+                              <h3
+                                onClick={() => openContactProfile('partner', partner.id)}
+                                className={`text-xl font-bold ${textClass} cursor-pointer hover:text-blue-500 transition`}
+                                title="Click to view partner details"
+                              >
                                 {partner.name || 'No name'}
                               </h3>
                             )}
                           </div>
-                          <button
-                            onClick={() => openContactProfile('partner', partner.id)}
-                            className={`p-1.5 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition flex-shrink-0`}
-                            title="View partner profile"
-                            aria-label={`View ${partner.name} profile`}
-                          >
-                            <ExternalLink size={14} />
-                          </button>
                         </div>
                         <div className="flex items-center gap-1 mt-1">
                           <Building2 size={14} className={textSecondaryClass} />
@@ -6306,19 +6289,15 @@ export default function IndustrialCRM() {
                                 placeholder="Gatekeeper name"
                               />
                             ) : (
-                              <h3 className={`text-xl font-bold ${textClass}`}>
+                              <h3
+                                onClick={() => openContactProfile('gatekeeper', gatekeeper.id)}
+                                className={`text-xl font-bold ${textClass} cursor-pointer hover:text-blue-500 transition`}
+                                title="Click to view gatekeeper details"
+                              >
                                 {gatekeeper.name || 'No name'}
                               </h3>
                             )}
                           </div>
-                          <button
-                            onClick={() => openContactProfile('gatekeeper', gatekeeper.id)}
-                            className={`p-1.5 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition flex-shrink-0`}
-                            title="View gatekeeper profile"
-                            aria-label={`View ${gatekeeper.name} profile`}
-                          >
-                            <ExternalLink size={14} />
-                          </button>
                         </div>
                         {editingGatekeeperCardId === gatekeeper.id ? (
                           <input
