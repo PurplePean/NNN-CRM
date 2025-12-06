@@ -171,6 +171,14 @@ export default function IndustrialCRM() {
   const [isEditingCard, setIsEditingCard] = useState(false);
   const [editedCardData, setEditedCardData] = useState({});
 
+  // Tab card edit mode state (for broker/partner/gatekeeper cards in tabs)
+  const [editingBrokerCardId, setEditingBrokerCardId] = useState(null);
+  const [editedBrokerCardData, setEditedBrokerCardData] = useState({});
+  const [editingPartnerCardId, setEditingPartnerCardId] = useState(null);
+  const [editedPartnerCardData, setEditedPartnerCardData] = useState({});
+  const [editingGatekeeperCardId, setEditingGatekeeperCardId] = useState(null);
+  const [editedGatekeeperCardData, setEditedGatekeeperCardData] = useState({});
+
   // ==================
   // PROPERTY PROFILE STATE
   // ==================
@@ -5429,14 +5437,19 @@ export default function IndustrialCRM() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <div className="flex-1">
-                            <InlineEditField
-                              value={broker.name}
-                              onSave={(newValue) => updateBrokerField(broker.id, 'name', newValue)}
-                              label=""
-                              type="text"
-                              darkMode={darkMode}
-                              placeholder="Broker name"
-                            />
+                            {editingBrokerCardId === broker.id ? (
+                              <input
+                                type="text"
+                                value={editedBrokerCardData.name || ''}
+                                onChange={(e) => setEditedBrokerCardData({...editedBrokerCardData, name: e.target.value})}
+                                className={`text-xl font-bold ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 w-full`}
+                                placeholder="Broker name"
+                              />
+                            ) : (
+                              <h3 className={`text-xl font-bold ${textClass}`}>
+                                {broker.name || 'No name'}
+                              </h3>
+                            )}
                           </div>
                           <button
                             onClick={() => openContactProfile('broker', broker.id)}
@@ -5447,35 +5460,83 @@ export default function IndustrialCRM() {
                             <ExternalLink size={14} />
                           </button>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 mt-1">
                           <Building2 size={14} className={textSecondaryClass} />
-                          <InlineEditField
-                            value={broker.firmName}
-                            onSave={(newValue) => updateBrokerField(broker.id, 'firmName', newValue)}
-                            label=""
-                            type="text"
-                            darkMode={darkMode}
-                            placeholder="Firm name"
-                          />
+                          {editingBrokerCardId === broker.id ? (
+                            <input
+                              type="text"
+                              value={editedBrokerCardData.firmName || ''}
+                              onChange={(e) => setEditedBrokerCardData({...editedBrokerCardData, firmName: e.target.value})}
+                              className={`text-sm ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1`}
+                              placeholder="Firm name"
+                            />
+                          ) : (
+                            <span className={`text-sm ${textSecondaryClass}`}>
+                              {broker.firmName || 'No firm'}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {/* Edit/Delete Buttons */}
+                      {/* Edit/Delete or Save/Cancel Buttons */}
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditBroker(broker)}
-                          className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
-                          title="Edit broker"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBroker(broker.id)}
-                          className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
-                          title="Delete broker"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {editingBrokerCardId === broker.id ? (
+                          <>
+                            <button
+                              onClick={async () => {
+                                const updates = {};
+                                const editableFields = ['name', 'firmName', 'email', 'phone'];
+
+                                editableFields.forEach(field => {
+                                  if (editedBrokerCardData[field] !== broker[field]) {
+                                    updates[field] = editedBrokerCardData[field];
+                                  }
+                                });
+
+                                if (Object.keys(updates).length > 0) {
+                                  for (const [field, value] of Object.entries(updates)) {
+                                    await updateBrokerField(broker.id, field, value);
+                                  }
+                                }
+
+                                setEditingBrokerCardId(null);
+                                setEditedBrokerCardData({});
+                              }}
+                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingBrokerCardId(null);
+                                setEditedBrokerCardData({});
+                              }}
+                              className={`px-3 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingBrokerCardId(broker.id);
+                                setEditedBrokerCardData({...broker});
+                              }}
+                              className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                              title="Edit broker"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBroker(broker.id)}
+                              className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                              title="Delete broker"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -5520,14 +5581,20 @@ export default function IndustrialCRM() {
                           <Mail size={18} className="text-blue-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <InlineEditField
-                            value={broker.email}
-                            onSave={(newValue) => updateBrokerField(broker.id, 'email', newValue)}
-                            label="Email"
-                            type="email"
-                            darkMode={darkMode}
-                            placeholder="email@example.com"
-                          />
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Email</div>
+                          {editingBrokerCardId === broker.id ? (
+                            <input
+                              type="email"
+                              value={editedBrokerCardData.email || ''}
+                              onChange={(e) => setEditedBrokerCardData({...editedBrokerCardData, email: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="email@example.com"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {broker.email || 'Not set'}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -5535,14 +5602,20 @@ export default function IndustrialCRM() {
                           <Phone size={18} className="text-green-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <InlineEditField
-                            value={broker.phone}
-                            onSave={(newValue) => updateBrokerField(broker.id, 'phone', newValue)}
-                            label="Phone"
-                            type="tel"
-                            darkMode={darkMode}
-                            placeholder="(555) 123-4567"
-                          />
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Phone</div>
+                          {editingBrokerCardId === broker.id ? (
+                            <input
+                              type="tel"
+                              value={editedBrokerCardData.phone || ''}
+                              onChange={(e) => setEditedBrokerCardData({...editedBrokerCardData, phone: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="(555) 123-4567"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {broker.phone || 'Not set'}
+                            </div>
+                          )}
                         </div>
                       </div>
                       {broker.firmWebsite && (
@@ -5836,14 +5909,19 @@ export default function IndustrialCRM() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <div className="flex-1">
-                            <InlineEditField
-                              value={partner.name}
-                              onSave={(newValue) => updatePartnerField(partner.id, 'name', newValue)}
-                              label=""
-                              type="text"
-                              darkMode={darkMode}
-                              placeholder="Partner name"
-                            />
+                            {editingPartnerCardId === partner.id ? (
+                              <input
+                                type="text"
+                                value={editedPartnerCardData.name || ''}
+                                onChange={(e) => setEditedPartnerCardData({...editedPartnerCardData, name: e.target.value})}
+                                className={`text-xl font-bold ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 w-full`}
+                                placeholder="Partner name"
+                              />
+                            ) : (
+                              <h3 className={`text-xl font-bold ${textClass}`}>
+                                {partner.name || 'No name'}
+                              </h3>
+                            )}
                           </div>
                           <button
                             onClick={() => openContactProfile('partner', partner.id)}
@@ -5854,35 +5932,73 @@ export default function IndustrialCRM() {
                             <ExternalLink size={14} />
                           </button>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 mt-1">
                           <Building2 size={14} className={textSecondaryClass} />
-                          <InlineEditField
-                            value={partner.entityName}
-                            onSave={(newValue) => updatePartnerField(partner.id, 'entityName', newValue)}
-                            label=""
-                            type="text"
-                            darkMode={darkMode}
-                            placeholder="Entity/Company name"
-                          />
+                          <span className={`text-sm ${textSecondaryClass}`}>
+                            {partner.entityName || 'No entity'}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Edit/Delete */}
+                      {/* Edit/Delete or Save/Cancel Buttons */}
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditPartner(partner)}
-                          className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
-                          title="Edit partner"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeletePartner(partner.id)}
-                          className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
-                          title="Delete partner"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {editingPartnerCardId === partner.id ? (
+                          <>
+                            <button
+                              onClick={async () => {
+                                const updates = {};
+                                const editableFields = ['name', 'commitmentAmount', 'email', 'phone', 'website'];
+
+                                editableFields.forEach(field => {
+                                  if (editedPartnerCardData[field] !== partner[field]) {
+                                    updates[field] = editedPartnerCardData[field];
+                                  }
+                                });
+
+                                if (Object.keys(updates).length > 0) {
+                                  for (const [field, value] of Object.entries(updates)) {
+                                    await updatePartnerField(partner.id, field, value);
+                                  }
+                                }
+
+                                setEditingPartnerCardId(null);
+                                setEditedPartnerCardData({});
+                              }}
+                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingPartnerCardId(null);
+                                setEditedPartnerCardData({});
+                              }}
+                              className={`px-3 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingPartnerCardId(partner.id);
+                                setEditedPartnerCardData({...partner});
+                              }}
+                              className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                              title="Edit partner"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePartner(partner.id)}
+                              className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                              title="Delete partner"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -5926,40 +6042,58 @@ export default function IndustrialCRM() {
                       <div className="flex items-center gap-2">
                         <Mail size={16} className={textSecondaryClass} />
                         <div className="flex-1 min-w-0">
-                          <InlineEditField
-                            value={partner.email}
-                            onSave={(newValue) => updatePartnerField(partner.id, 'email', newValue)}
-                            label="Email"
-                            type="email"
-                            darkMode={darkMode}
-                            placeholder="email@example.com"
-                          />
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Email</div>
+                          {editingPartnerCardId === partner.id ? (
+                            <input
+                              type="email"
+                              value={editedPartnerCardData.email || ''}
+                              onChange={(e) => setEditedPartnerCardData({...editedPartnerCardData, email: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="email@example.com"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {partner.email || 'Not set'}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone size={16} className={textSecondaryClass} />
                         <div className="flex-1 min-w-0">
-                          <InlineEditField
-                            value={partner.phone}
-                            onSave={(newValue) => updatePartnerField(partner.id, 'phone', newValue)}
-                            label="Phone"
-                            type="tel"
-                            darkMode={darkMode}
-                            placeholder="(555) 123-4567"
-                          />
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Phone</div>
+                          {editingPartnerCardId === partner.id ? (
+                            <input
+                              type="tel"
+                              value={editedPartnerCardData.phone || ''}
+                              onChange={(e) => setEditedPartnerCardData({...editedPartnerCardData, phone: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="(555) 123-4567"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {partner.phone || 'Not set'}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Globe size={16} className={textSecondaryClass} />
                         <div className="flex-1 min-w-0">
-                          <InlineEditField
-                            value={partner.website}
-                            onSave={(newValue) => updatePartnerField(partner.id, 'website', newValue)}
-                            label="Website"
-                            type="url"
-                            darkMode={darkMode}
-                            placeholder="https://example.com"
-                          />
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Website</div>
+                          {editingPartnerCardId === partner.id ? (
+                            <input
+                              type="url"
+                              value={editedPartnerCardData.website || ''}
+                              onChange={(e) => setEditedPartnerCardData({...editedPartnerCardData, website: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="https://example.com"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {partner.website || 'Not set'}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -6163,14 +6297,19 @@ export default function IndustrialCRM() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <div className="flex-1">
-                            <InlineEditField
-                              value={gatekeeper.name}
-                              onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'name', newValue)}
-                              label=""
-                              type="text"
-                              darkMode={darkMode}
-                              placeholder="Gatekeeper name"
-                            />
+                            {editingGatekeeperCardId === gatekeeper.id ? (
+                              <input
+                                type="text"
+                                value={editedGatekeeperCardData.name || ''}
+                                onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, name: e.target.value})}
+                                className={`text-xl font-bold ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 w-full`}
+                                placeholder="Gatekeeper name"
+                              />
+                            ) : (
+                              <h3 className={`text-xl font-bold ${textClass}`}>
+                                {gatekeeper.name || 'No name'}
+                              </h3>
+                            )}
                           </div>
                           <button
                             onClick={() => openContactProfile('gatekeeper', gatekeeper.id)}
@@ -6181,43 +6320,96 @@ export default function IndustrialCRM() {
                             <ExternalLink size={14} />
                           </button>
                         </div>
-                        <InlineEditField
-                          value={gatekeeper.title}
-                          onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'title', newValue)}
-                          label=""
-                          type="text"
-                          darkMode={darkMode}
-                          placeholder="Title"
-                        />
+                        {editingGatekeeperCardId === gatekeeper.id ? (
+                          <input
+                            type="text"
+                            value={editedGatekeeperCardData.title || ''}
+                            onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, title: e.target.value})}
+                            className={`text-sm ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 w-full mt-1`}
+                            placeholder="Title"
+                          />
+                        ) : (
+                          <div className={`text-sm ${textSecondaryClass}`}>
+                            {gatekeeper.title || 'No title'}
+                          </div>
+                        )}
                         <div className="flex items-center gap-1 mt-1">
                           <Building2 size={14} className={textSecondaryClass} />
-                          <InlineEditField
-                            value={gatekeeper.company}
-                            onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'company', newValue)}
-                            label=""
-                            type="text"
-                            darkMode={darkMode}
-                            placeholder="Company/Firm"
-                          />
+                          {editingGatekeeperCardId === gatekeeper.id ? (
+                            <input
+                              type="text"
+                              value={editedGatekeeperCardData.company || ''}
+                              onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, company: e.target.value})}
+                              className={`text-sm ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1`}
+                              placeholder="Company/Firm"
+                            />
+                          ) : (
+                            <span className={`text-sm ${textSecondaryClass}`}>
+                              {gatekeeper.company || 'No company'}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {/* Edit/Delete */}
+                      {/* Edit/Delete or Save/Cancel Buttons */}
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditGatekeeper(gatekeeper)}
-                          className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
-                          title="Edit gatekeeper"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteGatekeeper(gatekeeper.id)}
-                          className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
-                          title="Delete gatekeeper"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {editingGatekeeperCardId === gatekeeper.id ? (
+                          <>
+                            <button
+                              onClick={async () => {
+                                const updates = {};
+                                const editableFields = ['name', 'title', 'company', 'email', 'phone', 'firmWebsite'];
+
+                                editableFields.forEach(field => {
+                                  if (editedGatekeeperCardData[field] !== gatekeeper[field]) {
+                                    updates[field] = editedGatekeeperCardData[field];
+                                  }
+                                });
+
+                                if (Object.keys(updates).length > 0) {
+                                  for (const [field, value] of Object.entries(updates)) {
+                                    await updateGatekeeperField(gatekeeper.id, field, value);
+                                  }
+                                }
+
+                                setEditingGatekeeperCardId(null);
+                                setEditedGatekeeperCardData({});
+                              }}
+                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingGatekeeperCardId(null);
+                                setEditedGatekeeperCardData({});
+                              }}
+                              className={`px-3 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingGatekeeperCardId(gatekeeper.id);
+                                setEditedGatekeeperCardData({...gatekeeper});
+                              }}
+                              className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                              title="Edit gatekeeper"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteGatekeeper(gatekeeper.id)}
+                              className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                              title="Delete gatekeeper"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -6252,14 +6444,20 @@ export default function IndustrialCRM() {
                           <Mail size={18} className="text-blue-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <InlineEditField
-                            value={gatekeeper.email}
-                            onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'email', newValue)}
-                            label="Email"
-                            type="email"
-                            darkMode={darkMode}
-                            placeholder="email@example.com"
-                          />
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Email</div>
+                          {editingGatekeeperCardId === gatekeeper.id ? (
+                            <input
+                              type="email"
+                              value={editedGatekeeperCardData.email || ''}
+                              onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, email: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="email@example.com"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {gatekeeper.email || 'Not set'}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -6267,14 +6465,20 @@ export default function IndustrialCRM() {
                           <Phone size={18} className="text-green-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <InlineEditField
-                            value={gatekeeper.phone}
-                            onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'phone', newValue)}
-                            label="Phone"
-                            type="tel"
-                            darkMode={darkMode}
-                            placeholder="(555) 123-4567"
-                          />
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Phone</div>
+                          {editingGatekeeperCardId === gatekeeper.id ? (
+                            <input
+                              type="tel"
+                              value={editedGatekeeperCardData.phone || ''}
+                              onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, phone: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="(555) 123-4567"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {gatekeeper.phone || 'Not set'}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -6282,14 +6486,20 @@ export default function IndustrialCRM() {
                           <Globe size={18} className="text-purple-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <InlineEditField
-                            value={gatekeeper.firmWebsite}
-                            onSave={(newValue) => updateGatekeeperField(gatekeeper.id, 'firmWebsite', newValue)}
-                            label="Firm Website"
-                            type="url"
-                            darkMode={darkMode}
-                            placeholder="https://example.com"
-                          />
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Firm Website</div>
+                          {editingGatekeeperCardId === gatekeeper.id ? (
+                            <input
+                              type="url"
+                              value={editedGatekeeperCardData.firmWebsite || ''}
+                              onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, firmWebsite: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="https://example.com"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {gatekeeper.firmWebsite || 'Not set'}
+                            </div>
+                          )}
                         </div>
                       </div>
                       {gatekeeper.relatedTo && (
