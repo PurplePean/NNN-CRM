@@ -166,6 +166,12 @@ export default function IndustrialCRM() {
   const [inlineEventData, setInlineEventData] = useState({});
 
   // ==================
+  // DEDICATED CARD EDIT MODE STATE
+  // ==================
+  const [isEditingCard, setIsEditingCard] = useState(false);
+  const [editedCardData, setEditedCardData] = useState({});
+
+  // ==================
   // PROPERTY PROFILE STATE
   // ==================
   const [viewingPropertyProfile, setViewingPropertyProfile] = useState(false);
@@ -7920,6 +7926,8 @@ export default function IndustrialCRM() {
                     setShowInlineFollowUpForm(false);
                     setShowInlineEventForm(false);
                     setEditingObjective(false);
+                    setIsEditingCard(false);
+                    setEditedCardData({});
                   }}
                   className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
                 >
@@ -7927,43 +7935,89 @@ export default function IndustrialCRM() {
                   Close Profile
                 </button>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => {
-                      if (profileContact.contactType === 'broker') {
-                        const broker = brokers.find(b => b.id === profileContact.id);
-                        if (broker) handleEditBroker(broker);
-                      } else if (profileContact.contactType === 'gatekeeper') {
-                        const gatekeeper = gatekeepers.find(g => g.id === profileContact.id);
-                        if (gatekeeper) handleEditGatekeeper(gatekeeper);
-                      } else if (profileContact.contactType === 'partner') {
-                        const partner = partners.find(p => p.id === profileContact.id);
-                        if (partner) handleEditPartner(partner);
-                      }
-                      setViewingContactProfile(false);
-                      setActiveTab(profileContact.contactType === 'broker' ? 'brokers' : profileContact.contactType === 'gatekeeper' ? 'gatekeepers' : 'partners');
-                    }}
-                    className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
-                  >
-                    <Edit2 size={18} />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (profileContact.contactType === 'broker') {
-                        handleDeleteBroker(profileContact.id);
-                      } else if (profileContact.contactType === 'gatekeeper') {
-                        handleDeleteGatekeeper(profileContact.id);
-                      } else if (profileContact.contactType === 'partner') {
-                        handleDeletePartner(profileContact.id);
-                      }
-                      setViewingContactProfile(false);
-                    }}
-                    aria-label={`Delete ${profileContact.displayName}`}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${darkMode ? 'bg-red-900 hover:bg-red-800 text-red-100' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}
-                  >
-                    <Trash2 size={18} />
-                    Delete
-                  </button>
+                  {!isEditingCard ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          setIsEditingCard(true);
+                          setEditedCardData({...profileContact});
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
+                      >
+                        <Edit2 size={18} />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (profileContact.contactType === 'broker') {
+                            handleDeleteBroker(profileContact.id);
+                          } else if (profileContact.contactType === 'gatekeeper') {
+                            handleDeleteGatekeeper(profileContact.id);
+                          } else if (profileContact.contactType === 'partner') {
+                            handleDeletePartner(profileContact.id);
+                          }
+                          setViewingContactProfile(false);
+                        }}
+                        aria-label={`Delete ${profileContact.displayName}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${darkMode ? 'bg-red-900 hover:bg-red-800 text-red-100' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}
+                      >
+                        <Trash2 size={18} />
+                        Delete
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={async () => {
+                          // Save all changes based on contact type
+                          const updates = {};
+                          let editableFields = [];
+
+                          if (profileContact.contactType === 'broker') {
+                            editableFields = ['name', 'firmName', 'email', 'phone'];
+                          } else if (profileContact.contactType === 'partner') {
+                            editableFields = ['name', 'commitmentAmount', 'email', 'phone', 'website'];
+                          } else if (profileContact.contactType === 'gatekeeper') {
+                            editableFields = ['name', 'title', 'company', 'email', 'phone', 'firmWebsite'];
+                          }
+
+                          editableFields.forEach(field => {
+                            const displayField = field === 'name' ? 'displayName' : field;
+                            if (editedCardData[displayField] !== profileContact[displayField]) {
+                              updates[field] = editedCardData[displayField];
+                            }
+                          });
+
+                          if (Object.keys(updates).length > 0) {
+                            for (const [field, value] of Object.entries(updates)) {
+                              if (profileContact.contactType === 'broker') {
+                                await updateBrokerField(profileContact.id, field, value);
+                              } else if (profileContact.contactType === 'partner') {
+                                await updatePartnerField(profileContact.id, field, value);
+                              } else if (profileContact.contactType === 'gatekeeper') {
+                                await updateGatekeeperField(profileContact.id, field, value);
+                              }
+                            }
+                          }
+
+                          setIsEditingCard(false);
+                          setEditedCardData({});
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditingCard(false);
+                          setEditedCardData({});
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -7989,22 +8043,19 @@ export default function IndustrialCRM() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <InlineEditField
-                        value={profileContact.displayName}
-                        onSave={(newValue) => {
-                          if (profileContact.contactType === 'broker') {
-                            updateBrokerField(profileContact.id, 'name', newValue);
-                          } else if (profileContact.contactType === 'partner') {
-                            updatePartnerField(profileContact.id, 'name', newValue);
-                          } else if (profileContact.contactType === 'gatekeeper') {
-                            updateGatekeeperField(profileContact.id, 'name', newValue);
-                          }
-                        }}
-                        label=""
-                        type="text"
-                        darkMode={darkMode}
-                        placeholder="Contact Name"
-                      />
+                      {isEditingCard ? (
+                        <input
+                          type="text"
+                          value={editedCardData.displayName || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, displayName: e.target.value})}
+                          className={`text-2xl font-bold ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-3 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          placeholder="Contact Name"
+                        />
+                      ) : (
+                        <h2 className={`text-2xl font-bold ${textClass}`}>
+                          {profileContact.displayName || 'No name'}
+                        </h2>
+                      )}
                       <span className={`px-3 py-1 text-sm font-semibold rounded ${
                         profileContact.contactType === 'broker' ? 'bg-blue-100 text-blue-800' :
                         profileContact.contactType === 'gatekeeper' ? 'bg-purple-100 text-purple-800' :
@@ -8013,38 +8064,35 @@ export default function IndustrialCRM() {
                         {profileContact.contactType.toUpperCase()}
                       </span>
                     </div>
-                    {(profileContact.contactType === 'gatekeeper' || profileContact.title) && (
-                      <InlineEditField
-                        value={profileContact.title}
-                        onSave={(newValue) => {
-                          if (profileContact.contactType === 'gatekeeper') {
-                            updateGatekeeperField(profileContact.id, 'title', newValue);
-                          }
-                        }}
-                        label=""
-                        type="text"
-                        darkMode={darkMode}
-                        placeholder="Title"
-                        className="mb-2"
-                      />
+                    {(profileContact.contactType === 'gatekeeper' || profileContact.title || isEditingCard) && (
+                      <div className="mb-2">
+                        {isEditingCard ? (
+                          <input
+                            type="text"
+                            value={editedCardData.title || ''}
+                            onChange={(e) => setEditedCardData({...editedCardData, title: e.target.value})}
+                            className={`${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-full max-w-xs`}
+                            placeholder="Title"
+                          />
+                        ) : (
+                          <div className={`text-sm ${textSecondaryClass}`}>{profileContact.title}</div>
+                        )}
+                      </div>
                     )}
-                    {profileContact.company && (
+                    {(profileContact.company || isEditingCard) && (
                       <div className="flex items-center gap-2">
                         <Building2 size={18} className={textSecondaryClass} />
-                        <InlineEditField
-                          value={profileContact.company}
-                          onSave={(newValue) => {
-                            if (profileContact.contactType === 'broker') {
-                              updateBrokerField(profileContact.id, 'firmName', newValue);
-                            } else if (profileContact.contactType === 'gatekeeper') {
-                              updateGatekeeperField(profileContact.id, 'company', newValue);
-                            }
-                          }}
-                          label=""
-                          type="text"
-                          darkMode={darkMode}
-                          placeholder="Company"
-                        />
+                        {isEditingCard ? (
+                          <input
+                            type="text"
+                            value={editedCardData.company || ''}
+                            onChange={(e) => setEditedCardData({...editedCardData, company: e.target.value})}
+                            className={`${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm flex-1`}
+                            placeholder="Company"
+                          />
+                        ) : (
+                          <span className={`text-sm ${textClass}`}>{profileContact.company}</span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -8156,63 +8204,59 @@ export default function IndustrialCRM() {
                     <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
                       <Mail size={20} className="text-blue-500" />
                     </div>
-                    <InlineEditField
-                      value={profileContact.email}
-                      onSave={(newValue) => {
-                        if (profileContact.contactType === 'broker') {
-                          updateBrokerField(profileContact.id, 'email', newValue);
-                        } else if (profileContact.contactType === 'partner') {
-                          updatePartnerField(profileContact.id, 'email', newValue);
-                        } else if (profileContact.contactType === 'gatekeeper') {
-                          updateGatekeeperField(profileContact.id, 'email', newValue);
-                        }
-                      }}
-                      label="Email"
-                      type="email"
-                      darkMode={darkMode}
-                      placeholder="email@example.com"
-                    />
+                    <div className="flex-1">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Email</div>
+                      {isEditingCard ? (
+                        <input
+                          type="email"
+                          value={editedCardData.email || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, email: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                          placeholder="email@example.com"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileContact.email || 'N/A'}</div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
                       <Phone size={20} className="text-green-500" />
                     </div>
-                    <InlineEditField
-                      value={profileContact.phone}
-                      onSave={(newValue) => {
-                        if (profileContact.contactType === 'broker') {
-                          updateBrokerField(profileContact.id, 'phone', newValue);
-                        } else if (profileContact.contactType === 'partner') {
-                          updatePartnerField(profileContact.id, 'phone', newValue);
-                        } else if (profileContact.contactType === 'gatekeeper') {
-                          updateGatekeeperField(profileContact.id, 'phone', newValue);
-                        }
-                      }}
-                      label="Phone"
-                      type="tel"
-                      darkMode={darkMode}
-                      placeholder="(555) 123-4567"
-                    />
+                    <div className="flex-1">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Phone</div>
+                      {isEditingCard ? (
+                        <input
+                          type="tel"
+                          value={editedCardData.phone || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, phone: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                          placeholder="(555) 123-4567"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileContact.phone || 'N/A'}</div>
+                      )}
+                    </div>
                   </div>
                   {(profileContact.contactType === 'partner' || profileContact.contactType === 'gatekeeper') && (
                     <div className="flex items-center gap-3">
                       <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
                         <Globe size={20} className="text-purple-500" />
                       </div>
-                      <InlineEditField
-                        value={profileContact.contactType === 'partner' ? profileContact.website : profileContact.firmWebsite}
-                        onSave={(newValue) => {
-                          if (profileContact.contactType === 'partner') {
-                            updatePartnerField(profileContact.id, 'website', newValue);
-                          } else if (profileContact.contactType === 'gatekeeper') {
-                            updateGatekeeperField(profileContact.id, 'firmWebsite', newValue);
-                          }
-                        }}
-                        label={profileContact.contactType === 'partner' ? 'Website' : 'Firm Website'}
-                        type="url"
-                        darkMode={darkMode}
-                        placeholder="https://example.com"
-                      />
+                      <div className="flex-1">
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>{profileContact.contactType === 'partner' ? 'Website' : 'Firm Website'}</div>
+                        {isEditingCard ? (
+                          <input
+                            type="url"
+                            value={profileContact.contactType === 'partner' ? (editedCardData.website || '') : (editedCardData.firmWebsite || '')}
+                            onChange={(e) => setEditedCardData({...editedCardData, [profileContact.contactType === 'partner' ? 'website' : 'firmWebsite']: e.target.value})}
+                            className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                            placeholder="https://example.com"
+                          />
+                        ) : (
+                          <div className={`text-sm font-semibold ${textClass}`}>{(profileContact.contactType === 'partner' ? profileContact.website : profileContact.firmWebsite) || 'N/A'}</div>
+                        )}
+                      </div>
                     </div>
                   )}
                   {profileContact.contactType === 'partner' && (
@@ -8220,17 +8264,20 @@ export default function IndustrialCRM() {
                       <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
                         <DollarSign size={20} className="text-green-500" />
                       </div>
-                      <InlineEditField
-                        value={profileContact.commitmentAmount?.toString()}
-                        onSave={(newValue) => {
-                          updatePartnerField(profileContact.id, 'commitmentAmount', newValue);
-                        }}
-                        label="Commitment Amount"
-                        type="number"
-                        darkMode={darkMode}
-                        displayFormat={(v) => v ? `$${formatNumber(v)}` : '$0'}
-                        placeholder="$0"
-                      />
+                      <div className="flex-1">
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Commitment Amount</div>
+                        {isEditingCard ? (
+                          <input
+                            type="number"
+                            value={editedCardData.commitmentAmount || ''}
+                            onChange={(e) => setEditedCardData({...editedCardData, commitmentAmount: e.target.value})}
+                            className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                            placeholder="0"
+                          />
+                        ) : (
+                          <div className={`text-sm font-semibold ${textClass}`}>{profileContact.commitmentAmount ? `$${formatNumber(profileContact.commitmentAmount)}` : '$0'}</div>
+                        )}
+                      </div>
                     </div>
                   )}
                   {profileContact.crexiLink && (
@@ -8553,6 +8600,8 @@ export default function IndustrialCRM() {
                       setViewingPropertyProfile(false);
                       setSensitivityPropertyId(null);
                       setSensitivityTable(null);
+                      setIsEditingCard(false);
+                      setEditedCardData({});
                     }}
                     className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
                   >
@@ -8560,28 +8609,67 @@ export default function IndustrialCRM() {
                     Close Property
                   </button>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => {
-                        handleEditProperty(profileProperty);
-                        setViewingPropertyProfile(false);
-                        setActiveTab('assets');
-                      }}
-                      className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
-                    >
-                      <Edit2 size={18} />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleDeleteProperty(profileProperty.id);
-                        setViewingPropertyProfile(false);
-                      }}
-                      aria-label={`Delete ${profileProperty.address}`}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${darkMode ? 'bg-red-900 hover:bg-red-800 text-red-100' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}
-                    >
-                      <Trash2 size={18} />
-                      Delete
-                    </button>
+                    {!isEditingCard ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setIsEditingCard(true);
+                            setEditedCardData({...profileProperty});
+                          }}
+                          className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
+                        >
+                          <Edit2 size={18} />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleDeleteProperty(profileProperty.id);
+                            setViewingPropertyProfile(false);
+                          }}
+                          aria-label={`Delete ${profileProperty.address}`}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${darkMode ? 'bg-red-900 hover:bg-red-800 text-red-100' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}
+                        >
+                          <Trash2 size={18} />
+                          Delete
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={async () => {
+                            // Save all changes
+                            const updates = {};
+                            const editableFields = ['address', 'squareFeet', 'monthlyBaseRentPerSqft', 'purchasePrice', 'closingCosts', 'ltvPercent', 'interestRate', 'loanTerm', 'exitCapRate', 'holdingPeriodMonths'];
+                            editableFields.forEach(field => {
+                              if (editedCardData[field] !== profileProperty[field]) {
+                                updates[field] = editedCardData[field];
+                              }
+                            });
+
+                            if (Object.keys(updates).length > 0) {
+                              for (const [field, value] of Object.entries(updates)) {
+                                await updatePropertyField(profileProperty.id, field, value);
+                              }
+                            }
+
+                            setIsEditingCard(false);
+                            setEditedCardData({});
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsEditingCard(false);
+                            setEditedCardData({});
+                          }}
+                          className={`flex items-center gap-2 px-4 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition`}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -8598,14 +8686,19 @@ export default function IndustrialCRM() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
-                        <InlineEditField
-                          value={profileProperty.address}
-                          onSave={(newValue) => updatePropertyField(profileProperty.id, 'address', newValue)}
-                          label=""
-                          type="text"
-                          darkMode={darkMode}
-                          placeholder="Property Address"
-                        />
+                        {isEditingCard ? (
+                          <input
+                            type="text"
+                            value={editedCardData.address || ''}
+                            onChange={(e) => setEditedCardData({...editedCardData, address: e.target.value})}
+                            className={`text-2xl font-bold ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-3 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            placeholder="Property Address"
+                          />
+                        ) : (
+                          <h2 className={`text-2xl font-bold ${textClass}`}>
+                            {profileProperty.address || 'No address'}
+                          </h2>
+                        )}
                         <span className="px-3 py-1 text-sm font-semibold rounded bg-indigo-100 text-indigo-800">
                           PROPERTY
                         </span>
@@ -8613,15 +8706,19 @@ export default function IndustrialCRM() {
                       <div className="flex items-center gap-4 flex-wrap">
                         <div className={`flex items-center gap-2`}>
                           <TrendingUp size={18} className={textSecondaryClass} />
-                          <InlineEditField
-                            value={profileProperty.squareFeet?.toString()}
-                            onSave={(newValue) => updatePropertyField(profileProperty.id, 'squareFeet', newValue)}
-                            label=""
-                            type="number"
-                            darkMode={darkMode}
-                            displayFormat={(v) => `${formatNumber(v)} SF`}
-                            placeholder="0 SF"
-                          />
+                          {isEditingCard ? (
+                            <input
+                              type="number"
+                              value={editedCardData.squareFeet || ''}
+                              onChange={(e) => setEditedCardData({...editedCardData, squareFeet: e.target.value})}
+                              className={`${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 w-32`}
+                              placeholder="0"
+                            />
+                          ) : (
+                            <span className={`font-semibold ${textClass}`}>
+                              {profileProperty.squareFeet ? `${formatNumber(profileProperty.squareFeet)} SF` : 'N/A'}
+                            </span>
+                          )}
                         </div>
                         {profileProperty.crexi && (
                           <a href={profileProperty.crexi} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1">
@@ -9327,91 +9424,140 @@ export default function IndustrialCRM() {
                 <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
                   <h2 className={`text-xl font-bold ${textClass} mb-4`}>Property Details</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <InlineEditField
-                      value={profileProperty.squareFeet?.toString()}
-                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'squareFeet', newValue)}
-                      label="Square Feet"
-                      type="number"
-                      darkMode={darkMode}
-                      displayFormat={(v) => formatNumber(v)}
-                      placeholder="0"
-                    />
-                    <InlineEditField
-                      value={profileProperty.monthlyBaseRentPerSqft?.toString()}
-                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'monthlyBaseRentPerSqft', newValue)}
-                      label="Monthly Base Rent/SF"
-                      type="number"
-                      darkMode={darkMode}
-                      displayFormat={(v) => `$${v}`}
-                      placeholder="$0"
-                    />
-                    <InlineEditField
-                      value={profileProperty.purchasePrice?.toString()}
-                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'purchasePrice', newValue)}
-                      label="Purchase Price"
-                      type="number"
-                      darkMode={darkMode}
-                      displayFormat={(v) => formatCurrency(stripCommas(v))}
-                      placeholder="$0"
-                    />
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Square Feet</div>
+                      {isEditingCard ? (
+                        <input
+                          type="number"
+                          value={editedCardData.squareFeet || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, squareFeet: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          placeholder="0"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.squareFeet ? formatNumber(profileProperty.squareFeet) : 'N/A'}</div>
+                      )}
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Monthly Base Rent/SF</div>
+                      {isEditingCard ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editedCardData.monthlyBaseRentPerSqft || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, monthlyBaseRentPerSqft: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          placeholder="0.00"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.monthlyBaseRentPerSqft ? `$${profileProperty.monthlyBaseRentPerSqft}` : 'N/A'}</div>
+                      )}
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Purchase Price</div>
+                      {isEditingCard ? (
+                        <input
+                          type="number"
+                          value={editedCardData.purchasePrice || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, purchasePrice: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          placeholder="0"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.purchasePrice ? formatCurrency(stripCommas(profileProperty.purchasePrice)) : 'N/A'}</div>
+                      )}
+                    </div>
                     <div>
                       <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Improvements</div>
                       <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.improvements ? formatCurrency(stripCommas(profileProperty.improvements)) : 'N/A'}</div>
                     </div>
-                    <InlineEditField
-                      value={profileProperty.closingCosts?.toString()}
-                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'closingCosts', newValue)}
-                      label="Closing Costs"
-                      type="number"
-                      darkMode={darkMode}
-                      displayFormat={(v) => formatCurrency(stripCommas(v))}
-                      placeholder="$0"
-                    />
-                    <InlineEditField
-                      value={profileProperty.ltvPercent?.toString()}
-                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'ltvPercent', newValue)}
-                      label="LTV %"
-                      type="number"
-                      darkMode={darkMode}
-                      displayFormat={(v) => `${v}%`}
-                      placeholder="0%"
-                    />
-                    <InlineEditField
-                      value={profileProperty.interestRate?.toString()}
-                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'interestRate', newValue)}
-                      label="Interest Rate"
-                      type="number"
-                      darkMode={darkMode}
-                      displayFormat={(v) => `${v}%`}
-                      placeholder="0%"
-                    />
-                    <InlineEditField
-                      value={profileProperty.loanTerm?.toString()}
-                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'loanTerm', newValue)}
-                      label="Loan Term"
-                      type="number"
-                      darkMode={darkMode}
-                      displayFormat={(v) => `${v} yrs`}
-                      placeholder="0 yrs"
-                    />
-                    <InlineEditField
-                      value={profileProperty.exitCapRate?.toString()}
-                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'exitCapRate', newValue)}
-                      label="Exit Cap Rate"
-                      type="number"
-                      darkMode={darkMode}
-                      displayFormat={(v) => `${v}%`}
-                      placeholder="0%"
-                    />
-                    <InlineEditField
-                      value={profileProperty.holdingPeriodMonths?.toString()}
-                      onSave={(newValue) => updatePropertyField(profileProperty.id, 'holdingPeriodMonths', newValue)}
-                      label="Holding Period"
-                      type="number"
-                      darkMode={darkMode}
-                      displayFormat={(v) => `${v} months (${(v / 12).toFixed(1)} yrs)`}
-                      placeholder="0 months"
-                    />
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Closing Costs</div>
+                      {isEditingCard ? (
+                        <input
+                          type="number"
+                          value={editedCardData.closingCosts || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, closingCosts: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          placeholder="0"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.closingCosts ? formatCurrency(stripCommas(profileProperty.closingCosts)) : '$0'}</div>
+                      )}
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>LTV %</div>
+                      {isEditingCard ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editedCardData.ltvPercent || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, ltvPercent: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          placeholder="0"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.ltvPercent ? `${profileProperty.ltvPercent}%` : 'N/A'}</div>
+                      )}
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Interest Rate</div>
+                      {isEditingCard ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editedCardData.interestRate || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, interestRate: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          placeholder="0"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.interestRate ? `${profileProperty.interestRate}%` : 'N/A'}</div>
+                      )}
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Loan Term</div>
+                      {isEditingCard ? (
+                        <input
+                          type="number"
+                          value={editedCardData.loanTerm || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, loanTerm: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          placeholder="30"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.loanTerm ? `${profileProperty.loanTerm} yrs` : 'N/A'}</div>
+                      )}
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Exit Cap Rate</div>
+                      {isEditingCard ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editedCardData.exitCapRate || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, exitCapRate: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          placeholder="0"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.exitCapRate ? `${profileProperty.exitCapRate}%` : 'N/A'}</div>
+                      )}
+                    </div>
+                    <div>
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Holding Period</div>
+                      {isEditingCard ? (
+                        <input
+                          type="number"
+                          value={editedCardData.holdingPeriodMonths || ''}
+                          onChange={(e) => setEditedCardData({...editedCardData, holdingPeriodMonths: e.target.value})}
+                          className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          placeholder="0"
+                        />
+                      ) : (
+                        <div className={`text-sm font-semibold ${textClass}`}>{profileProperty.holdingPeriodMonths ? `${profileProperty.holdingPeriodMonths} months (${(profileProperty.holdingPeriodMonths / 12).toFixed(1)} yrs)` : 'N/A'}</div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
