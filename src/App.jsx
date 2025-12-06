@@ -8238,6 +8238,27 @@ export default function IndustrialCRM() {
                       )}
                     </div>
                   </div>
+                  {profileContact.contactType === 'broker' && (
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                        <Building2 size={20} className="text-orange-500" />
+                      </div>
+                      <div className="flex-1">
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Firm Name</div>
+                        {isEditingCard ? (
+                          <input
+                            type="text"
+                            value={editedCardData.firmName || ''}
+                            onChange={(e) => setEditedCardData({...editedCardData, firmName: e.target.value})}
+                            className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                            placeholder="Firm name"
+                          />
+                        ) : (
+                          <div className={`text-sm font-semibold ${textClass}`}>{profileContact.firmName || 'N/A'}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   {(profileContact.contactType === 'partner' || profileContact.contactType === 'gatekeeper') && (
                     <div className="flex items-center gap-3">
                       <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
