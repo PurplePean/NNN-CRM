@@ -2799,7 +2799,7 @@ export default function IndustrialCRM() {
           let totalYearRent = 0;
           for (let month = startMonth; month <= endMonth; month++) {
             // Find the applicable price per SF for this month
-            let pricePerSF = pricePerSfMonth; // Default to base price
+            let pricePerSF = monthlyBaseRent; // Default to base price
 
             // Find the last step that applies to this month
             for (let i = sortedSteps.length - 1; i >= 0; i--) {
@@ -2810,7 +2810,7 @@ export default function IndustrialCRM() {
             }
 
             // Add this month's rent to the year total
-            totalYearRent += pricePerSF * squareFeet;
+            totalYearRent += pricePerSF * sqft;
           }
 
           yearlyRent = totalYearRent;
