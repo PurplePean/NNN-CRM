@@ -1575,12 +1575,12 @@ export default function IndustrialCRM() {
    */
   const handleSaveLease = async () => {
     if (!leaseFormData.name || !leaseFormData.pricePerSfMonth || !leaseFormData.termYears) {
-      showToast('Please fill in all lease fields', 'error');
+      showToast('Please fill in all required lease fields (Name, Price per SF, Term)', 'error');
       return;
     }
 
     if (!editingPropertyId) {
-      showToast('Property ID is required', 'error');
+      showToast('Property ID is required. Please select a property first.', 'error');
       return;
     }
 
@@ -1642,7 +1642,8 @@ export default function IndustrialCRM() {
       setEditingPropertyId(null);
     } catch (error) {
       console.error('Error saving lease:', error);
-      showToast('Failed to save lease', 'error');
+      const errorMessage = error?.message || 'Unknown error occurred';
+      showToast(`Failed to save lease: ${errorMessage}. Please check your inputs and try again.`, 'error');
     }
   };
 
@@ -2786,6 +2787,33 @@ export default function IndustrialCRM() {
           }
 
           yearlyRent = annualRent * cumulativeIncrease;
+        } else if (rentIncreaseType === 'stepped_monthly' && rentSteps.length > 0) {
+          // Apply monthly stepped rent (different price per SF for different month ranges)
+          // Calculate the average rent for this year based on monthly steps
+          const startMonth = (year - 1) * 12 + 1;
+          const endMonth = year * 12;
+
+          // Sort steps by month
+          const sortedSteps = [...rentSteps].sort((a, b) => a.month - b.month);
+
+          let totalYearRent = 0;
+          for (let month = startMonth; month <= endMonth; month++) {
+            // Find the applicable price per SF for this month
+            let pricePerSF = pricePerSfMonth; // Default to base price
+
+            // Find the last step that applies to this month
+            for (let i = sortedSteps.length - 1; i >= 0; i--) {
+              if (sortedSteps[i].month <= month) {
+                pricePerSF = sortedSteps[i].price_per_sf;
+                break;
+              }
+            }
+
+            // Add this month's rent to the year total
+            totalYearRent += pricePerSF * squareFeet;
+          }
+
+          yearlyRent = totalYearRent;
         }
 
         return yearlyRent;
@@ -9106,7 +9134,8 @@ export default function IndustrialCRM() {
                           >
                             <option value="none">No Rent Increases</option>
                             <option value="flat_annual">Flat Annual Increase</option>
-                            <option value="stepped">Stepped Increases</option>
+                            <option value="stepped">Step Increases (by Year)</option>
+                            <option value="stepped_monthly">Step Increases (by Month)</option>
                           </select>
                         </div>
 
@@ -9141,10 +9170,10 @@ export default function IndustrialCRM() {
                                     type="number"
                                     min="1"
                                     placeholder="2"
-                                    value={step.trigger_year}
+                                    value={step.trigger_year || ''}
                                     onChange={(e) => {
                                       const newSteps = [...leaseFormData.rentSteps];
-                                      newSteps[index].trigger_year = parseInt(e.target.value) || 0;
+                                      newSteps[index] = { ...newSteps[index], trigger_year: parseInt(e.target.value) || 0 };
                                       setLeaseFormData({ ...leaseFormData, rentSteps: newSteps });
                                     }}
                                     className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
@@ -9158,10 +9187,10 @@ export default function IndustrialCRM() {
                                     type="number"
                                     step="0.01"
                                     placeholder="10"
-                                    value={step.increase_percent}
+                                    value={step.increase_percent || ''}
                                     onChange={(e) => {
                                       const newSteps = [...leaseFormData.rentSteps];
-                                      newSteps[index].increase_percent = parseFloat(e.target.value) || 0;
+                                      newSteps[index] = { ...newSteps[index], increase_percent: parseFloat(e.target.value) || 0 };
                                       setLeaseFormData({ ...leaseFormData, rentSteps: newSteps });
                                     }}
                                     className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
@@ -9173,8 +9202,9 @@ export default function IndustrialCRM() {
                                     setLeaseFormData({ ...leaseFormData, rentSteps: newSteps });
                                   }}
                                   className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                  title="Delete this step"
                                 >
-                                  ✕
+                                  🗑️
                                 </button>
                               </div>
                             ))}
@@ -9189,7 +9219,7 @@ export default function IndustrialCRM() {
                                 darkMode ? 'border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-300' : 'border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-700'
                               } transition font-medium`}
                             >
-                              + Add Rent Increase Step
+                              + Add Year Step
                             </button>
 
                             <div className="mt-3">
@@ -9208,6 +9238,76 @@ export default function IndustrialCRM() {
                                 Applied annually between step increases (e.g., 2% between Year 2 and Year 4)
                               </p>
                             </div>
+                          </div>
+                        )}
+
+                        {leaseFormData.rentIncreaseType === 'stepped_monthly' && (
+                          <div className="space-y-3">
+                            {leaseFormData.rentSteps.map((step, index) => (
+                              <div key={index} className={`flex gap-3 items-end p-3 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-slate-50'} border ${borderClass}`}>
+                                <div className="flex-1">
+                                  <label className={`block text-xs font-medium ${textClass} mb-1`}>
+                                    Starting Month
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="360"
+                                    placeholder="1"
+                                    value={step.month || ''}
+                                    onChange={(e) => {
+                                      const newSteps = [...leaseFormData.rentSteps];
+                                      newSteps[index] = { ...newSteps[index], month: parseInt(e.target.value) || 1 };
+                                      setLeaseFormData({ ...leaseFormData, rentSteps: newSteps });
+                                    }}
+                                    className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <label className={`block text-xs font-medium ${textClass} mb-1`}>
+                                    Price per SF/Month ($)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="1.50"
+                                    value={step.price_per_sf || ''}
+                                    onChange={(e) => {
+                                      const newSteps = [...leaseFormData.rentSteps];
+                                      newSteps[index] = { ...newSteps[index], price_per_sf: parseFloat(e.target.value) || 0 };
+                                      setLeaseFormData({ ...leaseFormData, rentSteps: newSteps });
+                                    }}
+                                    className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    const newSteps = leaseFormData.rentSteps.filter((_, i) => i !== index);
+                                    setLeaseFormData({ ...leaseFormData, rentSteps: newSteps });
+                                  }}
+                                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                  title="Delete this step"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => {
+                                setLeaseFormData({
+                                  ...leaseFormData,
+                                  rentSteps: [...leaseFormData.rentSteps, { month: 1, price_per_sf: 0 }]
+                                });
+                              }}
+                              className={`w-full px-4 py-2 rounded-lg border-2 border-dashed ${
+                                darkMode ? 'border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-300' : 'border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-700'
+                              } transition font-medium`}
+                            >
+                              + Add Month Step
+                            </button>
+                            <p className={`text-xs ${textSecondaryClass} mt-2`}>
+                              Example: Month 1-6: $1.00/SF (promotional), Month 7-60: $1.50/SF (regular rate)
+                            </p>
                           </div>
                         )}
                       </div>
@@ -9324,7 +9424,9 @@ export default function IndustrialCRM() {
                             if (lease.rent_increase_type === 'flat_annual' && lease.flat_annual_increase_percent) {
                               rentIncreaseDisplay = `${parseFloat(lease.flat_annual_increase_percent).toFixed(1)}% annual`;
                             } else if (lease.rent_increase_type === 'stepped' && lease.rent_steps && lease.rent_steps.length > 0) {
-                              rentIncreaseDisplay = `${lease.rent_steps.length} step increases`;
+                              rentIncreaseDisplay = `${lease.rent_steps.length} year-based steps`;
+                            } else if (lease.rent_increase_type === 'stepped_monthly' && lease.rent_steps && lease.rent_steps.length > 0) {
+                              rentIncreaseDisplay = `${lease.rent_steps.length} month-based steps`;
                             }
 
                             return (
@@ -9470,6 +9572,9 @@ export default function IndustrialCRM() {
                         } else if (selectedLease.rent_increase_type === 'stepped' && selectedLease.rent_steps && selectedLease.rent_steps.length > 0) {
                           const sortedSteps = [...selectedLease.rent_steps].sort((a, b) => a.trigger_year - b.trigger_year);
                           rentIncreaseDisplay = sortedSteps.map(s => `Yr ${s.trigger_year}: +${s.increase_percent}%`).join(', ');
+                        } else if (selectedLease.rent_increase_type === 'stepped_monthly' && selectedLease.rent_steps && selectedLease.rent_steps.length > 0) {
+                          const sortedSteps = [...selectedLease.rent_steps].sort((a, b) => a.month - b.month);
+                          rentIncreaseDisplay = sortedSteps.map(s => `Mo ${s.month}: $${s.price_per_sf}/SF`).join(', ');
                         }
 
                         // Calculate total rent including CAM
