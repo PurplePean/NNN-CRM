@@ -6,7 +6,6 @@ import LoadingSpinner from './components/LoadingSpinner';
 import FollowUpForm from './components/FollowUpForm';
 import CustomSelect from './components/CustomSelect';
 import NotesSidebar from './components/NotesSidebar';
-import CommandCenter from './components/Dashboard/CommandCenter';
 import { supabaseService, notesService, isSupabaseConfigured, supabase } from './services/supabase';
 import {
   initGoogleCalendar,
@@ -92,6 +91,7 @@ export default function IndustrialCRM() {
   // UI NAVIGATION STATE
   // ==================
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [dashboardView, setDashboardView] = useState('communication');
   const [searchTerm, setSearchTerm] = useState('');
   const [contactFilter, setContactFilter] = useState('all');
   const [contactSort, setContactSort] = useState('name');
@@ -442,7 +442,9 @@ export default function IndustrialCRM() {
 
         // Always load UI preferences from localStorage
         const savedDarkMode = localStorage.getItem('darkMode');
+        const savedDashboardView = localStorage.getItem('dashboardView');
         if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
+        if (savedDashboardView) setDashboardView(savedDashboardView);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -457,6 +459,11 @@ export default function IndustrialCRM() {
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
+
+  // Persist dashboard view preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('dashboardView', dashboardView);
+  }, [dashboardView]);
 
   // Initialize Google Calendar API and OAuth client
   useEffect(() => {
@@ -3260,90 +3267,3551 @@ export default function IndustrialCRM() {
         {/* Content Area */}
         <div className="px-6 py-8">
 
-
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
-          <CommandCenter
-            darkMode={darkMode}
-            properties={properties}
-            brokers={brokers}
-            partners={partners}
-            gatekeepers={gatekeepers}
-            events={events}
-            followUps={followUps}
-            notes={notes}
-            leases={leases}
-            loading={isLoadingData}
-            onAddProperty={() => {
-              setFormData({});
-              setEditingId(null);
-              setShowPropertyForm(true);
-            }}
-            onAddContact={() => {
-              setFormData({});
-              setEditingId(null);
-              setShowBrokerForm(true);
-            }}
-            onAddEvent={() => {
-              setFormData({});
-              setEditingId(null);
-              setShowEventForm(true);
-            }}
-            onAddFollowUp={() => {
-              setFormData({});
-              setEditingId(null);
-              setShowFollowUpForm(true);
-            }}
-            onSaveNote={async (noteData) => {
-              try {
-                const newNote = {
-                  id: Date.now().toString(),
-                  ...noteData,
-                  createdAt: new Date().toISOString(),
+          <div className="space-y-4">
+            {/* Dashboard View Selector */}
+            <div className={`${cardBgClass} rounded-lg shadow-sm border ${borderClass} p-1 flex gap-1`}>
+              <button
+                onClick={() => setDashboardView('communication')}
+                className={`flex-1 px-4 py-2.5 rounded-md font-medium transition text-sm ${
+                  dashboardView === 'communication'
+                    ? 'bg-blue-600 text-white shadow'
+                    : `${textSecondaryClass} hover:bg-slate-100 ${darkMode ? 'hover:bg-slate-700' : ''}`
+                }`}
+              >
+                🗣️ Communication
+              </button>
+              <button
+                onClick={() => setDashboardView('today')}
+                className={`flex-1 px-4 py-2.5 rounded-md font-medium transition text-sm ${
+                  dashboardView === 'today'
+                    ? 'bg-blue-600 text-white shadow'
+                    : `${textSecondaryClass} hover:bg-slate-100 ${darkMode ? 'hover:bg-slate-700' : ''}`
+                }`}
+              >
+                ⚡ Today
+              </button>
+              <button
+                onClick={() => setDashboardView('weekly')}
+                className={`flex-1 px-4 py-2.5 rounded-md font-medium transition text-sm ${
+                  dashboardView === 'weekly'
+                    ? 'bg-blue-600 text-white shadow'
+                    : `${textSecondaryClass} hover:bg-slate-100 ${darkMode ? 'hover:bg-slate-700' : ''}`
+                }`}
+              >
+                📅 Weekly
+              </button>
+              <button
+                onClick={() => setDashboardView('analytics')}
+                className={`flex-1 px-4 py-2.5 rounded-md font-medium transition text-sm ${
+                  dashboardView === 'analytics'
+                    ? 'bg-blue-600 text-white shadow'
+                    : `${textSecondaryClass} hover:bg-slate-100 ${darkMode ? 'hover:bg-slate-700' : ''}`
+                }`}
+              >
+                📊 Analytics
+              </button>
+            </div>
+
+            {/* Communication View */}
+            {dashboardView === 'communication' && (
+              <>
+                {/* Relationship Status Board */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Hot Relationships */}
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border-l-4 border-red-500 ${borderClass}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">🔥</span>
+                      <h3 className={`text-lg font-bold ${textClass}`}>Hot</h3>
+                    </div>
+                    <div className={`text-2xl font-bold ${textClass} mb-2`}>
+                      {(() => {
+                        const recentContacts = [...brokers, ...partners, ...gatekeepers]
+                          .filter(contact => {
+                            const recentFollowUps = followUps.filter(f =>
+                              f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}` &&
+                              new Date(f.createdAt || f.dueDate) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                            );
+                            const recentEvents = events.filter(e => {
+                              const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
+                              return e.taggedContacts?.[type]?.includes(contact.id) &&
+                                new Date(e.date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                            });
+                            return (recentFollowUps.length + recentEvents.length) >= 2;
+                          });
+                        return recentContacts.length;
+                      })()}
+                    </div>
+                    <p className={`text-xs ${textSecondaryClass}`}>Active in last 7 days</p>
+                  </div>
+
+                  {/* Warming Relationships */}
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border-l-4 border-yellow-500 ${borderClass}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">🌡️</span>
+                      <h3 className={`text-lg font-bold ${textClass}`}>Warming</h3>
+                    </div>
+                    <div className={`text-2xl font-bold ${textClass} mb-2`}>
+                      {(() => {
+                        const warmingContacts = [...brokers, ...partners, ...gatekeepers]
+                          .filter(contact => {
+                            const recentFollowUps = followUps.filter(f =>
+                              f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}` &&
+                              new Date(f.createdAt || f.dueDate) > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) &&
+                              new Date(f.createdAt || f.dueDate) <= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                            );
+                            const recentEvents = events.filter(e => {
+                              const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
+                              return e.taggedContacts?.[type]?.includes(contact.id) &&
+                                new Date(e.date) > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) &&
+                                new Date(e.date) <= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                            });
+                            return (recentFollowUps.length + recentEvents.length) >= 1;
+                          });
+                        return warmingContacts.length;
+                      })()}
+                    </div>
+                    <p className={`text-xs ${textSecondaryClass}`}>Some activity (7-14 days)</p>
+                  </div>
+
+                  {/* Cold Relationships */}
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border-l-4 border-blue-400 ${borderClass}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">❄️</span>
+                      <h3 className={`text-lg font-bold ${textClass}`}>Need Attention</h3>
+                    </div>
+                    <div className={`text-2xl font-bold ${textClass} mb-2`}>
+                      {(() => {
+                        const coldContacts = [...brokers, ...partners, ...gatekeepers]
+                          .filter(contact => {
+                            const recentFollowUps = followUps.filter(f =>
+                              f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}` &&
+                              new Date(f.createdAt || f.dueDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                            );
+                            const recentEvents = events.filter(e => {
+                              const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
+                              return e.taggedContacts?.[type]?.includes(contact.id) &&
+                                new Date(e.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+                            });
+                            return (recentFollowUps.length + recentEvents.length) === 0;
+                          });
+                        return coldContacts.length;
+                      })()}
+                    </div>
+                    <p className={`text-xs ${textSecondaryClass}`}>No activity in 30+ days</p>
+                  </div>
+                </div>
+
+                {/* Recent Interactions Feed */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
+                      <MessageSquare size={20} />
+                      Recent Interactions
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
+                    {(() => {
+                      const interactions = [
+                        ...followUps.map(f => ({ ...f, type: 'followup', timestamp: f.completedAt || f.dueDate })),
+                        ...events.map(e => ({ ...e, type: 'event', timestamp: e.date }))
+                      ]
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .slice(0, 10);
+
+                      if (interactions.length === 0) {
+                        return (
+                          <div className={`text-center py-8 ${textSecondaryClass}`}>
+                            <MessageSquare size={48} className="mx-auto mb-2 opacity-50" />
+                            <p>No recent interactions yet</p>
+                          </div>
+                        );
+                      }
+
+                      return interactions.map((item, idx) => {
+                        const timeAgo = (() => {
+                          const diff = Date.now() - new Date(item.timestamp).getTime();
+                          const hours = Math.floor(diff / (1000 * 60 * 60));
+                          const days = Math.floor(hours / 24);
+                          if (days > 0) return `${days}d ago`;
+                          if (hours > 0) return `${hours}h ago`;
+                          return 'Just now';
+                        })();
+
+                        if (item.type === 'followup') {
+                          return (
+                            <div key={`interaction-followup-${item.id}-${idx}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} border ${borderClass}`}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    {item.status === 'completed' ? (
+                                      <CheckCircle size={16} className="text-green-500" />
+                                    ) : (
+                                      <Clock size={16} className="text-yellow-500" />
+                                    )}
+                                    <span className={`text-sm font-semibold ${textClass}`}>{item.contactName}</span>
+                                    <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                      {item.type}
+                                    </span>
+                                    <span className={`text-xs ${textSecondaryClass}`}>{timeAgo}</span>
+                                  </div>
+                                  {item.notes && (
+                                    <p className={`text-xs ${textSecondaryClass} mt-1 line-clamp-1`}>{item.notes}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div key={`interaction-event-${item.id}-${idx}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} border ${borderClass}`}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar size={16} className="text-blue-500" />
+                                    <span className={`text-sm font-semibold ${textClass}`}>{item.title}</span>
+                                    <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                      {item.type}
+                                    </span>
+                                    <span className={`text-xs ${textSecondaryClass}`}>{timeAgo}</span>
+                                  </div>
+                                  {item.location && (
+                                    <p className={`text-xs ${textSecondaryClass} mt-1`}>📍 {item.location}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* Priority Contacts - Need Attention */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
+                      <AlertCircle size={20} className="text-orange-500" />
+                      Contacts Needing Attention
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
+                    {(() => {
+                      const needsAttention = [...brokers, ...partners, ...gatekeepers]
+                        .map(contact => {
+                          const lastFollowUp = followUps
+                            .filter(f => f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}`)
+                            .sort((a, b) => new Date(b.completedAt || b.dueDate) - new Date(a.completedAt || a.dueDate))[0];
+
+                          const lastEvent = events
+                            .filter(e => {
+                              const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
+                              return e.taggedContacts?.[type]?.includes(contact.id);
+                            })
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+                          const lastInteraction = lastFollowUp && lastEvent
+                            ? new Date(lastFollowUp.completedAt || lastFollowUp.dueDate) > new Date(lastEvent.date)
+                              ? lastFollowUp.completedAt || lastFollowUp.dueDate
+                              : lastEvent.date
+                            : lastFollowUp
+                              ? lastFollowUp.completedAt || lastFollowUp.dueDate
+                              : lastEvent?.date;
+
+                          const daysSinceInteraction = lastInteraction
+                            ? Math.floor((Date.now() - new Date(lastInteraction).getTime()) / (1000 * 60 * 60 * 24))
+                            : 999;
+
+                          return { contact, daysSinceInteraction, lastInteraction };
+                        })
+                        .filter(({ daysSinceInteraction }) => daysSinceInteraction > 14)
+                        .sort((a, b) => b.daysSinceInteraction - a.daysSinceInteraction)
+                        .slice(0, 5);
+
+                      if (needsAttention.length === 0) {
+                        return (
+                          <div className={`text-center py-8 ${textSecondaryClass}`}>
+                            <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
+                            <p>All contacts have recent activity!</p>
+                          </div>
+                        );
+                      }
+
+                      return needsAttention.map(({ contact, daysSinceInteraction, lastInteraction }) => (
+                        <div key={`need-attention-${contact.id}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-orange-50'} border-l-4 border-orange-500`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-semibold ${textClass}`}>{contact.name}</span>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-orange-200'} ${textSecondaryClass}`}>
+                                  {contact.contactType || 'broker'}
+                                </span>
+                              </div>
+                              <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                                {lastInteraction
+                                  ? `Last contact: ${daysSinceInteraction} days ago`
+                                  : 'No interactions yet'}
+                              </p>
+                            </div>
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setFormData({
+                                    contactName: contact.name,
+                                    relatedContact: `${contact.contactType || 'broker'}-${contact.id}`
+                                  });
+                                  setEditingId(null);
+                                  setShowFollowUpForm(true);
+                                  setActiveTab('followups');
+                                }}
+                                className="bg-blue-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-blue-700 transition"
+                                title="Schedule follow-up"
+                              >
+                                <Phone size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <button
+                    onClick={() => {
+                      setFormData({});
+                      setEditingId(null);
+                      setShowFollowUpForm(true);
+                      setActiveTab('followups');
+                    }}
+                    className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow"
+                  >
+                    <Phone size={20} />
+                    <span>Log Call</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFormData({ type: 'Email' });
+                      setEditingId(null);
+                      setShowFollowUpForm(true);
+                      setActiveTab('followups');
+                    }}
+                    className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition shadow"
+                  >
+                    <Mail size={20} />
+                    <span>Log Email</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFormData({ type: 'Meeting' });
+                      setEditingId(null);
+                      setShowEventForm(true);
+                      setActiveTab('calendar');
+                    }}
+                    className="flex items-center justify-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition shadow"
+                  >
+                    <Video size={20} />
+                    <span>Schedule Meeting</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFormData({});
+                      setEditingId(null);
+                      setShowFollowUpForm(true);
+                      setActiveTab('followups');
+                    }}
+                    className="flex items-center justify-center gap-2 bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-orange-700 transition shadow"
+                  >
+                    <MessageSquare size={20} />
+                    <span>Add Note</span>
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Today View */}
+            {dashboardView === 'today' && (
+              <>
+                {/* Quick Actions Bar */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <button
+                onClick={() => {
+                  setFormData({});
+                  setEditingId(null);
+                  setShowFollowUpForm(true);
+                  setActiveTab('followups');
+                }}
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow"
+              >
+                <Phone size={20} />
+                <span>New Call</span>
+              </button>
+              <button
+                onClick={() => {
+                  setFormData({ type: 'Email' });
+                  setEditingId(null);
+                  setShowFollowUpForm(true);
+                  setActiveTab('followups');
+                }}
+                className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition shadow"
+              >
+                <Mail size={20} />
+                <span>New Email</span>
+              </button>
+              <button
+                onClick={() => {
+                  setFormData({ type: 'Meeting' });
+                  setEditingId(null);
+                  setShowEventForm(true);
+                  setActiveTab('calendar');
+                }}
+                className="flex items-center justify-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition shadow"
+              >
+                <Video size={20} />
+                <span>Schedule Meeting</span>
+              </button>
+              <button
+                onClick={() => {
+                  setFormData({});
+                  setEditingId(null);
+                  setShowFollowUpForm(true);
+                  setActiveTab('followups');
+                }}
+                className="flex items-center justify-center gap-2 bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-orange-700 transition shadow"
+              >
+                <MessageSquare size={20} />
+                <span>Add Note</span>
+              </button>
+            </div>
+
+            {/* Today's Agenda */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border-l-4 border-blue-500 ${borderClass}`}>
+              <div className="flex items-center gap-2 mb-3">
+                <Clock size={24} className="text-blue-500" />
+                <div>
+                  <h3 className={`text-xl font-bold ${textClass}`}>Today's Agenda</h3>
+                  <p className={`text-xs ${textSecondaryClass}`}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                </div>
+              </div>
+
+              {(() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                const todaysFollowUps = followUps.filter(f => {
+                  if (f.status === 'completed') return false;
+                  const dueDate = new Date(f.dueDate);
+                  dueDate.setHours(0, 0, 0, 0);
+                  return dueDate <= today;
+                });
+
+                const todaysEvents = events.filter(e => {
+                  const eventDate = new Date(e.date);
+                  return eventDate >= today && eventDate < tomorrow;
+                });
+
+                const hasItems = todaysFollowUps.length > 0 || todaysEvents.length > 0;
+
+                return hasItems ? (
+                  <div className="space-y-2">
+                    {todaysFollowUps.map(followUp => {
+                      const overdue = isOverdue(followUp.dueDate);
+                      return (
+                        <div key={`today-followup-${followUp.id}`} className={`p-2.5 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-red-50'} border-l-4 ${overdue ? 'border-red-500' : 'border-yellow-500'}`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                {overdue ? <AlertCircle size={18} className="text-red-500" /> : <Clock size={18} className="text-yellow-500" />}
+                                <span className={`font-semibold ${textClass}`}>{followUp.contactName}</span>
+                                <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-white'}`}>{followUp.type}</span>
+                                {overdue && <span className="text-xs font-semibold text-red-500">OVERDUE</span>}
+                              </div>
+                              {followUp.notes && (
+                                <div className={`ml-6 mt-2 p-2 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-100'}`}>
+                                  <p className={`text-sm ${textClass} leading-relaxed whitespace-pre-wrap`}>{followUp.notes}</p>
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => {
+                                setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
+                                showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
+                              }}
+                              className="ml-4 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-green-700 transition flex items-center gap-1"
+                            >
+                              <CheckCircle size={16} />
+                              Done
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {todaysEvents.map(event => (
+                      <div key={`today-event-${event.id}`} className={`p-2.5 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-l-4 border-blue-500`}>
+                        <div className="flex items-center gap-2">
+                          <Calendar size={18} className="text-blue-500" />
+                          <span className={`font-semibold ${textClass}`}>{event.title}</span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-white'}`}>{event.type}</span>
+                        </div>
+                        {event.location && <p className={`text-sm ${textSecondaryClass} ml-6 mt-1`}>📍 {event.location}</p>}
+                        <p className={`text-xs ${textSecondaryClass} ml-6 mt-1`}>{formatDateTime(event.date)}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={`text-center py-8 ${textSecondaryClass}`}>
+                    <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
+                    <p className="font-medium">All clear for today!</p>
+                    <p className="text-sm mt-1">No follow-ups or events scheduled</p>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Communication Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
+                  <Bell size={18} className="text-orange-500" />
+                </div>
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {followUps.filter(f => f.status !== 'completed').length}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
+                  {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue • {followUps.filter(f => isDueToday(f.dueDate) && f.status !== 'completed').length} due today
+                </div>
+              </div>
+
+              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Upcoming Events</div>
+                  <Calendar size={18} className="text-blue-500" />
+                </div>
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {events.filter(e => new Date(e.date) >= new Date()).length}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
+                  Next 7 days
+                </div>
+              </div>
+
+              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Contacts</div>
+                  <Target size={18} className="text-green-500" />
+                </div>
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {brokers.length + partners.length + gatekeepers.length}
+                </div>
+                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
+                  {brokers.length} Brokers • {gatekeepers.length} Gatekeepers
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Follow-ups */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
+                  <Bell size={20} />
+                  Upcoming Follow-ups
+                </h3>
+                <button
+                  onClick={() => setActiveTab('followups')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
+                >
+                  View All →
+                </button>
+              </div>
+
+              {followUps.filter(f => f.status !== 'completed').length === 0 ? (
+                <div className={`text-center py-8 ${textSecondaryClass}`}>
+                  <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
+                  <p>No pending follow-ups. You're all caught up!</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {followUps
+                    .filter(f => f.status !== 'completed')
+                    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+                    .slice(0, 3)
+                    .map(followUp => {
+                      const overdue = isOverdue(followUp.dueDate);
+                      const dueToday = isDueToday(followUp.dueDate);
+                      const statusColor = overdue ? 'red' : dueToday ? 'yellow' : 'green';
+
+                      // Get related contact info
+                      let relatedContactInfo = null;
+                      if (followUp.relatedContact) {
+                        const [type, id] = followUp.relatedContact.split('-');
+                        const contactId = parseInt(id);
+                        if (type === 'broker') {
+                          const contact = brokers.find(b => b.id === contactId);
+                          if (contact) relatedContactInfo = { type: 'Broker', name: contact.name, icon: Target };
+                        } else if (type === 'partner') {
+                          const contact = partners.find(p => p.id === contactId);
+                          if (contact) relatedContactInfo = { type: 'Partner', name: contact.name, icon: DollarSign };
+                        } else if (type === 'gatekeeper') {
+                          const contact = gatekeepers.find(g => g.id === contactId);
+                          if (contact) relatedContactInfo = { type: 'Gatekeeper', name: contact.name, icon: AlertCircle };
+                        }
+                      }
+
+                      return (
+                        <div key={followUp.id} className={`p-3 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-semibold ${textClass}`}>{followUp.contactName}</span>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                  {followUp.type}
+                                </span>
+                                {followUp.priority === 'High' && (
+                                  <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">HIGH</span>
+                                )}
+                              </div>
+                              {followUp.notes && (
+                                <div className={`mt-1.5 p-2 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-100'}`}>
+                                  <p className={`text-xs ${textClass} leading-relaxed whitespace-pre-wrap line-clamp-2`}>{followUp.notes}</p>
+                                </div>
+                              )}
+                              <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} mt-1`}>
+                                {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
+                              </p>
+                            </div>
+                            <div className="flex gap-1.5 ml-3">
+                              <button
+                                onClick={() => {
+                                  setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
+                                  showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
+                                }}
+                                className="bg-green-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-green-700 transition"
+                                title="Mark as complete"
+                              >
+                                Done
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const newDate = new Date(followUp.dueDate);
+                                  newDate.setDate(newDate.getDate() + 1);
+                                  setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, dueDate: newDate.toISOString().split('T')[0] } : f));
+                                  showToast(`Follow-up snoozed to ${newDate.toLocaleDateString()}`, 'info');
+                                }}
+                                className={`${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} px-2.5 py-1 rounded text-xs font-semibold transition`}
+                                title="Snooze until tomorrow"
+                              >
+                                Snooze
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+            {/* Upcoming Calendar Events */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
+                  <Calendar size={20} />
+                  Upcoming Events
+                </h3>
+                <button
+                  onClick={() => setActiveTab('calendar')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
+                >
+                  View All →
+                </button>
+              </div>
+
+              {events.filter(e => new Date(e.date) >= new Date()).length === 0 ? (
+                <div className={`text-center py-8 ${textSecondaryClass}`}>
+                  <Calendar size={48} className="mx-auto mb-2 opacity-50" />
+                  <p>No upcoming events scheduled.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {events
+                    .filter(e => new Date(e.date) >= new Date())
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .slice(0, 3)
+                    .map(event => (
+                      <div key={event.id} className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm font-semibold ${textClass}`}>{event.title}</span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                {event.type}
+                              </span>
+                            </div>
+                            {event.location && (
+                              <p className={`text-xs ${textSecondaryClass} mt-1`}>📍 {event.location}</p>
+                            )}
+                            <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                              {formatDateTime(event.date)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+              </>
+            )}
+
+            {/* Weekly View */}
+            {dashboardView === 'weekly' && (
+              <>
+                {/* Week Overview Header */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <h3 className={`text-lg font-bold ${textClass} mb-4`}>This Week at a Glance</h3>
+                  <div className="grid grid-cols-7 gap-2">
+                    {(() => {
+                      const today = new Date();
+                      const startOfWeek = new Date(today);
+                      startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+
+                      return Array.from({ length: 7 }).map((_, index) => {
+                        const day = new Date(startOfWeek);
+                        day.setDate(startOfWeek.getDate() + index);
+                        day.setHours(0, 0, 0, 0);
+                        const nextDay = new Date(day);
+                        nextDay.setDate(day.getDate() + 1);
+
+                        const dayEvents = events.filter(e => {
+                          const eventDate = new Date(e.date);
+                          return eventDate >= day && eventDate < nextDay;
+                        });
+
+                        const dayFollowUps = followUps.filter(f => {
+                          if (f.status === 'completed') return false;
+                          const dueDate = new Date(f.dueDate);
+                          dueDate.setHours(0, 0, 0, 0);
+                          return dueDate.getTime() === day.getTime();
+                        });
+
+                        const isToday = day.toDateString() === today.toDateString();
+                        const totalItems = dayEvents.length + dayFollowUps.length;
+
+                        return (
+                          <div
+                            key={index}
+                            className={`p-3 rounded-lg border-2 ${
+                              isToday
+                                ? 'border-blue-500 bg-blue-50'
+                                : totalItems > 0
+                                  ? `border-green-300 ${darkMode ? 'bg-slate-700' : 'bg-green-50'}`
+                                  : `border-slate-200 ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`
+                            }`}
+                          >
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>
+                              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][index]}
+                            </div>
+                            <div className={`text-2xl font-bold ${textClass} my-1`}>
+                              {day.getDate()}
+                            </div>
+                            {totalItems > 0 && (
+                              <div className={`text-xs ${textClass} mt-2`}>
+                                {dayEvents.length > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <Calendar size={12} className="text-blue-500" />
+                                    <span>{dayEvents.length}</span>
+                                  </div>
+                                )}
+                                {dayFollowUps.length > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <Bell size={12} className="text-orange-500" />
+                                    <span>{dayFollowUps.length}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {totalItems === 0 && (
+                              <div className={`text-xs ${textSecondaryClass} mt-2`}>Free</div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* This Week's Events */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2 mb-3`}>
+                    <Calendar size={20} />
+                    This Week's Events
+                  </h3>
+                  <div className="space-y-2">
+                    {(() => {
+                      const today = new Date();
+                      const startOfWeek = new Date(today);
+                      startOfWeek.setDate(today.getDate() - today.getDay());
+                      startOfWeek.setHours(0, 0, 0, 0);
+                      const endOfWeek = new Date(startOfWeek);
+                      endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+                      const weekEvents = events
+                        .filter(e => {
+                          const eventDate = new Date(e.date);
+                          return eventDate >= startOfWeek && eventDate < endOfWeek;
+                        })
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                      if (weekEvents.length === 0) {
+                        return (
+                          <div className={`text-center py-8 ${textSecondaryClass}`}>
+                            <Calendar size={48} className="mx-auto mb-2 opacity-50" />
+                            <p>No events this week</p>
+                          </div>
+                        );
+                      }
+
+                      return weekEvents.map(event => (
+                        <div key={event.id} className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-semibold ${textClass}`}>{event.title}</span>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                  {event.type}
+                                </span>
+                              </div>
+                              {event.location && (
+                                <p className={`text-xs ${textSecondaryClass} mt-1`}>📍 {event.location}</p>
+                              )}
+                              <p className={`text-xs ${textSecondaryClass} mt-1`}>
+                                {formatDateTime(event.date)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+
+                {/* This Week's Follow-ups */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2 mb-3`}>
+                    <Bell size={20} />
+                    This Week's Follow-ups
+                  </h3>
+                  <div className="space-y-2">
+                    {(() => {
+                      const today = new Date();
+                      const startOfWeek = new Date(today);
+                      startOfWeek.setDate(today.getDate() - today.getDay());
+                      startOfWeek.setHours(0, 0, 0, 0);
+                      const endOfWeek = new Date(startOfWeek);
+                      endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+                      const weekFollowUps = followUps
+                        .filter(f => {
+                          if (f.status === 'completed') return false;
+                          const dueDate = new Date(f.dueDate);
+                          dueDate.setHours(0, 0, 0, 0);
+                          return dueDate >= startOfWeek && dueDate < endOfWeek;
+                        })
+                        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+                      if (weekFollowUps.length === 0) {
+                        return (
+                          <div className={`text-center py-8 ${textSecondaryClass}`}>
+                            <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
+                            <p>No follow-ups this week</p>
+                          </div>
+                        );
+                      }
+
+                      return weekFollowUps.map(followUp => {
+                        const overdue = isOverdue(followUp.dueDate);
+                        const dueToday = isDueToday(followUp.dueDate);
+
+                        return (
+                          <div key={followUp.id} className={`p-3 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-sm font-semibold ${textClass}`}>{followUp.contactName}</span>
+                                  <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
+                                    {followUp.type}
+                                  </span>
+                                </div>
+                                {followUp.notes && (
+                                  <p className={`text-xs ${textSecondaryClass} mt-1 line-clamp-1`}>{followUp.notes}</p>
+                                )}
+                                <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} mt-1`}>
+                                  {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
+                                </p>
+                              </div>
+                              <div className="flex gap-1.5 ml-3">
+                                <button
+                                  onClick={() => {
+                                    setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
+                                    showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
+                                  }}
+                                  className="bg-green-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-green-700 transition"
+                                  title="Mark as complete"
+                                >
+                                  Done
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Analytics View */}
+            {dashboardView === 'analytics' && (
+              <>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Contacts</div>
+                      <Target size={20} className="text-blue-500" />
+                    </div>
+                    <div className={`text-3xl font-bold ${textClass}`}>
+                      {brokers.length + partners.length + gatekeepers.length}
+                    </div>
+                    <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                      {brokers.length} Brokers • {partners.length} Partners • {gatekeepers.length} Gatekeepers
+                    </div>
+                  </div>
+
+                  <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
+                      <Bell size={20} className="text-orange-500" />
+                    </div>
+                    <div className={`text-3xl font-bold ${textClass}`}>
+                      {followUps.filter(f => f.status !== 'completed').length}
+                    </div>
+                    <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                      {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue
+                    </div>
+                  </div>
+
+                  <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Events</div>
+                      <Calendar size={20} className="text-green-500" />
+                    </div>
+                    <div className={`text-3xl font-bold ${textClass}`}>
+                      {events.length}
+                    </div>
+                    <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                      {events.filter(e => new Date(e.date) >= new Date()).length} upcoming
+                    </div>
+                  </div>
+
+                  <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Properties</div>
+                      <Building2 size={20} className="text-purple-500" />
+                    </div>
+                    <div className={`text-3xl font-bold ${textClass}`}>
+                      {properties.length}
+                    </div>
+                    <div className={`text-xs ${textSecondaryClass} mt-1`}>
+                      Tracked assets
+                    </div>
+                  </div>
+                </div>
+
+                {/* Activity Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Follow-ups by Type */}
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                    <h3 className={`text-lg font-bold ${textClass} mb-3`}>Follow-ups by Type</h3>
+                    <div className="space-y-2">
+                      {(() => {
+                        const types = ['Call', 'Email', 'Meeting', 'Text'];
+                        return types.map(type => {
+                          const count = followUps.filter(f => f.type === type).length;
+                          const completed = followUps.filter(f => f.type === type && f.status === 'completed').length;
+                          const percentage = count > 0 ? (completed / count) * 100 : 0;
+
+                          return (
+                            <div key={type}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-sm ${textClass}`}>{type}</span>
+                                <span className={`text-sm ${textSecondaryClass}`}>
+                                  {completed}/{count}
+                                </span>
+                              </div>
+                              <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                <div
+                                  className="h-full rounded-full bg-blue-600"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Events by Type */}
+                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                    <h3 className={`text-lg font-bold ${textClass} mb-3`}>Events by Type</h3>
+                    <div className="space-y-2">
+                      {(() => {
+                        const types = ['Meeting', 'Call', 'Site Visit', 'Other'];
+                        return types.map(type => {
+                          const count = events.filter(e => e.type === type).length;
+                          const total = events.length;
+                          const percentage = total > 0 ? (count / total) * 100 : 0;
+
+                          return (
+                            <div key={type}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-sm ${textClass}`}>{type}</span>
+                                <span className={`text-sm ${textSecondaryClass}`}>
+                                  {count} ({percentage.toFixed(0)}%)
+                                </span>
+                              </div>
+                              <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                <div
+                                  className="h-full rounded-full bg-green-600"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Engagement */}
+                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
+                  <h3 className={`text-lg font-bold ${textClass} mb-3`}>Contact Engagement (Last 30 Days)</h3>
+                  <div className="space-y-2">
+                    {(() => {
+                      const allContacts = [
+                        ...brokers.map(b => ({ ...b, contactType: 'broker' })),
+                        ...partners.map(p => ({ ...p, contactType: 'partner' })),
+                        ...gatekeepers.map(g => ({ ...g, contactType: 'gatekeeper' }))
+                      ];
+
+                      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+                      const contactEngagement = allContacts
+                        .map(contact => {
+                          const recentFollowUps = followUps.filter(f =>
+                            f.relatedContact === `${contact.contactType}-${contact.id}` &&
+                            new Date(f.createdAt || f.dueDate) > thirtyDaysAgo
+                          ).length;
+
+                          const recentEvents = events.filter(e => {
+                            const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
+                            return e.taggedContacts?.[type]?.includes(contact.id) &&
+                              new Date(e.date) > thirtyDaysAgo;
+                          }).length;
+
+                          const totalInteractions = recentFollowUps + recentEvents;
+
+                          return { contact, totalInteractions };
+                        })
+                        .filter(({ totalInteractions }) => totalInteractions > 0)
+                        .sort((a, b) => b.totalInteractions - a.totalInteractions)
+                        .slice(0, 10);
+
+                      if (contactEngagement.length === 0) {
+                        return (
+                          <div className={`text-center py-8 ${textSecondaryClass}`}>
+                            <TrendingUp size={48} className="mx-auto mb-2 opacity-50" />
+                            <p>No activity in the last 30 days</p>
+                          </div>
+                        );
+                      }
+
+                      const maxInteractions = Math.max(...contactEngagement.map(({ totalInteractions }) => totalInteractions));
+
+                      return contactEngagement.map(({ contact, totalInteractions }) => (
+                        <div key={`${contact.contactType}-${contact.id}`} className="flex items-center gap-3">
+                          <div className={`text-sm ${textClass} flex-1`}>{contact.name}</div>
+                          <div className="flex-1">
+                            <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                              <div
+                                className="h-full rounded-full bg-blue-600"
+                                style={{ width: `${(totalInteractions / maxInteractions) * 100}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className={`text-sm ${textSecondaryClass} w-12 text-right`}>
+                            {totalInteractions}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Assets Tab */}
+        {activeTab === 'assets' && (
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <Search className={`absolute left-3 top-3 ${textSecondaryClass}`} size={20} />
+                <input
+                  type="text"
+                  placeholder="Search by address or Crexi link..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+              </div>
+              <button
+                onClick={handleAddProperty}
+                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                <Plus size={20} /> New Property
+              </button>
+            </div>
+
+            {/* Property Form */}
+            {showPropertyForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
+                <h2 className={`text-2xl font-bold ${textClass} mb-6`}>
+                  {editingId ? 'Edit Property' : 'Add New Property'}
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  {/* Address */}
+                  <input
+                    type="text"
+                    placeholder="Property Address"
+                    value={formData.address || ''}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+
+                  {/* Property Details Section */}
+                  <div className="col-span-2">
+                    <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Property Details</h3>
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Square Feet"
+                    value={formatNumberInput(formData.squareFeet || '')}
+                    onChange={(e) => setFormData({ ...formData, squareFeet: stripCommas(e.target.value) })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Monthly Base Rent per Sq Ft (e.g., 1.25)"
+                    value={formData.monthlyBaseRentPerSqft || ''}
+                    onChange={(e) => setFormData({ ...formData, monthlyBaseRentPerSqft: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+
+                  {/* Purchase & Costs Section */}
+                  <div className="col-span-2 mt-4">
+                    <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Purchase & Costs</h3>
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Purchase Price"
+                    value={formatNumberInput(formData.purchasePrice || '')}
+                    onChange={(e) => setFormData({ ...formData, purchasePrice: stripCommas(e.target.value) })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Improvements (CapEx/Renovation)"
+                    value={formatNumberInput(formData.improvements || '')}
+                    onChange={(e) => setFormData({ ...formData, improvements: stripCommas(e.target.value) })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Closing Costs (optional)"
+                    value={formatNumberInput(formData.closingCosts || '')}
+                    onChange={(e) => setFormData({ ...formData, closingCosts: stripCommas(e.target.value) })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+
+                  {/* Financing Section */}
+                  <div className="col-span-2 mt-4">
+                    <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Financing</h3>
+                  </div>
+
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="LTV % (e.g., 80)"
+                    value={formData.ltvPercent || ''}
+                    onChange={(e) => setFormData({ ...formData, ltvPercent: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Interest Rate % (e.g., 5.5)"
+                    value={formData.interestRate || ''}
+                    onChange={(e) => setFormData({ ...formData, interestRate: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Loan Term (years, e.g., 30)"
+                    value={formData.loanTerm || ''}
+                    onChange={(e) => setFormData({ ...formData, loanTerm: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <CustomSelect
+                    label="Debt Service Type"
+                    value={formData.debtServiceType || 'standard'}
+                    onChange={(value) => setFormData({ ...formData, debtServiceType: value })}
+                    options={[
+                      { value: 'standard', label: 'Standard Amortization' },
+                      { value: 'interestOnly', label: 'Interest-Only' }
+                    ]}
+                  />
+
+                  {/* Exit & Hold Section */}
+                  <div className="col-span-2 mt-4">
+                    <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Exit Strategy</h3>
+                  </div>
+
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="Exit Cap Rate % (e.g., 6.5)"
+                    value={formData.exitCapRate || ''}
+                    onChange={(e) => setFormData({ ...formData, exitCapRate: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Holding Period (months, e.g., 60)"
+                    value={formData.holdingPeriodMonths || ''}
+                    onChange={(e) => setFormData({ ...formData, holdingPeriodMonths: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+
+                  {/* Lease Terms Section */}
+                  <div className="col-span-2 mt-4">
+                    <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Lease Terms</h3>
+                  </div>
+
+                  <input
+                    type="number"
+                    placeholder="Initial Lease Term (years, e.g., 7)"
+                    value={formData.initialLeaseTermYears || ''}
+                    onChange={(e) => setFormData({ ...formData, initialLeaseTermYears: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Number of Renewal Options (e.g., 3)"
+                    value={formData.renewalOptionCount || ''}
+                    onChange={(e) => setFormData({ ...formData, renewalOptionCount: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Renewal Term Length (years, e.g., 5)"
+                    value={formData.renewalTermYears || ''}
+                    onChange={(e) => setFormData({ ...formData, renewalTermYears: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="Annual Rent Escalator % (e.g., 2.0)"
+                    value={formData.annualRentEscalator || ''}
+                    onChange={(e) => setFormData({ ...formData, annualRentEscalator: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="Option Rent Escalator % (e.g., 5.0)"
+                    value={formData.optionRentEscalator || ''}
+                    onChange={(e) => setFormData({ ...formData, optionRentEscalator: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+
+                  {/* Brokers Section */}
+                  <div className="col-span-2 mt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className={`text-lg font-semibold ${textClass}`}>Brokers</h3>
+                      <button
+                        type="button"
+                        onClick={handleShowInlineBrokerForm}
+                        className="flex items-center gap-1 text-sm bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition"
+                      >
+                        <Plus size={16} /> Add New Broker
+                      </button>
+                    </div>
+
+                    {/* Inline Broker Quick-Add Form */}
+                    {showInlineBrokerForm && (
+                      <div className={`p-4 mb-4 rounded-lg border-2 border-green-500 ${darkMode ? 'bg-slate-700' : 'bg-green-50'}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className={`font-semibold ${textClass}`}>Quick Add Broker</h4>
+                          <button
+                            type="button"
+                            onClick={() => setShowInlineBrokerForm(false)}
+                            className={`p-1 ${textSecondaryClass} ${hoverBgClass} rounded`}
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          <input
+                            type="text"
+                            placeholder="Broker Name *"
+                            value={inlineBrokerData.name || ''}
+                            onChange={(e) => setInlineBrokerData({ ...inlineBrokerData, name: e.target.value })}
+                            className={`w-full px-3 py-2 text-sm rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-green-500`}
+                          />
+                          <input
+                            type="email"
+                            placeholder="Email (optional)"
+                            value={inlineBrokerData.email || ''}
+                            onChange={(e) => setInlineBrokerData({ ...inlineBrokerData, email: e.target.value })}
+                            className={`w-full px-3 py-2 text-sm rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-green-500`}
+                          />
+                          <input
+                            type="tel"
+                            placeholder="Phone (optional)"
+                            value={inlineBrokerData.phone || ''}
+                            onChange={(e) => setInlineBrokerData({ ...inlineBrokerData, phone: e.target.value })}
+                            className={`w-full px-3 py-2 text-sm rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-green-500`}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Firm Name (optional)"
+                            value={inlineBrokerData.firmName || ''}
+                            onChange={(e) => setInlineBrokerData({ ...inlineBrokerData, firmName: e.target.value })}
+                            className={`w-full px-3 py-2 text-sm rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-green-500`}
+                          />
+                          <input
+                            type="url"
+                            placeholder="Firm Website (optional)"
+                            value={inlineBrokerData.firmWebsite || ''}
+                            onChange={(e) => setInlineBrokerData({ ...inlineBrokerData, firmWebsite: e.target.value })}
+                            className={`w-full px-3 py-2 text-sm rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-green-500`}
+                          />
+                          <input
+                            type="url"
+                            placeholder="Crexi Profile Link (optional)"
+                            value={inlineBrokerData.crexiLink || ''}
+                            onChange={(e) => setInlineBrokerData({ ...inlineBrokerData, crexiLink: e.target.value })}
+                            className={`w-full px-3 py-2 text-sm rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-green-500`}
+                          />
+                          <input
+                            type="text"
+                            placeholder="License # (optional)"
+                            value={inlineBrokerData.licenseNumber || ''}
+                            onChange={(e) => setInlineBrokerData({ ...inlineBrokerData, licenseNumber: e.target.value })}
+                            className={`w-full px-3 py-2 text-sm rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-green-500`}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSaveInlineBroker}
+                            className="w-full bg-green-600 text-white text-sm font-semibold py-2 rounded-lg hover:bg-green-700 transition"
+                          >
+                            Add Broker
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Broker Selection */}
+                    {brokers.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {brokers.map(broker => (
+                          <label
+                            key={broker.id}
+                            className={`flex items-center gap-2 p-3 rounded-lg border ${inputBorderClass} ${
+                              formData.brokerIds?.includes(broker.id) ? 'bg-blue-100 border-blue-500' : inputBgClass
+                            } cursor-pointer hover:border-blue-400 transition`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.brokerIds?.includes(broker.id) || false}
+                              onChange={() => handleToggleBroker(broker.id)}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className={`text-sm font-medium ${textClass}`}>{broker.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className={`text-sm ${textSecondaryClass} italic`}>
+                        No brokers yet. Click "+ Add New Broker" above to create one.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Photos Section */}
+                  <div className="col-span-2 mt-4">
+                    <h3 className={`text-lg font-semibold ${textClass} mb-3`}>Property Photos</h3>
+
+                    {/* Method 1: Upload from file */}
+                    <div className="mb-3">
+                      <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
+                        Upload from file:
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotoUpload}
+                        className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+
+                    {/* Method 2: Paste from URL */}
+                    <div className="mb-3">
+                      <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
+                        Or paste image URL:
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          placeholder="https://example.com/image.jpg"
+                          id="photoUrlInput"
+                          className={`flex-1 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handlePhotoUrlAdd(e.target.value);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            const input = document.getElementById('photoUrlInput');
+                            handlePhotoUrlAdd(input.value);
+                            input.value = '';
+                          }}
+                          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Method 3: Paste from clipboard */}
+                    <div className="mb-3">
+                      <label className={`block text-sm font-medium ${textSecondaryClass} mb-2`}>
+                        Or paste image directly (Ctrl+V / Cmd+V):
+                      </label>
+                      <div
+                        contentEditable
+                        onPaste={handlePasteImage}
+                        className={`w-full px-4 py-3 rounded-lg border-2 border-dashed ${inputBorderClass} ${inputBgClass} ${textSecondaryClass} focus:outline-none focus:ring-2 focus:ring-blue-500 italic text-center cursor-text`}
+                        suppressContentEditableWarning
+                      >
+                        Click here and paste image (Ctrl+V / Cmd+V)
+                      </div>
+                    </div>
+
+                    <p className={`text-xs ${textSecondaryClass} mt-2`}>
+                      Maximum 10 photos, 2MB per image. Supported formats: JPG, PNG, GIF, WebP
+                    </p>
+
+                    {/* Photo Preview Grid */}
+                    {formData.photos && formData.photos.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        {formData.photos.map(photo => (
+                          <div key={photo.id} className={`relative group rounded-lg overflow-hidden border-2 ${borderClass}`}>
+                            <img
+                              src={photo.data}
+                              alt={photo.name}
+                              className="w-full h-32 object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePhoto(photo.id)}
+                              className="absolute top-1 right-1 bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition hover:bg-red-700"
+                            >
+                              <X size={16} />
+                            </button>
+                            <div className={`absolute bottom-0 left-0 right-0 ${darkMode ? 'bg-black bg-opacity-70' : 'bg-white bg-opacity-90'} p-1`}>
+                              <p className={`text-xs ${textClass} truncate`}>{photo.name}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Other */}
+                  <input
+                    type="text"
+                    placeholder="Crexi Listing Link"
+                    value={formData.crexi || ''}
+                    onChange={(e) => setFormData({ ...formData, crexi: e.target.value })}
+                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSaveProperty}
+                    className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    {editingId ? 'Update' : 'Add'} Property
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPropertyForm(false);
+                      setShowInlineBrokerForm(false);
+                    }}
+                    className={`flex-1 border ${borderClass} ${textSecondaryClass} font-semibold py-3 rounded-lg ${hoverBgClass} transition`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Properties List */}
+            <div className="grid gap-6">
+              {filteredProperties.map(property => {
+                const metrics = calculateMetrics(property);
+                const propertyBrokers = (property.brokerIds || []).map(id => brokers.find(b => b.id === id)).filter(Boolean);
+
+                return (
+                  <div key={property.id} className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition`}>
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="flex-1">
+                        <h2
+                          onClick={() => openPropertyProfile(property.id)}
+                          className={`text-2xl font-bold ${textClass} cursor-pointer hover:text-blue-500 transition`}
+                          title="Click to view property details"
+                        >
+                          {property.address || 'No address'}
+                        </h2>
+                        {property.crexi && (
+                          <a href={property.crexi} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm mt-1 block">
+                            View on Crexi →
+                          </a>
+                        )}
+                        {propertyBrokers.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {propertyBrokers.map(broker => (
+                              <button
+                                key={broker.id}
+                                onClick={() => openContactProfile('broker', broker.id)}
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition ${
+                                  darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
+                                }`}
+                                aria-label={`View ${broker.name} profile`}
+                              >
+                                {broker.name}{broker.firmName ? ` - ${broker.firmName}` : ''}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditProperty(property)}
+                          className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                        >
+                          <Edit2 size={20} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProperty(property.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Property Photos Gallery */}
+                    {property.photos && property.photos.length > 0 && (
+                      <div className="mb-6">
+                        <h4 className={`text-sm font-semibold ${textSecondaryClass} uppercase mb-3`}>
+                          Property Photos ({property.photos.length})
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {property.photos.map((photo, index) => (
+                            <div key={photo.id} className={`relative group rounded-lg overflow-hidden border-2 ${borderClass} ${hoverBgClass} cursor-pointer transition`}>
+                              <img
+                                src={photo.data}
+                                alt={photo.name}
+                                className="w-full h-32 object-cover"
+                                onClick={() => openLightbox(property.photos, index)}
+                              />
+                              <div className={`absolute bottom-0 left-0 right-0 ${darkMode ? 'bg-black bg-opacity-70' : 'bg-white bg-opacity-90'} p-1 opacity-0 group-hover:opacity-100 transition`}>
+                                <p className={`text-xs ${textClass} truncate`}>{photo.name}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* All-in Cost & Financing Summary */}
+                    <div className={`p-4 rounded-lg mb-6 ${metricsBgClass}`}>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>All-in Cost</div>
+                          <div className={`text-xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{formatCurrency(metrics.allInCost)}</div>
+                        </div>
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Loan Amount ({property.ltvPercent}% LTV)</div>
+                          <div className={`text-xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{formatCurrency(metrics.loanAmount)}</div>
+                        </div>
+                        <div>
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Equity Required</div>
+                          <div className={`text-xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{formatCurrency(metrics.equityRequired)}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Key Metrics Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Monthly Rent</div>
+                        <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.monthlyRent)}</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Annual NOI</div>
+                        <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.noi)}</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Cap Rate</div>
+                        <div className={`text-lg font-semibold ${textClass}`}>{formatPercent(metrics.capRate)}</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>DSCR</div>
+                        <div className={`text-lg font-semibold ${textClass}`}>{metrics.dscr > 0 ? metrics.dscr.toFixed(2) : 'N/A'}</div>
+                      </div>
+                    </div>
+
+                    {/* Debt Service & Returns */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Debt Service Type</div>
+                        <div className={`text-sm font-semibold ${textClass}`}>{property.debtServiceType === 'interestOnly' ? 'Interest-Only' : 'Standard'}</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Monthly Debt Service</div>
+                        <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.monthlyDebtService)}</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Annual Cash Flow</div>
+                        <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.annualCashFlow)}</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Cash-on-Cash</div>
+                        <div className={`text-lg font-semibold ${textClass}`}>{formatPercent(metrics.cashOnCash)}</div>
+                      </div>
+                    </div>
+
+                    {/* Exit Metrics */}
+                    {property.holdingPeriodMonths && (
+                      <div className={`p-4 rounded-lg mb-4 ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        <div className={`text-sm font-bold ${textSecondaryClass} uppercase mb-3`}>Exit Analysis ({property.holdingPeriodMonths} months)</div>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                          <div>
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Exit Value</div>
+                            <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.exitValue)}</div>
+                          </div>
+                          <div>
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Remaining Loan</div>
+                            <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.remainingLoanBalance)}</div>
+                          </div>
+                          <div>
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Net Proceeds</div>
+                            <div className={`text-lg font-semibold ${textClass}`}>{formatCurrency(metrics.netProceedsAtExit)}</div>
+                          </div>
+                          <div>
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Equity Multiple</div>
+                            <div className={`text-lg font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{metrics.equityMultiple > 0 ? `${metrics.equityMultiple.toFixed(2)}x` : 'N/A'}</div>
+                          </div>
+                          <div>
+                            <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>IRR</div>
+                            <div className={`text-lg font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{metrics.irr > 0 ? `${metrics.irr.toFixed(2)}%` : 'N/A'}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sensitivity Analysis */}
+                    {property.holdingPeriodMonths && (
+                      <div className="mb-4">
+                        <button
+                          onClick={() => {
+                            if (sensitivityPropertyId === property.id) {
+                              setSensitivityPropertyId(null);
+                              setSensitivityTable(null);
+                            } else {
+                              setSensitivityPropertyId(property.id);
+                              setSensitivityTable(null);
+                              // Set default ranges based on current property values
+                              const currentRent = parseFloat(property.monthlyBaseRentPerSqft) || 1.0;
+                              const currentExitCap = parseFloat(property.exitCapRate) || 7.0;
+                              setSensitivityRowMin((currentRent * 0.7).toFixed(2));
+                              setSensitivityRowMax((currentRent * 1.3).toFixed(2));
+                              setSensitivityColMin((currentExitCap - 2).toFixed(2));
+                              setSensitivityColMax((currentExitCap + 2).toFixed(2));
+                            }
+                          }}
+                          className={`w-full px-4 py-2 rounded-lg font-semibold transition ${
+                            darkMode
+                              ? 'bg-purple-900 hover:bg-purple-800 text-purple-200'
+                              : 'bg-purple-100 hover:bg-purple-200 text-purple-900'
+                          }`}
+                        >
+                          {sensitivityPropertyId === property.id ? '− Hide' : '+ Show'} Sensitivity Analysis
+                        </button>
+
+                        {sensitivityPropertyId === property.id && (
+                          <div className={`mt-4 p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                            <div className={`text-sm font-bold ${textSecondaryClass} uppercase mb-4`}>
+                              Sensitivity Analysis
+                            </div>
+
+                            {/* Output Metric Selection */}
+                            <div className="mb-4">
+                              <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>
+                                Output Metric
+                              </label>
+                              <select
+                                value={sensitivityOutputMetric}
+                                onChange={(e) => setSensitivityOutputMetric(e.target.value)}
+                                className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                              >
+                                <option value="irr">IRR (Internal Rate of Return) %</option>
+                                <option value="equityMultiple">Equity Multiple</option>
+                                <option value="dscr">DSCR (Debt Service Coverage Ratio)</option>
+                                <option value="cashOnCash">Cash-on-Cash Return %</option>
+                                <option value="capRate">Cap Rate %</option>
+                                <option value="annualCashFlow">Annual Cash Flow</option>
+                                <option value="netProceedsAtExit">Net Proceeds at Exit</option>
+                                <option value="noi">NOI (Net Operating Income)</option>
+                              </select>
+                            </div>
+
+                            {/* Variable Selection */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              {/* Row Variable */}
+                              <div>
+                                <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>
+                                  Row Variable
+                                </label>
+                                <select
+                                  value={sensitivityRowVar}
+                                  onChange={(e) => setSensitivityRowVar(e.target.value)}
+                                  className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                >
+                                  <option value="monthlyBaseRentPerSqft">Monthly Rent/SF</option>
+                                  <option value="purchasePrice">Purchase Price</option>
+                                  <option value="improvements">Improvements</option>
+                                  <option value="closingCosts">Closing Costs</option>
+                                  <option value="ltvPercent">LTV %</option>
+                                  <option value="interestRate">Interest Rate</option>
+                                  <option value="exitCapRate">Exit Cap Rate</option>
+                                  <option value="holdingPeriodMonths">Holding Period</option>
+                                </select>
+
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <div>
+                                    <label className={`block text-xs ${textSecondaryClass} mb-1`}>Min</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={sensitivityRowMin}
+                                      onChange={(e) => setSensitivityRowMin(e.target.value)}
+                                      className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className={`block text-xs ${textSecondaryClass} mb-1`}>Max</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={sensitivityRowMax}
+                                      onChange={(e) => setSensitivityRowMax(e.target.value)}
+                                      className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Column Variable */}
+                              <div>
+                                <label className={`block text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>
+                                  Column Variable
+                                </label>
+                                <select
+                                  value={sensitivityColVar}
+                                  onChange={(e) => setSensitivityColVar(e.target.value)}
+                                  className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                >
+                                  <option value="monthlyBaseRentPerSqft">Monthly Rent/SF</option>
+                                  <option value="purchasePrice">Purchase Price</option>
+                                  <option value="improvements">Improvements</option>
+                                  <option value="closingCosts">Closing Costs</option>
+                                  <option value="ltvPercent">LTV %</option>
+                                  <option value="interestRate">Interest Rate</option>
+                                  <option value="exitCapRate">Exit Cap Rate</option>
+                                  <option value="holdingPeriodMonths">Holding Period</option>
+                                </select>
+
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <div>
+                                    <label className={`block text-xs ${textSecondaryClass} mb-1`}>Min</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={sensitivityColMin}
+                                      onChange={(e) => setSensitivityColMin(e.target.value)}
+                                      className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className={`block text-xs ${textSecondaryClass} mb-1`}>Max</label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={sensitivityColMax}
+                                      onChange={(e) => setSensitivityColMax(e.target.value)}
+                                      className={`w-full px-2 py-1 rounded border ${inputBorderClass} ${inputBgClass} ${textClass}`}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Generate Button */}
+                            <button
+                              onClick={() => {
+                                const table = generateSensitivityTable(
+                                  property,
+                                  sensitivityRowVar,
+                                  sensitivityColVar,
+                                  sensitivityRowMin,
+                                  sensitivityRowMax,
+                                  sensitivityColMin,
+                                  sensitivityColMax
+                                );
+                                setSensitivityTable(table);
+                              }}
+                              className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition mb-4"
+                            >
+                              Generate Sensitivity Table
+                            </button>
+
+                            {/* Sensitivity Table Display */}
+                            {sensitivityTable && (() => {
+                              // Metric metadata
+                              const metricMeta = {
+                                irr: { label: 'IRR %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 18, fair: 13 },
+                                equityMultiple: { label: 'Equity Multiple', format: (v) => v > 0 ? `${v.toFixed(2)}x` : 'N/A', good: 2.0, fair: 1.5 },
+                                dscr: { label: 'DSCR', format: (v) => v > 0 ? v.toFixed(2) : 'N/A', good: 1.25, fair: 1.0 },
+                                cashOnCash: { label: 'Cash-on-Cash %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 8, fair: 5 },
+                                capRate: { label: 'Cap Rate %', format: (v) => v > 0 ? `${v.toFixed(2)}%` : 'N/A', good: 7, fair: 5 },
+                                annualCashFlow: { label: 'Annual Cash Flow', format: (v) => formatCurrency(v), good: 50000, fair: 25000 },
+                                netProceedsAtExit: { label: 'Net Proceeds at Exit', format: (v) => formatCurrency(v), good: 500000, fair: 250000 },
+                                noi: { label: 'NOI', format: (v) => formatCurrency(v), good: 100000, fair: 50000 }
+                              };
+
+                              const selectedMetric = metricMeta[sensitivityOutputMetric];
+
+                              return (
+                                <div className="overflow-x-auto">
+                                  <div className={`text-xs ${textSecondaryClass} mb-2 text-center`}>
+                                    {sensitivityTable.rowLabel} (rows) vs {sensitivityTable.colLabel} (columns) → {selectedMetric.label}
+                                  </div>
+                                  <table className="w-full text-xs border-collapse">
+                                    <thead>
+                                      <tr>
+                                        <th className={`border ${borderClass} p-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                          ↓ / →
+                                        </th>
+                                        {sensitivityTable.colValues.map((colVal, i) => (
+                                          <th key={i} className={`border ${borderClass} p-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                            {sensitivityTable.colFormat(colVal)}
+                                          </th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {sensitivityTable.tableData.map((row, rowIdx) => (
+                                        <tr key={rowIdx}>
+                                          <td className={`border ${borderClass} p-2 font-semibold ${darkMode ? 'bg-slate-800' : 'bg-slate-100'} ${textClass}`}>
+                                            {sensitivityTable.rowFormat(sensitivityTable.rowValues[rowIdx])}
+                                          </td>
+                                          {row.map((cell, colIdx) => {
+                                            // Get metric value
+                                            const value = cell[sensitivityOutputMetric];
+
+                                            // Color coding based on metric thresholds
+                                            let bgColor = '';
+                                            if (value >= selectedMetric.good) {
+                                              bgColor = darkMode ? 'bg-green-900' : 'bg-green-100';
+                                            } else if (value >= selectedMetric.fair) {
+                                              bgColor = darkMode ? 'bg-yellow-900' : 'bg-yellow-100';
+                                            } else {
+                                              bgColor = darkMode ? 'bg-red-900' : 'bg-red-100';
+                                            }
+
+                                            return (
+                                              <td key={colIdx} className={`border ${borderClass} p-2 text-center font-semibold ${bgColor} ${textClass}`}>
+                                                {selectedMetric.format(value)}
+                                              </td>
+                                            );
+                                          })}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                  <div className={`text-xs ${textSecondaryClass} mt-2 text-center`}>
+                                    Color Guide: Green ≥{selectedMetric.format(selectedMetric.good)} | Yellow {selectedMetric.format(selectedMetric.fair)}-{selectedMetric.format(selectedMetric.good)} | Red &lt;{selectedMetric.format(selectedMetric.fair)}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Property Details */}
+                    <div className={`p-4 rounded-lg mb-4 ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                      <div className={`text-sm font-bold ${textSecondaryClass} uppercase mb-3`}>Property Details</div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <InlineEditField
+                          value={property.squareFeet}
+                          onSave={(newValue) => updatePropertyField(property.id, 'squareFeet', newValue)}
+                          label="Square Feet"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => formatNumber(val)}
+                        />
+                        <InlineEditField
+                          value={property.monthlyBaseRentPerSqft}
+                          onSave={(newValue) => updatePropertyField(property.id, 'monthlyBaseRentPerSqft', newValue)}
+                          label="Monthly Base Rent/SF"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0.00"
+                          displayFormat={(val) => val ? `$${val}` : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.purchasePrice}
+                          onSave={(newValue) => updatePropertyField(property.id, 'purchasePrice', newValue)}
+                          label="Purchase Price"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? formatCurrency(stripCommas(val)) : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.improvements}
+                          onSave={(newValue) => updatePropertyField(property.id, 'improvements', newValue)}
+                          label="Improvements"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? formatCurrency(stripCommas(val)) : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.closingCosts}
+                          onSave={(newValue) => updatePropertyField(property.id, 'closingCosts', newValue)}
+                          label="Closing Costs"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? formatCurrency(stripCommas(val)) : '$0'}
+                        />
+                        <InlineEditField
+                          value={property.ltvPercent}
+                          onSave={(newValue) => updatePropertyField(property.id, 'ltvPercent', newValue)}
+                          label="LTV %"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? `${val}%` : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.interestRate}
+                          onSave={(newValue) => updatePropertyField(property.id, 'interestRate', newValue)}
+                          label="Interest Rate"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? `${val}%` : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.loanTerm}
+                          onSave={(newValue) => updatePropertyField(property.id, 'loanTerm', newValue)}
+                          label="Loan Term"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="30"
+                          displayFormat={(val) => val ? `${val} yrs` : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.exitCapRate}
+                          onSave={(newValue) => updatePropertyField(property.id, 'exitCapRate', newValue)}
+                          label="Exit Cap Rate"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? `${val}%` : 'N/A'}
+                        />
+                        <InlineEditField
+                          value={property.holdingPeriodMonths}
+                          onSave={(newValue) => updatePropertyField(property.id, 'holdingPeriodMonths', newValue)}
+                          label="Holding Period"
+                          type="number"
+                          darkMode={darkMode}
+                          placeholder="0"
+                          displayFormat={(val) => val ? `${val} months (${(val / 12).toFixed(1)} yrs)` : 'N/A'}
+                        />
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+
+            {filteredProperties.length === 0 && !showPropertyForm && (
+              <EmptyState
+                icon={Building2}
+                title="No Properties Yet"
+                message="Click 'New Property' to add your first property and start tracking your industrial real estate portfolio."
+                action={{
+                  label: 'New Property',
+                  onClick: handleAddProperty
+                }}
+                darkMode={darkMode}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Brokers Tab */}
+        {activeTab === 'brokers' && (
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <Search className={`absolute left-3 top-2.5 ${textSecondaryClass}`} size={20} />
+                <input
+                  type="text"
+                  placeholder="Search brokers by name, firm, email, or phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+              </div>
+              <button
+                onClick={handleAddBroker}
+                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                <Plus size={20} /> Add Broker
+              </button>
+            </div>
+
+            {/* Broker Form */}
+            {showBrokerForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
+                <h2 className={`text-2xl font-bold ${textClass} mb-6`}>
+                  {editingId ? 'Edit Broker' : 'Add New Broker'}
+                </h2>
+
+                <div className="space-y-6 mb-6">
+                  <input
+                    type="text"
+                    placeholder="Broker Name"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={formData.email || ''}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone"
+                    value={formData.phone || ''}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Firm Name"
+                    value={formData.firmName || ''}
+                    onChange={(e) => setFormData({ ...formData, firmName: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="url"
+                    placeholder="Firm Website"
+                    value={formData.firmWebsite || ''}
+                    onChange={(e) => setFormData({ ...formData, firmWebsite: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="url"
+                    placeholder="Crexi Profile Link"
+                    value={formData.crexiLink || ''}
+                    onChange={(e) => setFormData({ ...formData, crexiLink: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="License #"
+                    value={formData.licenseNumber || ''}
+                    onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSaveBroker}
+                    className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    {editingId ? 'Update' : 'Add'} Broker
+                  </button>
+                  <button
+                    onClick={() => setShowBrokerForm(false)}
+                    className={`flex-1 border ${borderClass} ${textSecondaryClass} font-semibold py-3 rounded-lg ${hoverBgClass} transition`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Brokers List */}
+            <div className="grid gap-6">
+              {brokers.filter(broker =>
+                broker.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                broker.firmName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                broker.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                broker.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map(broker => {
+                // Get initials for avatar
+                const getInitials = (name) => {
+                  if (!name) return '?';
+                  const parts = name.split(' ');
+                  if (parts.length === 1) return parts[0][0].toUpperCase();
+                  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
                 };
-                setNotes([...notes, newNote]);
-                // Save to database if configured
-                if (isSupabaseConfigured()) {
-                  await notesService.createNote(newNote);
-                }
-              } catch (error) {
-                console.error('Error saving note:', error);
-              }
-            }}
-            onToggleComplete={async (type, id) => {
-              if (type === 'followup') {
-                const followUp = followUps.find(f => f.id === id);
-                if (followUp) {
-                  const updatedFollowUp = {
-                    ...followUp,
-                    status: followUp.status === 'completed' ? 'pending' : 'completed',
-                    completedAt: followUp.status === 'completed' ? null : new Date().toISOString()
-                  };
-                  setFollowUps(followUps.map(f => f.id === id ? updatedFollowUp : f));
-                  // Update database if configured
-                  if (isSupabaseConfigured()) {
-                    await supabaseService.updateFollowUp(id, updatedFollowUp);
+
+
+                return (
+                <div key={broker.id} className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} hover:shadow-xl transition overflow-hidden`}>
+                  {/* Header with Avatar and Quick Actions */}
+                  <div className={`p-6 ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                    <div className="flex items-start gap-4">
+                      {/* Avatar Circle */}
+                      <div className="flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                          {getInitials(broker.name)}
+                        </div>
+                      </div>
+
+                      {/* Name and Title */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            {editingBrokerCardId === broker.id ? (
+                              <input
+                                type="text"
+                                value={editedBrokerCardData.name || ''}
+                                onChange={(e) => setEditedBrokerCardData({...editedBrokerCardData, name: e.target.value})}
+                                className={`text-xl font-bold ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 w-full`}
+                                placeholder="Broker name"
+                              />
+                            ) : (
+                              <h3
+                                onClick={() => openContactProfile('broker', broker.id)}
+                                className={`text-xl font-bold ${textClass} cursor-pointer hover:text-blue-500 transition`}
+                                title="Click to view broker details"
+                              >
+                                {broker.name || 'No name'}
+                              </h3>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Building2 size={14} className={textSecondaryClass} />
+                          {editingBrokerCardId === broker.id ? (
+                            <input
+                              type="text"
+                              value={editedBrokerCardData.firmName || ''}
+                              onChange={(e) => setEditedBrokerCardData({...editedBrokerCardData, firmName: e.target.value})}
+                              className={`text-sm ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1`}
+                              placeholder="Firm name"
+                            />
+                          ) : (
+                            <span className={`text-sm ${textSecondaryClass}`}>
+                              {broker.firmName || 'No firm'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Edit/Delete or Save/Cancel Buttons */}
+                      <div className="flex gap-2">
+                        {editingBrokerCardId === broker.id ? (
+                          <>
+                            <button
+                              onClick={async () => {
+                                const updates = {};
+                                const editableFields = ['name', 'firmName', 'email', 'phone'];
+
+                                editableFields.forEach(field => {
+                                  if (editedBrokerCardData[field] !== broker[field]) {
+                                    updates[field] = editedBrokerCardData[field];
+                                  }
+                                });
+
+                                if (Object.keys(updates).length > 0) {
+                                  for (const [field, value] of Object.entries(updates)) {
+                                    await updateBrokerField(broker.id, field, value);
+                                  }
+                                }
+
+                                setEditingBrokerCardId(null);
+                                setEditedBrokerCardData({});
+                              }}
+                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingBrokerCardId(null);
+                                setEditedBrokerCardData({});
+                              }}
+                              className={`px-3 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingBrokerCardId(broker.id);
+                                setEditedBrokerCardData({...broker});
+                              }}
+                              className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                              title="Edit broker"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBroker(broker.id)}
+                              className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                              title="Delete broker"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Action Buttons */}
+                    <div className="flex gap-2 mt-4">
+                      {broker.phone && (
+                        <a
+                          href={`tel:${broker.phone}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Phone size={16} />
+                          Call
+                        </a>
+                      )}
+                      {broker.email && (
+                        <a
+                          href={`mailto:${broker.email}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Mail size={16} />
+                          Email
+                        </a>
+                      )}
+                      <button
+                        onClick={() => {
+                          const noteInput = document.querySelector(`#note-input-broker-${broker.id}`);
+                          if (noteInput) noteInput.focus();
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
+                      >
+                        <MessageSquare size={16} />
+                        Note
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Contact Information */}
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} flex-shrink-0`}>
+                          <Mail size={18} className="text-blue-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Email</div>
+                          {editingBrokerCardId === broker.id ? (
+                            <input
+                              type="email"
+                              value={editedBrokerCardData.email || ''}
+                              onChange={(e) => setEditedBrokerCardData({...editedBrokerCardData, email: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="email@example.com"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {broker.email || 'Not set'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} flex-shrink-0`}>
+                          <Phone size={18} className="text-green-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Phone</div>
+                          {editingBrokerCardId === broker.id ? (
+                            <input
+                              type="tel"
+                              value={editedBrokerCardData.phone || ''}
+                              onChange={(e) => setEditedBrokerCardData({...editedBrokerCardData, phone: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="(555) 123-4567"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {broker.phone || 'Not set'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {broker.firmWebsite && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Globe size={18} className="text-purple-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Website</div>
+                            <a href={broker.firmWebsite} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 truncate">
+                              {broker.firmWebsite.replace(/^https?:\/\//, '')}
+                              <ExternalLink size={12} />
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {broker.crexiLink && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Building2 size={18} className="text-orange-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Crexi Profile</div>
+                            <a href={broker.crexiLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                              View Profile
+                              <ExternalLink size={12} />
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {broker.licenseNumber && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Target size={18} className="text-cyan-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>License #</div>
+                            <div className={`text-sm ${textClass}`}>
+                              {broker.licenseNumber}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+                );
+              })}
+            </div>
+
+            {brokers.length === 0 && !showBrokerForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                <p className={`${textSecondaryClass} text-lg`}>No brokers yet. Click "Add Broker" to get started!</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Partners Tab */}
+        {activeTab === 'partners' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className={`text-2xl font-bold ${textClass}`}>Partners & LPs</h2>
+                <p className={textSecondaryClass}>Manage your equity partners and limited partners</p>
+              </div>
+              <button
+                onClick={handleAddPartner}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
+              >
+                <Plus size={20} />
+                Add Partner
+              </button>
+            </div>
+
+            {/* Partner Form */}
+            {showPartnerForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8`}>
+                <h3 className={`text-xl font-bold ${textClass} mb-6`}>
+                  {editingId ? 'Edit Partner' : 'New Partner'}
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Contact Info */}
+                  <input
+                    type="text"
+                    placeholder="Name *"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Entity/Company Name"
+                    value={formData.entityName || ''}
+                    onChange={(e) => setFormData({ ...formData, entityName: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={formData.email || ''}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone"
+                    value={formData.phone || ''}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="url"
+                    placeholder="Website"
+                    value={formData.website || ''}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+
+                  {/* Investment Profile */}
+                  <div className="col-span-2 mt-4">
+                    <h4 className={`text-md font-semibold ${textClass} mb-3`}>Investment Profile</h4>
+                  </div>
+
+                  <select
+                    value={formData.checkSize || ''}
+                    onChange={(e) => setFormData({ ...formData, checkSize: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="">Typical Check Size</option>
+                    <option value="$50K-$100K">$50K-$100K</option>
+                    <option value="$100K-$250K">$100K-$250K</option>
+                    <option value="$250K-$500K">$250K-$500K</option>
+                    <option value="$500K-$1M">$500K-$1M</option>
+                    <option value="$1M+">$1M+</option>
+                  </select>
+
+                  <select
+                    value={formData.creExperience || ''}
+                    onChange={(e) => setFormData({ ...formData, creExperience: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="">CRE Experience Level</option>
+                    <option value="First-Time Investor">First-Time Investor</option>
+                    <option value="1-3 Deals">1-3 Deals</option>
+                    <option value="Experienced (5+ Deals)">Experienced (5+ Deals)</option>
+                    <option value="Sophisticated Investor">Sophisticated Investor</option>
+                  </select>
+
+                  <select
+                    value={formData.background || ''}
+                    onChange={(e) => setFormData({ ...formData, background: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="">Background</option>
+                    <option value="Real Estate Professional">Real Estate Professional</option>
+                    <option value="Business Owner">Business Owner</option>
+                    <option value="Finance/Banking">Finance/Banking</option>
+                    <option value="W2/Professional">W2/Professional</option>
+                    <option value="Inherited Wealth">Inherited Wealth</option>
+                    <option value="Self-Made">Self-Made</option>
+                  </select>
+
+                  <select
+                    value={formData.riskTolerance || ''}
+                    onChange={(e) => setFormData({ ...formData, riskTolerance: e.target.value })}
+                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  >
+                    <option value="">Risk Tolerance</option>
+                    <option value="Conservative">Conservative</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Aggressive">Aggressive</option>
+                  </select>
+
+                  {/* Asset Classes (multiple select) */}
+                  <div className="col-span-2">
+                    <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                      Favorite Asset Classes (select all that apply)
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {['NNN Industrial', 'NNN Retail', 'NNN Office', 'Multi-Family', 'Self-Storage', 'CRE Lending', 'Other'].map(assetClass => (
+                        <label key={assetClass} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={(formData.assetClasses || []).includes(assetClass)}
+                            onChange={(e) => {
+                              const current = formData.assetClasses || [];
+                              if (e.target.checked) {
+                                setFormData({ ...formData, assetClasses: [...current, assetClass] });
+                              } else {
+                                setFormData({ ...formData, assetClasses: current.filter(ac => ac !== assetClass) });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className={`text-sm ${textClass}`}>{assetClass}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Tags */}
+                  <div className="col-span-2">
+                    <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                      Tags (comma-separated: Active, 1031 Exchange, Repeat Investor, etc.)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Active, 1031 Exchange, Preferred Partner"
+                      value={(formData.customTags || []).join(', ')}
+                      onChange={(e) => {
+                        const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                        setFormData({ ...formData, customTags: tags });
+                      }}
+                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    />
+                  </div>
+
+                  {/* Initial Notes */}
+                  <div className="col-span-2 mt-4">
+                    <h4 className={`text-md font-semibold ${textClass} mb-3`}>Initial Notes</h4>
+                    <select
+                      value={formData.initialNoteCategory || 'general'}
+                      onChange={(e) => setFormData({ ...formData, initialNoteCategory: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2`}
+                    >
+                      <option value="general">General</option>
+                      <option value="call">Call</option>
+                      <option value="meeting">Meeting</option>
+                      <option value="email">Email</option>
+                    </select>
+                    <textarea
+                      placeholder="Add notes about this partner (optional)..."
+                      value={formData.initialNotes || ''}
+                      onChange={(e) => setFormData({ ...formData, initialNotes: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 h-24`}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={handleSavePartner}
+                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                  >
+                    {editingId ? 'Update Partner' : 'Create Partner'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPartnerForm(false);
+                      setFormData({});
+                    }}
+                    className={`px-6 py-3 rounded-lg font-semibold transition ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-200 hover:bg-gray-300'} ${textClass}`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Partner Cards */}
+            <div className="grid gap-6">
+              {partners.filter(partner =>
+                partner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                partner.entityName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                partner.email?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map(partner => {
+                const getInitials = (name) => {
+                  if (!name) return '?';
+                  const parts = name.split(' ');
+                  if (parts.length === 1) return parts[0][0].toUpperCase();
+                  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                };
+
+
+                return (
+                <div key={partner.id} className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} hover:shadow-xl transition overflow-hidden`}>
+                  {/* Header */}
+                  <div className={`p-6 ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                    <div className="flex items-start gap-4">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                          {getInitials(partner.name)}
+                        </div>
+                      </div>
+
+                      {/* Name and Entity */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            {editingPartnerCardId === partner.id ? (
+                              <input
+                                type="text"
+                                value={editedPartnerCardData.name || ''}
+                                onChange={(e) => setEditedPartnerCardData({...editedPartnerCardData, name: e.target.value})}
+                                className={`text-xl font-bold ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 w-full`}
+                                placeholder="Partner name"
+                              />
+                            ) : (
+                              <h3
+                                onClick={() => openContactProfile('partner', partner.id)}
+                                className={`text-xl font-bold ${textClass} cursor-pointer hover:text-blue-500 transition`}
+                                title="Click to view partner details"
+                              >
+                                {partner.name || 'No name'}
+                              </h3>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Building2 size={14} className={textSecondaryClass} />
+                          <span className={`text-sm ${textSecondaryClass}`}>
+                            {partner.entityName || 'No entity'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Edit/Delete or Save/Cancel Buttons */}
+                      <div className="flex gap-2">
+                        {editingPartnerCardId === partner.id ? (
+                          <>
+                            <button
+                              onClick={async () => {
+                                const updates = {};
+                                const editableFields = ['name', 'commitmentAmount', 'email', 'phone', 'website'];
+
+                                editableFields.forEach(field => {
+                                  if (editedPartnerCardData[field] !== partner[field]) {
+                                    updates[field] = editedPartnerCardData[field];
+                                  }
+                                });
+
+                                if (Object.keys(updates).length > 0) {
+                                  for (const [field, value] of Object.entries(updates)) {
+                                    await updatePartnerField(partner.id, field, value);
+                                  }
+                                }
+
+                                setEditingPartnerCardId(null);
+                                setEditedPartnerCardData({});
+                              }}
+                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingPartnerCardId(null);
+                                setEditedPartnerCardData({});
+                              }}
+                              className={`px-3 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingPartnerCardId(partner.id);
+                                setEditedPartnerCardData({...partner});
+                              }}
+                              className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                              title="Edit partner"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePartner(partner.id)}
+                              className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                              title="Delete partner"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 mt-4">
+                      {partner.phone && (
+                        <a
+                          href={`tel:${partner.phone}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Phone size={16} />
+                          Call
+                        </a>
+                      )}
+                      {partner.email && (
+                        <a
+                          href={`mailto:${partner.email}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Mail size={16} />
+                          Email
+                        </a>
+                      )}
+                      <button
+                        onClick={() => {
+                          const noteInput = document.querySelector(`#note-input-partner-${partner.id}`);
+                          if (noteInput) noteInput.focus();
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
+                      >
+                        <MessageSquare size={16} />
+                        Note
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Contact & Investment Info */}
+                  <div className="p-6">
+                    {/* Contact Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 pb-4 border-b ${borderClass}">
+                      <div className="flex items-center gap-2">
+                        <Mail size={16} className={textSecondaryClass} />
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Email</div>
+                          {editingPartnerCardId === partner.id ? (
+                            <input
+                              type="email"
+                              value={editedPartnerCardData.email || ''}
+                              onChange={(e) => setEditedPartnerCardData({...editedPartnerCardData, email: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="email@example.com"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {partner.email || 'Not set'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone size={16} className={textSecondaryClass} />
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Phone</div>
+                          {editingPartnerCardId === partner.id ? (
+                            <input
+                              type="tel"
+                              value={editedPartnerCardData.phone || ''}
+                              onChange={(e) => setEditedPartnerCardData({...editedPartnerCardData, phone: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="(555) 123-4567"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {partner.phone || 'Not set'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Globe size={16} className={textSecondaryClass} />
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Website</div>
+                          {editingPartnerCardId === partner.id ? (
+                            <input
+                              type="url"
+                              value={editedPartnerCardData.website || ''}
+                              onChange={(e) => setEditedPartnerCardData({...editedPartnerCardData, website: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="https://example.com"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {partner.website || 'Not set'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                  {/* Investment Profile */}
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-4`}>
+                    {partner.checkSize && (
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Check Size</div>
+                        <div className={`text-sm font-medium ${textClass}`}>{partner.checkSize}</div>
+                      </div>
+                    )}
+                    {partner.creExperience && (
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>CRE Experience</div>
+                        <div className={`text-sm font-medium ${textClass}`}>{partner.creExperience}</div>
+                      </div>
+                    )}
+                    {partner.background && (
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Background</div>
+                        <div className={`text-sm font-medium ${textClass}`}>{partner.background}</div>
+                      </div>
+                    )}
+                    {partner.riskTolerance && (
+                      <div>
+                        <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Risk Tolerance</div>
+                        <div className={`text-sm font-medium ${textClass}`}>{partner.riskTolerance}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Asset Classes */}
+                  {partner.assetClasses && partner.assetClasses.length > 0 && (
+                    <div className="mb-4">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>Asset Classes</div>
+                      <div className="flex flex-wrap gap-2">
+                        {partner.assetClasses.map(ac => (
+                          <span key={ac} className={`px-3 py-1 rounded-full text-xs font-medium ${darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
+                            {ac}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Custom Tags */}
+                  {partner.customTags && partner.customTags.length > 0 && (
+                    <div className="mb-4">
+                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-2`}>Tags</div>
+                      <div className="flex flex-wrap gap-2">
+                        {partner.customTags.map(tag => (
+                          <span key={tag} className={`px-3 py-1 rounded-full text-xs font-medium ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-800'}`}>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+                </div>
+              );
+              })}
+            </div>
+
+            {partners.length === 0 && !showPartnerForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                <p className={`${textSecondaryClass} text-lg`}>No partners yet. Click "Add Partner" to get started!</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Gatekeepers Tab */}
+        {activeTab === 'gatekeepers' && (
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <Search className={`absolute left-3 top-2.5 ${textSecondaryClass}`} size={20} />
+                <input
+                  type="text"
+                  placeholder="Search gatekeepers by name, company, title, or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+              </div>
+              <button
+                onClick={handleAddGatekeeper}
+                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                <Plus size={20} /> Add Gatekeeper
+              </button>
+            </div>
+
+            {/* Gatekeeper Form */}
+            {showGatekeeperForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
+                <h2 className={`text-2xl font-bold ${textClass} mb-6`}>
+                  {editingId ? 'Edit Gatekeeper' : 'Add New Gatekeeper'}
+                </h2>
+
+                <div className="space-y-6 mb-6">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Title (e.g., Executive Assistant, Office Manager)"
+                    value={formData.title || ''}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={formData.email || ''}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone"
+                    value={formData.phone || ''}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Company/Firm"
+                    value={formData.company || ''}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="url"
+                    placeholder="Firm Website"
+                    value={formData.firmWebsite || ''}
+                    onChange={(e) => setFormData({ ...formData, firmWebsite: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Related To (optional - broker or contact they gate for)"
+                    value={formData.relatedTo || ''}
+                    onChange={(e) => setFormData({ ...formData, relatedTo: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSaveGatekeeper}
+                    className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    {editingId ? 'Update' : 'Add'} Gatekeeper
+                  </button>
+                  <button
+                    onClick={() => setShowGatekeeperForm(false)}
+                    className={`flex-1 border ${borderClass} ${textSecondaryClass} font-semibold py-3 rounded-lg ${hoverBgClass} transition`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Gatekeepers List */}
+            <div className="grid gap-6">
+              {gatekeepers.filter(gatekeeper =>
+                gatekeeper.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                gatekeeper.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                gatekeeper.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                gatekeeper.email?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).map(gatekeeper => {
+                const getInitials = (name) => {
+                  if (!name) return '?';
+                  const parts = name.split(' ');
+                  if (parts.length === 1) return parts[0][0].toUpperCase();
+                  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                };
+
+                return (
+                <div key={gatekeeper.id} className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} hover:shadow-xl transition overflow-hidden`}>
+                  {/* Header */}
+                  <div className={`p-6 ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                    <div className="flex items-start gap-4">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                          {getInitials(gatekeeper.name)}
+                        </div>
+                      </div>
+
+                      {/* Name and Title */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            {editingGatekeeperCardId === gatekeeper.id ? (
+                              <input
+                                type="text"
+                                value={editedGatekeeperCardData.name || ''}
+                                onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, name: e.target.value})}
+                                className={`text-xl font-bold ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 w-full`}
+                                placeholder="Gatekeeper name"
+                              />
+                            ) : (
+                              <h3
+                                onClick={() => openContactProfile('gatekeeper', gatekeeper.id)}
+                                className={`text-xl font-bold ${textClass} cursor-pointer hover:text-blue-500 transition`}
+                                title="Click to view gatekeeper details"
+                              >
+                                {gatekeeper.name || 'No name'}
+                              </h3>
+                            )}
+                          </div>
+                        </div>
+                        {editingGatekeeperCardId === gatekeeper.id ? (
+                          <input
+                            type="text"
+                            value={editedGatekeeperCardData.title || ''}
+                            onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, title: e.target.value})}
+                            className={`text-sm ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 w-full mt-1`}
+                            placeholder="Title"
+                          />
+                        ) : (
+                          <div className={`text-sm ${textSecondaryClass}`}>
+                            {gatekeeper.title || 'No title'}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 mt-1">
+                          <Building2 size={14} className={textSecondaryClass} />
+                          {editingGatekeeperCardId === gatekeeper.id ? (
+                            <input
+                              type="text"
+                              value={editedGatekeeperCardData.company || ''}
+                              onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, company: e.target.value})}
+                              className={`text-sm ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1`}
+                              placeholder="Company/Firm"
+                            />
+                          ) : (
+                            <span className={`text-sm ${textSecondaryClass}`}>
+                              {gatekeeper.company || 'No company'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Edit/Delete or Save/Cancel Buttons */}
+                      <div className="flex gap-2">
+                        {editingGatekeeperCardId === gatekeeper.id ? (
+                          <>
+                            <button
+                              onClick={async () => {
+                                const updates = {};
+                                const editableFields = ['name', 'title', 'company', 'email', 'phone', 'firmWebsite'];
+
+                                editableFields.forEach(field => {
+                                  if (editedGatekeeperCardData[field] !== gatekeeper[field]) {
+                                    updates[field] = editedGatekeeperCardData[field];
+                                  }
+                                });
+
+                                if (Object.keys(updates).length > 0) {
+                                  for (const [field, value] of Object.entries(updates)) {
+                                    await updateGatekeeperField(gatekeeper.id, field, value);
+                                  }
+                                }
+
+                                setEditingGatekeeperCardId(null);
+                                setEditedGatekeeperCardData({});
+                              }}
+                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingGatekeeperCardId(null);
+                                setEditedGatekeeperCardData({});
+                              }}
+                              className={`px-3 py-2 ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} rounded-lg font-semibold transition text-sm`}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingGatekeeperCardId(gatekeeper.id);
+                                setEditedGatekeeperCardData({...gatekeeper});
+                              }}
+                              className={`p-2 ${textSecondaryClass} ${hoverBgClass} rounded-lg transition`}
+                              title="Edit gatekeeper"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteGatekeeper(gatekeeper.id)}
+                              className={`p-2 rounded-lg transition ${darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-red-50'}`}
+                              title="Delete gatekeeper"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 mt-4">
+                      {gatekeeper.phone && (
+                        <a
+                          href={`tel:${gatekeeper.phone}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Phone size={16} />
+                          Call
+                        </a>
+                      )}
+                      {gatekeeper.email && (
+                        <a
+                          href={`mailto:${gatekeeper.email}`}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm"
+                        >
+                          <Mail size={16} />
+                          Email
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contact Information */}
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} flex-shrink-0`}>
+                          <Mail size={18} className="text-blue-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Email</div>
+                          {editingGatekeeperCardId === gatekeeper.id ? (
+                            <input
+                              type="email"
+                              value={editedGatekeeperCardData.email || ''}
+                              onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, email: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="email@example.com"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {gatekeeper.email || 'Not set'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} flex-shrink-0`}>
+                          <Phone size={18} className="text-green-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Phone</div>
+                          {editingGatekeeperCardId === gatekeeper.id ? (
+                            <input
+                              type="tel"
+                              value={editedGatekeeperCardData.phone || ''}
+                              onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, phone: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="(555) 123-4567"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {gatekeeper.phone || 'Not set'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} flex-shrink-0`}>
+                          <Globe size={18} className="text-purple-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-semibold ${textSecondaryClass} uppercase mb-1`}>Firm Website</div>
+                          {editingGatekeeperCardId === gatekeeper.id ? (
+                            <input
+                              type="url"
+                              value={editedGatekeeperCardData.firmWebsite || ''}
+                              onChange={(e) => setEditedGatekeeperCardData({...editedGatekeeperCardData, firmWebsite: e.target.value})}
+                              className={`w-full ${darkMode ? 'bg-slate-700 text-gray-100' : 'bg-white text-gray-900'} px-2 py-1 rounded border ${borderClass} focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
+                              placeholder="https://example.com"
+                            />
+                          ) : (
+                            <div className={`text-sm ${textClass}`}>
+                              {gatekeeper.firmWebsite || 'Not set'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {gatekeeper.relatedTo && (
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                            <Target size={18} className="text-purple-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs ${textSecondaryClass} uppercase font-semibold`}>Related To</div>
+                            <div className={`text-sm ${textClass}`}>
+                              {gatekeeper.relatedTo}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+              })}
+            </div>
+
+            {gatekeepers.length === 0 && !showGatekeeperForm && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                <p className={`${textSecondaryClass} text-lg`}>No gatekeepers yet. Click "Add Gatekeeper" to get started!</p>
+              </div>
+            )}
+          </div>
+        )}
+
+
+        {/* Total Contacts Tab */}
+
+        {activeTab === 'contacts' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className={`text-2xl font-bold ${textClass}`}>All Contacts</h2>
+                <p className={textSecondaryClass}>
+                  {brokers.length} Brokers • {gatekeepers.length} Gatekeepers • {partners.length} Partners
+                </p>
+              </div>
+            </div>
+
+            {/* Search and Filter Bar */}
+            <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
+              {/* Search Bar */}
+              <div className="relative mb-4">
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${textSecondaryClass}`} size={20} />
+                <input
+                  type="text"
+                  placeholder="Search contacts by name, company, email, phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${textSecondaryClass} hover:${textClass}`}
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Buttons */}
+              <div className="flex flex-wrap gap-3 mb-4">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setContactFilter('all')}
+                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                      contactFilter === 'all'
+                        ? 'bg-blue-600 text-white'
+                        : `${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass}`
+                    }`}
+                  >
+                    All ({brokers.length + gatekeepers.length + partners.length})
+                  </button>
+                  <button
+                    onClick={() => setContactFilter('brokers')}
+                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                      contactFilter === 'brokers'
+                        ? 'bg-blue-600 text-white'
+                        : `${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass}`
+                    }`}
+                  >
+                    Brokers ({brokers.length})
+                  </button>
+                  <button
+                    onClick={() => setContactFilter('gatekeepers')}
+                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                      contactFilter === 'gatekeepers'
+                        ? 'bg-blue-600 text-white'
+                        : `${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass}`
+                    }`}
+                  >
+                    Gatekeepers ({gatekeepers.length})
+                  </button>
+                  <button
+                    onClick={() => setContactFilter('partners')}
+                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                      contactFilter === 'partners'
+                        ? 'bg-blue-600 text-white'
+                        : `${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'} ${textClass}`
+                    }`}
+                  >
+                    Partners ({partners.length})
+                  </button>
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="ml-auto">
+                  <select
+                    value={contactSort}
+                    onChange={(e) => setContactSort(e.target.value)}
+                    className={`px-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass} focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-sm`}
+                  >
+                    <option value="name">Sort by Name</option>
+                    <option value="recent">Sort by Recent Activity</option>
+                    <option value="type">Sort by Type</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Active Filters Display */}
+              {(searchTerm || contactFilter !== 'all') && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-sm font-medium ${textSecondaryClass}`}>Active filters:</span>
+                  {searchTerm && (
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                      Search: "{searchTerm}"
+                      <button onClick={() => setSearchTerm('')} className="hover:text-blue-900">
+                        <X size={14} />
+                      </button>
+                    </span>
+                  )}
+                  {contactFilter !== 'all' && (
+                    <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                      {contactFilter.charAt(0).toUpperCase() + contactFilter.slice(1)}
+                      <button onClick={() => setContactFilter('all')} className="hover:text-purple-900">
+                        <X size={14} />
+                      </button>
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setContactFilter('all');
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-semibold ml-2"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Combined Contacts List */}
+            <div className="grid gap-6">
+              {(() => {
+                // Combine all contacts with type information
+                const allContacts = [
+                  ...brokers.map(b => ({ ...b, contactType: 'broker', displayName: b.name, company: b.firmName })),
+                  ...gatekeepers.map(g => ({ ...g, contactType: 'gatekeeper', displayName: g.name, company: g.company })),
+                  ...partners.map(p => ({ ...p, contactType: 'partner', displayName: p.name, company: p.entityName }))
+                ];
+
+                // Apply filters
+                let filtered = allContacts.filter(contact => {
+                  // Type filter
+                  if (contactFilter !== 'all' && contact.contactType !== contactFilter.slice(0, -1)) {
+                    return false;
                   }
+
+                  // Search filter
+                  if (searchTerm) {
+                    const search = searchTerm.toLowerCase();
+                    return (
+                      contact.displayName?.toLowerCase().includes(search) ||
+                      contact.company?.toLowerCase().includes(search) ||
+                      contact.email?.toLowerCase().includes(search) ||
+                      contact.phone?.toLowerCase().includes(search) ||
+                      contact.title?.toLowerCase().includes(search)
+                    );
+                  }
+
+                  return true;
+                });
+
+                // Apply sorting
+                if (contactSort === 'name') {
+                  filtered.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+                } else if (contactSort === 'type') {
+                  filtered.sort((a, b) => a.contactType.localeCompare(b.contactType));
+                } else if (contactSort === 'recent') {
+                  filtered.sort((a, b) => {
+                    const aHistory = a.noteHistory || [];
+                    const bHistory = b.noteHistory || [];
+                    const aLastNote = aHistory.length > 0 ? new Date(aHistory[aHistory.length - 1].timestamp) : new Date(0);
+                    const bLastNote = bHistory.length > 0 ? new Date(bHistory[bHistory.length - 1].timestamp) : new Date(0);
+                    return bLastNote - aLastNote;
+                  });
                 }
-              }
-            }}
-            onContactClick={(contact) => {
-              // Handle contact click - could open a modal or navigate to contact detail
-              console.log('Contact clicked:', contact);
-            }}
-            onActivityClick={(activity) => {
-              // Handle activity click
-              console.log('Activity clicked:', activity);
-            }}
-            onDayClick={(date) => {
-              // Handle day click - could navigate to calendar view
-              console.log('Day clicked:', date);
-            }}
-            onItemClick={(item) => {
-              // Handle item click
-              console.log('Item clicked:', item);
-            }}
-          />
+
+                // Show empty state if no results
+                if (filtered.length === 0) {
+                  return (
+                    <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center border ${borderClass}`}>
+                      <Search size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
+                      <p className={`${textClass} text-lg font-semibold mb-2`}>No contacts found</p>
+                      <p className={`${textSecondaryClass}`}>
+                        {searchTerm ? `No contacts match "${searchTerm}"` : 'Try adjusting your filters'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                // Render filtered contacts
+                return filtered.map(contact => {
+                  const typeConfig = {
+                    broker: {
+                      label: 'BROKER',
+                      color: 'bg-blue-100 text-blue-800',
+                      detailsTab: 'brokers'
+                    },
+                    gatekeeper: {
+                      label: 'GATEKEEPER',
+                      color: 'bg-purple-100 text-purple-800',
+                      detailsTab: 'gatekeepers'
+                    },
+                    partner: {
+                      label: 'PARTNER',
+                      color: 'bg-green-100 text-green-800',
+                      detailsTab: 'partners'
+                    }
+                  };
+
+                  const config = typeConfig[contact.contactType];
+
+                  return (
+                    <div
+                      key={`${contact.contactType}-${contact.id}`}
+                      className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass} hover:shadow-xl transition cursor-pointer`}
+                      onClick={() => {
+                        setProfileContact(contact);
+                        setViewingContactProfile(true);
+                      }}
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className={`text-2xl font-bold ${textClass}`}>{contact.displayName}</h3>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded ${config.color}`}>
+                              {config.label}
+                            </span>
+                          </div>
+                          {contact.title && (
+                            <p className={`${textSecondaryClass} text-sm`}>{contact.title}</p>
+                          )}
+                        </div>
+                        <div className={`text-sm ${textSecondaryClass} flex items-center gap-1`}>
+                          View Details
+                          <ExternalLink size={14} />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {contact.company && (
+                          <div className="text-sm">
+                            <span className={`font-medium ${textSecondaryClass}`}>
+                              {contact.contactType === 'broker' ? 'Firm:' : 'Company:'}
+                            </span>
+                            <span className={`${textClass} ml-2`}>{contact.company}</span>
+                          </div>
+                        )}
+                        {contact.email && (
+                          <div className="text-sm">
+                            <span className={`font-medium ${textSecondaryClass}`}>Email:</span>
+                            <a href={`mailto:${contact.email}`} className="text-blue-600 hover:underline ml-2">
+                              {contact.email}
+                            </a>
+                          </div>
+                        )}
+                        {contact.phone && (
+                          <div className="text-sm">
+                            <span className={`font-medium ${textSecondaryClass}`}>Phone:</span>
+                            <a href={`tel:${contact.phone}`} className="text-blue-600 hover:underline ml-2">
+                              {contact.phone}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {(brokers.length === 0 && gatekeepers.length === 0 && partners.length === 0) && (
+              <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
+                <p className={`${textSecondaryClass} text-lg`}>No contacts yet. Add brokers, gatekeepers, and partners to get started!</p>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Follow-ups Tab (keeping old brokers section start) */}
