@@ -2764,7 +2764,6 @@ export default function IndustrialCRM() {
                       {(() => {
                         const warmingContacts = [...brokers, ...partners, ...gatekeepers]
                           .filter(contact => {
-                            );
                             const recentEvents = events.filter(e => {
                               const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
                               return e.taggedContacts?.[type]?.includes(contact.id) &&
