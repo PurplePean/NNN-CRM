@@ -1,24 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, Calendar, Bell, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, LogOut } from 'lucide-react';
+import { Trash2, Plus, Edit2, Search, Moon, Sun, X, Database, AlertTriangle, CheckCircle, Clock, AlertCircle, TrendingUp, DollarSign, Building2, Target, Phone, Mail, Video, MessageSquare, User, Globe, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, LogOut } from 'lucide-react';
 import InlineEditField from './components/InlineEditField';
 import ConfirmDialog from './components/ConfirmDialog';
 import LoadingSpinner from './components/LoadingSpinner';
-import FollowUpForm from './components/FollowUpForm';
 import CustomSelect from './components/CustomSelect';
 import NotesSidebar from './components/NotesSidebar';
 import { supabaseService, notesService, isSupabaseConfigured, supabase } from './services/supabase';
-import {
-  initGoogleCalendar,
-  initGoogleOAuth,
-  isGoogleCalendarReady,
-  isGoogleCalendarConnected,
-  connectGoogleCalendar,
-  disconnectGoogleCalendar,
-  syncEventToGoogle,
-  deleteGoogleCalendarEvent,
-  syncFromGoogleCalendar,
-  syncAllEventsToGoogle
-} from './services/googleCalendar';
 
 // ==================
 // CONSTANTS
@@ -28,9 +15,6 @@ const ALLOWED_EMAILS = [
   'zach@axispoint.llc',
   'ethaniel@axispoint.llc'
 ];
-
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
-                     'July', 'August', 'September', 'October', 'November', 'December'];
 
 const EVENT_TYPES = ['Call', 'Email', 'Meeting', 'Property Tour', 'Broker Meeting', 'Partner Presentation',
                      'Due Diligence Deadline', 'Closing Date', 'Other'];
@@ -82,7 +66,6 @@ export default function IndustrialCRM() {
   const [partners, setPartners] = useState([]);
   const [gatekeepers, setGatekeepers] = useState([]);
   const [events, setEvents] = useState([]);
-  const [followUps, setFollowUps] = useState([]);
   const [partnersInDeal, setPartnersInDeal] = useState([]);
   const [leases, setLeases] = useState([]);
   const [notes, setNotes] = useState([]); // Categorized notes for all entities
@@ -105,14 +88,6 @@ export default function IndustrialCRM() {
   const [authLoading, setAuthLoading] = useState(true);
 
   // ==================
-  // GOOGLE CALENDAR SYNC STATE
-  // ==================
-  const [googleCalendarReady, setGoogleCalendarReady] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState(null);
-  const [syncStatus, setSyncStatus] = useState({ message: '', type: '' });
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  // ==================
   // FORM/MODAL STATE
   // ==================
   const [showPropertyForm, setShowPropertyForm] = useState(false);
@@ -121,19 +96,9 @@ export default function IndustrialCRM() {
   const [showGatekeeperForm, setShowGatekeeperForm] = useState(false);
   const [showInlineBrokerForm, setShowInlineBrokerForm] = useState(false);
   const [showEventForm, setShowEventForm] = useState(false);
-  const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [inlineBrokerData, setInlineBrokerData] = useState({});
-
-  // ==================
-  // CALENDAR STATE
-  // ==================
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [calendarView, setCalendarView] = useState('month');
-  const [selectedDayDetails, setSelectedDayDetails] = useState(null);
-  const [contactTagSearch, setContactTagSearch] = useState('');
 
   // ==================
   // NOTIFICATION STATE
@@ -160,9 +125,7 @@ export default function IndustrialCRM() {
   const [profileContact, setProfileContact] = useState(null);
   const [editingObjective, setEditingObjective] = useState(false);
   const [objectiveText, setObjectiveText] = useState('');
-  const [showInlineFollowUpForm, setShowInlineFollowUpForm] = useState(false);
   const [showInlineEventForm, setShowInlineEventForm] = useState(false);
-  const [inlineFollowUpData, setInlineFollowUpData] = useState({});
   const [inlineEventData, setInlineEventData] = useState({});
 
   // ==================
@@ -320,59 +283,6 @@ export default function IndustrialCRM() {
     if (error) console.error('Error signing out:', error);
   };
 
-  /**
-   * Connect to Google Calendar
-   * Initiates OAuth flow for calendar access
-   * @async
-   * @returns {Promise<void>}
-   */
-  const handleConnectCalendar = async () => {
-    try {
-      setSyncStatus({ message: 'Connecting to Google Calendar...', type: '' });
-      await connectGoogleCalendar();
-      setGoogleCalendarReady(true);
-      setSyncStatus({ message: 'Google Calendar connected', type: 'success' });
-      showToast('Google Calendar connected successfully', 'success');
-
-      // Perform initial sync
-      if (user) {
-        const result = await syncFromGoogleCalendar();
-        if (result.success) {
-          setLastSyncTime(new Date());
-          // Reload events and follow-ups after sync
-          const [dbEvents, dbFollowUps] = await Promise.all([
-            supabaseService.getAll('events'),
-            supabaseService.getAll('follow_ups')
-          ]);
-          if (dbEvents) setEvents(dbEvents);
-          if (dbFollowUps) setFollowUps(dbFollowUps);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to connect Google Calendar:', error);
-      setSyncStatus({ message: `Connection failed: ${error.message}`, type: 'error' });
-      showToast('Failed to connect Google Calendar', 'error');
-    }
-  };
-
-  /**
-   * Disconnect from Google Calendar
-   * Revokes OAuth token and clears stored credentials
-   * @async
-   * @returns {Promise<void>}
-   */
-  const handleDisconnectCalendar = async () => {
-    try {
-      await disconnectGoogleCalendar();
-      setGoogleCalendarReady(false);
-      setSyncStatus({ message: 'Google Calendar disconnected', type: '' });
-      showToast('Google Calendar disconnected', 'success');
-    } catch (error) {
-      console.error('Failed to disconnect Google Calendar:', error);
-      showToast('Failed to disconnect Google Calendar', 'error');
-    }
-  };
-
   // ==================
   // INITIALIZATION & EFFECTS
   // ==================
@@ -418,13 +328,12 @@ export default function IndustrialCRM() {
         }
 
         // Load from Supabase
-        const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbFollowUps, dbPartnersInDeal, dbLeases, dbNotes] = await Promise.all([
+        const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbPartnersInDeal, dbLeases, dbNotes] = await Promise.all([
           supabaseService.getAll('properties'),
           supabaseService.getAll('brokers'),
           supabaseService.getAll('partners'),
           supabaseService.getAll('gatekeepers'),
           supabaseService.getAll('events'),
-          supabaseService.getAll('follow_ups'),
           supabaseService.getAll('partners_in_deal'),
           supabaseService.getAll('leases'),
           notesService.getAllNotes()
@@ -435,7 +344,6 @@ export default function IndustrialCRM() {
         if (dbPartners) setPartners(dbPartners);
         if (dbGatekeepers) setGatekeepers(dbGatekeepers);
         if (dbEvents) setEvents(dbEvents);
-        if (dbFollowUps) setFollowUps(dbFollowUps);
         if (dbPartnersInDeal) setPartnersInDeal(dbPartnersInDeal);
         if (dbLeases) setLeases(dbLeases);
         if (dbNotes) setNotes(dbNotes);
@@ -464,95 +372,6 @@ export default function IndustrialCRM() {
   useEffect(() => {
     localStorage.setItem('dashboardView', dashboardView);
   }, [dashboardView]);
-
-  // Initialize Google Calendar API and OAuth client
-  useEffect(() => {
-    const initCalendar = async () => {
-      try {
-        // Initialize gapi client (no auth required yet)
-        await initGoogleCalendar();
-
-        // Initialize OAuth client
-        await initGoogleOAuth();
-
-        // Check if user already has a calendar token
-        if (isGoogleCalendarConnected()) {
-          setGoogleCalendarReady(true);
-          console.log('Google Calendar already connected');
-          setSyncStatus({ message: 'Google Calendar connected', type: 'success' });
-
-          // Perform initial sync if user is logged in
-          if (user) {
-            const result = await syncFromGoogleCalendar();
-            if (result.success) {
-              setLastSyncTime(new Date());
-              // Reload events and follow-ups after sync
-              const [dbEvents, dbFollowUps] = await Promise.all([
-                supabaseService.getAll('events'),
-                supabaseService.getAll('follow_ups')
-              ]);
-              if (dbEvents) setEvents(dbEvents);
-              if (dbFollowUps) setFollowUps(dbFollowUps);
-            }
-          }
-        } else {
-          setGoogleCalendarReady(false);
-          setSyncStatus({ message: 'Connect Google Calendar to enable sync', type: '' });
-        }
-      } catch (error) {
-        console.error('Failed to initialize Google Calendar:', error);
-        setGoogleCalendarReady(false);
-        setSyncStatus({ message: `Calendar initialization error: ${error.message}`, type: 'error' });
-      }
-    };
-
-    initCalendar();
-  }, [user]);
-
-  // Periodic sync from Google Calendar (every 5 minutes)
-  useEffect(() => {
-    if (!googleCalendarReady || !user) return;
-
-    const syncInterval = setInterval(async () => {
-      try {
-        setIsSyncing(true);
-        console.log('Running periodic sync from Google Calendar...');
-
-        const result = await syncFromGoogleCalendar();
-
-        if (result.success) {
-          setLastSyncTime(new Date());
-          setSyncStatus({
-            message: result.message || 'Synced successfully',
-            type: 'success'
-          });
-
-          // Reload events and follow-ups after sync
-          const [dbEvents, dbFollowUps] = await Promise.all([
-            supabaseService.getAll('events'),
-            supabaseService.getAll('follow_ups')
-          ]);
-          if (dbEvents) setEvents(dbEvents);
-          if (dbFollowUps) setFollowUps(dbFollowUps);
-        } else {
-          setSyncStatus({
-            message: result.message || 'Sync failed',
-            type: 'warning'
-          });
-        }
-      } catch (error) {
-        console.error('Periodic sync error:', error);
-        setSyncStatus({
-          message: `Sync error: ${error.message}`,
-          type: 'error'
-        });
-      } finally {
-        setIsSyncing(false);
-      }
-    }, 5 * 60 * 1000); // 5 minutes
-
-    return () => clearInterval(syncInterval);
-  }, [googleCalendarReady, user]);
 
   // ==================
   // FORMATTING UTILITIES
@@ -683,113 +502,6 @@ export default function IndustrialCRM() {
   };
 
   // ==================
-  // CALENDAR UTILITIES
-  // ==================
-
-  /**
-   * Get number of days in month
-   * @param {number} month - Month (0-11)
-   * @param {number} year - Year
-   * @returns {number} Number of days
-   */
-  const getDaysInMonth = (month, year) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-
-  /**
-   * Get first day of month (0=Sunday, 6=Saturday)
-   * @param {number} month - Month (0-11)
-   * @param {number} year - Year
-   * @returns {number} Day of week
-   */
-  const getFirstDayOfMonth = (month, year) => {
-    return new Date(year, month, 1).getDay();
-  };
-
-  /**
-   * Generate array of days for calendar grid
-   * @returns {Array<number|null>} Array of days with null for empty cells
-   */
-  const generateCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentMonth, currentYear);
-    const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
-    const days = [];
-
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-
-    // Add all days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(day);
-    }
-
-    return days;
-  };
-
-  /**
-   * Get events for specific day
-   * @param {number} day - Day of month
-   * @returns {Array} Events for that day
-   */
-  const getEventsForDay = (day) => {
-    if (!day) return [];
-    const dateToCheck = new Date(currentYear, currentMonth, day);
-    return events.filter(event => {
-      const eventDate = new Date(event.date);
-      return eventDate.getFullYear() === currentYear &&
-             eventDate.getMonth() === currentMonth &&
-             eventDate.getDate() === day;
-    });
-  };
-
-  /**
-   * Navigate to previous month in calendar
-   */
-  const goToPreviousMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
-    } else {
-      setCurrentMonth(currentMonth - 1);
-    }
-  };
-
-  /**
-   * Navigate to next month in calendar
-   */
-  const goToNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
-    } else {
-      setCurrentMonth(currentMonth + 1);
-    }
-  };
-
-  /**
-   * Navigate to today's month in calendar
-   */
-  const goToToday = () => {
-    const today = new Date();
-    setCurrentMonth(today.getMonth());
-    setCurrentYear(today.getFullYear());
-  };
-
-  /**
-   * Check if calendar day is today
-   * @param {number} day - Day of month
-   * @returns {boolean} True if day is today
-   */
-  const isToday = (day) => {
-    const today = new Date();
-    return day === today.getDate() &&
-           currentMonth === today.getMonth() &&
-           currentYear === today.getFullYear();
-  };
-
-  // ==================
   // TOAST NOTIFICATIONS
   // ==================
 
@@ -805,33 +517,6 @@ export default function IndustrialCRM() {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 4000);
   }, []);
-
-  // ==================
-  // GOOGLE CALENDAR INTEGRATION
-  // ==================
-
-  /**
-   * Export event to Google Calendar
-   * @param {Object} event - Event object
-   */
-  const exportToGoogleCalendar = (event) => {
-    const title = encodeURIComponent(event.title);
-    const details = encodeURIComponent(event.description || '');
-    const location = encodeURIComponent(event.location || '');
-
-    // Format dates for Google Calendar (YYYYMMDDTHHmmss)
-    const startDate = new Date(event.date);
-    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour later
-
-    const formatGoogleDate = (date) => {
-      return date.toISOString().replace(/-|:|\.\d+/g, '');
-    };
-
-    const dates = `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`;
-
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
-    window.open(url, '_blank');
-  };
 
   // ==================
   // FINANCIAL CALCULATIONS
@@ -2065,17 +1750,6 @@ export default function IndustrialCRM() {
         }
       }
 
-      // Sync to Google Calendar immediately
-      if (savedEvent && isGoogleCalendarReady()) {
-        try {
-          await syncEventToGoogle(savedEvent, 'events');
-          console.log('Event synced to Google Calendar');
-        } catch (error) {
-          console.error('Failed to sync event to Google Calendar:', error);
-          showToast('Event saved but Google Calendar sync failed', 'warning');
-        }
-      }
-
       showToast(eventData.id ? 'Event updated' : 'Event added', 'success');
       return true;
     } catch (error) {
@@ -2102,133 +1776,14 @@ export default function IndustrialCRM() {
             showToast('Deleted locally but Supabase sync failed', 'warning');
           }
         }
-
-        // Delete from Google Calendar if synced
-        if (googleEventId && isGoogleCalendarReady()) {
-          try {
-            await deleteGoogleCalendarEvent(googleEventId);
-            console.log('Event deleted from Google Calendar');
-          } catch (error) {
-            console.error('Failed to delete from Google Calendar:', error);
-            showToast('Deleted locally but Google Calendar sync failed', 'warning');
-          }
-        }
       },
       'danger'
     );
   };
 
   // ==================
-  // FOLLOW-UP CRUD OPERATIONS
+  // CONTACT PROFILE HELPER
   // ==================
-
-  /**
-   * Save or update follow-up
-   * @async
-   * @param {Object} followUpData - Follow-up data object
-   * @returns {Promise<boolean>} True if successful
-   */
-  const handleSaveFollowUp = async (followUpData) => {
-    if (!followUpData.contactName || !followUpData.dueDate) {
-      showToast('Please fill in contact name and due date', 'error');
-      return false;
-    }
-
-    try {
-      // Prepare data with new contact fields
-      const dataWithStatus = {
-        ...followUpData,
-        status: followUpData.status || 'pending',
-        contactName: followUpData.contactName,
-        contactId: followUpData.contactId || null,
-        contactType: followUpData.contactType || 'manual',
-        // For backward compatibility with existing code
-        relatedContact: followUpData.contactId
-          ? `${followUpData.contactType}-${followUpData.contactId}`
-          : followUpData.contactName
-      };
-
-      let savedFollowUp = null;
-
-      if (followUpData.id && followUps.some(f => f.id === followUpData.id)) {
-        // Update existing follow-up
-        setFollowUps(followUps.map(f => f.id === followUpData.id ? dataWithStatus : f));
-
-        if (isSupabaseConfigured()) {
-          await supabaseService.update('follow_ups', followUpData.id, dataWithStatus);
-          savedFollowUp = dataWithStatus;
-        }
-      } else {
-        // Create new follow-up
-        const newFollowUp = { ...dataWithStatus, createdAt: dataWithStatus.createdAt || new Date().toISOString() };
-
-        if (isSupabaseConfigured()) {
-          savedFollowUp = await supabaseService.create('follow_ups', newFollowUp);
-          if (savedFollowUp) {
-            setFollowUps([...followUps, savedFollowUp]);
-          } else {
-            setFollowUps([...followUps, { ...newFollowUp, id: Date.now() }]);
-            showToast('Saved locally only - Supabase error', 'warning');
-          }
-        } else {
-          setFollowUps([...followUps, { ...newFollowUp, id: Date.now() }]);
-        }
-      }
-
-      // Sync to Google Calendar immediately
-      if (savedFollowUp && isGoogleCalendarReady()) {
-        try {
-          await syncEventToGoogle(savedFollowUp, 'follow_ups');
-          console.log('Follow-up synced to Google Calendar');
-        } catch (error) {
-          console.error('Failed to sync follow-up to Google Calendar:', error);
-          showToast('Follow-up saved but Google Calendar sync failed', 'warning');
-        }
-      }
-
-      showToast(followUpData.id ? 'Follow-up updated' : 'Follow-up added', 'success');
-      return true;
-    } catch (error) {
-      console.error('Error saving follow-up:', error);
-      showToast('Error saving follow-up', 'error');
-      return false;
-    }
-  };
-
-  const handleDeleteFollowUp = (id) => {
-    showConfirmDialog(
-      'Delete Follow-up',
-      'Are you sure you want to delete this follow-up? This action cannot be undone.',
-      async () => {
-        // Find the follow-up to get google_event_id before deletion
-        const followUpToDelete = followUps.find(f => f.id === id);
-        const googleEventId = followUpToDelete?.google_event_id;
-
-        setFollowUps(followUps.filter(f => f.id !== id));
-
-        if (isSupabaseConfigured()) {
-          const success = await supabaseService.delete('follow_ups', id);
-          if (!success) {
-            showToast('Deleted locally but Supabase sync failed', 'warning');
-          }
-        }
-
-        // Delete from Google Calendar if synced
-        if (googleEventId && isGoogleCalendarReady()) {
-          try {
-            await deleteGoogleCalendarEvent(googleEventId);
-            console.log('Follow-up deleted from Google Calendar');
-          } catch (error) {
-            console.error('Failed to delete from Google Calendar:', error);
-            showToast('Deleted locally but Google Calendar sync failed', 'warning');
-          }
-        }
-      },
-      'danger'
-    );
-  };
-
-  // Contact Profile Helper
   const openContactProfile = (contactType, contactId) => {
     let contact = null;
 
@@ -2410,49 +1965,6 @@ export default function IndustrialCRM() {
       }
     ];
 
-    const testFollowUps = [
-      {
-        id: 5001,
-        contactName: 'Sarah Mitchell (CBRE)',
-        type: 'Call',
-        dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days ago (overdue)
-        priority: 'High',
-        notes: 'Follow up on Phoenix property - buyer is very interested',
-        status: 'pending',
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 5002,
-        contactName: 'James Chen (JLL)',
-        type: 'Meeting',
-        dueDate: new Date().toISOString().split('T')[0], // Today
-        priority: 'Medium',
-        notes: 'Quarterly portfolio review meeting',
-        status: 'pending',
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 5003,
-        contactName: 'Jennifer Walsh (Redwood Capital)',
-        type: 'Email',
-        dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
-        priority: 'Medium',
-        notes: 'Send updated investment deck for Dallas property',
-        status: 'pending',
-        createdAt: now
-      },
-      {
-        id: 5004,
-        contactName: 'Maria Rodriguez (C&W)',
-        type: 'Property Tour',
-        dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 5 days from now
-        priority: 'High',
-        notes: 'Schedule tour of Atlanta property with potential buyer',
-        status: 'pending',
-        createdAt: now
-      }
-    ];
-
     const testEvents = [
       {
         id: 6001,
@@ -2513,18 +2025,16 @@ export default function IndustrialCRM() {
           supabaseService.bulkInsert('partners', testPartners.map(({ id, ...rest }) => rest)),
           supabaseService.bulkInsert('gatekeepers', testGatekeepers.map(({ id, ...rest }) => rest)),
           supabaseService.bulkInsert('properties', testProperties.map(({ id, brokerIds, ...rest }) => ({ ...rest, brokerIds: [] }))),
-          supabaseService.bulkInsert('follow_ups', testFollowUps.map(({ id, ...rest }) => rest)),
           supabaseService.bulkInsert('events', testEvents.map(({ id, ...rest }) => rest))
         ]);
 
         // Reload from Supabase to get the new IDs
-        const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents, dbFollowUps] = await Promise.all([
+        const [dbProperties, dbBrokers, dbPartners, dbGatekeepers, dbEvents] = await Promise.all([
           supabaseService.getAll('properties'),
           supabaseService.getAll('brokers'),
           supabaseService.getAll('partners'),
           supabaseService.getAll('gatekeepers'),
-          supabaseService.getAll('events'),
-          supabaseService.getAll('follow_ups')
+          supabaseService.getAll('events')
         ]);
 
         setProperties(dbProperties || []);
@@ -2532,9 +2042,8 @@ export default function IndustrialCRM() {
         setPartners(dbPartners || []);
         setGatekeepers(dbGatekeepers || []);
         setEvents(dbEvents || []);
-        setFollowUps(dbFollowUps || []);
 
-        showToast('Test data loaded to cloud! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, 4 follow-ups, and 5 events.', 'success');
+        showToast('Test data loaded to cloud! 5 properties, 4 brokers, 4 partners, 3 gatekeepers, and 5 events.', 'success');
       } catch (error) {
         console.error('Error loading test data:', error);
         showToast('Error loading test data. Check console for details.', 'error');
@@ -2558,7 +2067,7 @@ export default function IndustrialCRM() {
         }
 
         // Clear all data from Supabase
-        const tables = ['properties', 'brokers', 'partners', 'gatekeepers', 'events', 'follow_ups'];
+        const tables = ['properties', 'brokers', 'partners', 'gatekeepers', 'events'];
 
         for (const table of tables) {
           const items = await supabaseService.getAll(table);
@@ -2573,7 +2082,6 @@ export default function IndustrialCRM() {
         setPartners([]);
         setGatekeepers([]);
         setEvents([]);
-        setFollowUps([]);
         setSensitivityTable(null);
         setSensitivityPropertyId(null);
 
@@ -3027,48 +2535,6 @@ export default function IndustrialCRM() {
           </button>
 
           <button
-            onClick={() => setActiveTab('followups')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition min-h-[44px] ${
-              activeTab === 'followups'
-                ? 'bg-blue-600 text-white'
-                : `${textSecondaryClass} ${hoverBgClass}`
-            }`}
-            aria-label={`Follow-ups (${followUps.filter(f => f.status !== 'completed').length} pending)`}
-            aria-current={activeTab === 'followups' ? 'page' : undefined}
-          >
-            <Bell size={20} aria-hidden="true" />
-            <div className="flex-1 text-left">Follow-ups</div>
-            <span className={`text-xs px-2 py-1 rounded-full ${
-              activeTab === 'followups'
-                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
-                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
-            }`} aria-label={`${followUps.filter(f => f.status !== 'completed').length} pending follow-ups`}>
-              {followUps.filter(f => f.status !== 'completed').length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition min-h-[44px] ${
-              activeTab === 'calendar'
-                ? 'bg-blue-600 text-white'
-                : `${textSecondaryClass} ${hoverBgClass}`
-            }`}
-            aria-label={`Calendar (${events.length} events)`}
-            aria-current={activeTab === 'calendar' ? 'page' : undefined}
-          >
-            <Calendar size={20} aria-hidden="true" />
-            <div className="flex-1 text-left">Calendar</div>
-            <span className={`text-xs px-2 py-1 rounded-full ${
-              activeTab === 'calendar'
-                ? (darkMode ? 'bg-blue-400 text-blue-900' : 'bg-white text-blue-600')
-                : (darkMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-100 text-blue-800')
-            }`} aria-label={`${events.length} events`}>
-              {events.length}
-            </span>
-          </button>
-
-          <button
             onClick={() => setActiveTab('assets')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition min-h-[44px] ${
               activeTab === 'assets'
@@ -3168,58 +2634,6 @@ export default function IndustrialCRM() {
 
         {/* Bottom Actions */}
         <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-white'} space-y-2`}>
-          {/* Google Calendar Sync Status */}
-          {user && (
-            <div className={`px-3 py-2 rounded-lg text-xs ${
-              darkMode ? 'bg-slate-700' : 'bg-slate-100'
-            }`}>
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar size={14} className={
-                  googleCalendarReady
-                    ? 'text-green-500'
-                    : 'text-slate-400'
-                } />
-                <span className={`font-semibold ${textClass}`}>
-                  {googleCalendarReady ? 'Calendar Sync' : 'Calendar Offline'}
-                </span>
-              </div>
-              {googleCalendarReady && lastSyncTime && (
-                <div className={`${textSecondaryClass} text-[10px]`}>
-                  Last sync: {new Date(lastSyncTime).toLocaleTimeString()}
-                </div>
-              )}
-              {syncStatus.message && (
-                <div className={`mt-1 text-[10px] ${
-                  syncStatus.type === 'success' ? 'text-green-500' :
-                  syncStatus.type === 'error' ? 'text-red-500' :
-                  syncStatus.type === 'warning' ? 'text-yellow-500' :
-                  textSecondaryClass
-                }`}>
-                  {isSyncing && '🔄 '}
-                  {syncStatus.message}
-                </div>
-              )}
-            </div>
-          )}
-          {/* Google Calendar Connect/Disconnect Button */}
-          {user && (
-            <button
-              onClick={googleCalendarReady ? handleDisconnectCalendar : handleConnectCalendar}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
-                googleCalendarReady
-                  ? darkMode
-                    ? 'bg-green-900/30 hover:bg-green-900/40 text-green-400 border border-green-700'
-                    : 'bg-green-50 hover:bg-green-100 text-green-700 border border-green-200'
-                  : darkMode
-                    ? 'bg-indigo-900/30 hover:bg-indigo-900/40 text-indigo-400 border border-indigo-700'
-                    : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
-              }`}
-              title={googleCalendarReady ? 'Disconnect Google Calendar' : 'Connect Google Calendar'}
-            >
-              <Calendar size={16} />
-              {googleCalendarReady ? 'Disconnect Calendar' : 'Connect Calendar'}
-            </button>
-          )}
           <button
             onClick={() => setDarkMode(!darkMode)}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${hoverBgClass} transition`}
@@ -3252,8 +2666,6 @@ export default function IndustrialCRM() {
           <div className="px-6 py-4">
             <h2 className={`text-2xl font-bold ${textClass}`}>
               {activeTab === 'dashboard' && 'Dashboard'}
-              {activeTab === 'followups' && 'Follow-ups'}
-              {activeTab === 'calendar' && 'Calendar'}
               {activeTab === 'assets' && 'Assets'}
               {activeTab === 'brokers' && 'Brokers'}
               {activeTab === 'gatekeepers' && 'Gatekeepers'}
@@ -3329,16 +2741,12 @@ export default function IndustrialCRM() {
                       {(() => {
                         const recentContacts = [...brokers, ...partners, ...gatekeepers]
                           .filter(contact => {
-                            const recentFollowUps = followUps.filter(f =>
-                              f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}` &&
-                              new Date(f.createdAt || f.dueDate) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-                            );
                             const recentEvents = events.filter(e => {
                               const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
                               return e.taggedContacts?.[type]?.includes(contact.id) &&
                                 new Date(e.date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                             });
-                            return (recentFollowUps.length + recentEvents.length) >= 2;
+                            return recentEvents.length >= 2;
                           });
                         return recentContacts.length;
                       })()}
@@ -3356,10 +2764,6 @@ export default function IndustrialCRM() {
                       {(() => {
                         const warmingContacts = [...brokers, ...partners, ...gatekeepers]
                           .filter(contact => {
-                            const recentFollowUps = followUps.filter(f =>
-                              f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}` &&
-                              new Date(f.createdAt || f.dueDate) > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) &&
-                              new Date(f.createdAt || f.dueDate) <= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
                             );
                             const recentEvents = events.filter(e => {
                               const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
@@ -3367,7 +2771,7 @@ export default function IndustrialCRM() {
                                 new Date(e.date) > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) &&
                                 new Date(e.date) <= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                             });
-                            return (recentFollowUps.length + recentEvents.length) >= 1;
+                            return recentEvents.length >= 1;
                           });
                         return warmingContacts.length;
                       })()}
@@ -3385,16 +2789,12 @@ export default function IndustrialCRM() {
                       {(() => {
                         const coldContacts = [...brokers, ...partners, ...gatekeepers]
                           .filter(contact => {
-                            const recentFollowUps = followUps.filter(f =>
-                              f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}` &&
-                              new Date(f.createdAt || f.dueDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-                            );
                             const recentEvents = events.filter(e => {
                               const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
                               return e.taggedContacts?.[type]?.includes(contact.id) &&
                                 new Date(e.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
                             });
-                            return (recentFollowUps.length + recentEvents.length) === 0;
+                            return recentEvents.length === 0;
                           });
                         return coldContacts.length;
                       })()}
@@ -3414,7 +2814,6 @@ export default function IndustrialCRM() {
                   <div className="space-y-2">
                     {(() => {
                       const interactions = [
-                        ...followUps.map(f => ({ ...f, type: 'followup', timestamp: f.completedAt || f.dueDate })),
                         ...events.map(e => ({ ...e, type: 'event', timestamp: e.date }))
                       ]
                         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -3439,31 +2838,6 @@ export default function IndustrialCRM() {
                           return 'Just now';
                         })();
 
-                        if (item.type === 'followup') {
-                          return (
-                            <div key={`interaction-followup-${item.id}-${idx}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} border ${borderClass}`}>
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    {item.status === 'completed' ? (
-                                      <CheckCircle size={16} className="text-green-500" />
-                                    ) : (
-                                      <Clock size={16} className="text-yellow-500" />
-                                    )}
-                                    <span className={`text-sm font-semibold ${textClass}`}>{item.contactName}</span>
-                                    <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
-                                      {item.type}
-                                    </span>
-                                    <span className={`text-xs ${textSecondaryClass}`}>{timeAgo}</span>
-                                  </div>
-                                  {item.notes && (
-                                    <p className={`text-xs ${textSecondaryClass} mt-1 line-clamp-1`}>{item.notes}</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        } else {
                           return (
                             <div key={`interaction-event-${item.id}-${idx}`} className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-50'} border ${borderClass}`}>
                               <div className="flex items-start justify-between">
@@ -3501,9 +2875,6 @@ export default function IndustrialCRM() {
                     {(() => {
                       const needsAttention = [...brokers, ...partners, ...gatekeepers]
                         .map(contact => {
-                          const lastFollowUp = followUps
-                            .filter(f => f.relatedContact === `${contact.contactType || 'broker'}-${contact.id}`)
-                            .sort((a, b) => new Date(b.completedAt || b.dueDate) - new Date(a.completedAt || a.dueDate))[0];
 
                           const lastEvent = events
                             .filter(e => {
@@ -3512,13 +2883,7 @@ export default function IndustrialCRM() {
                             })
                             .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
 
-                          const lastInteraction = lastFollowUp && lastEvent
-                            ? new Date(lastFollowUp.completedAt || lastFollowUp.dueDate) > new Date(lastEvent.date)
-                              ? lastFollowUp.completedAt || lastFollowUp.dueDate
-                              : lastEvent.date
-                            : lastFollowUp
-                              ? lastFollowUp.completedAt || lastFollowUp.dueDate
-                              : lastEvent?.date;
+                          const lastInteraction = lastEvent?.date;
 
                           const daysSinceInteraction = lastInteraction
                             ? Math.floor((Date.now() - new Date(lastInteraction).getTime()) / (1000 * 60 * 60 * 24))
@@ -3555,23 +2920,6 @@ export default function IndustrialCRM() {
                                   : 'No interactions yet'}
                               </p>
                             </div>
-                            <div className="flex gap-1.5">
-                              <button
-                                onClick={() => {
-                                  setFormData({
-                                    contactName: contact.name,
-                                    relatedContact: `${contact.contactType || 'broker'}-${contact.id}`
-                                  });
-                                  setEditingId(null);
-                                  setShowFollowUpForm(true);
-                                  setActiveTab('followups');
-                                }}
-                                className="bg-blue-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-blue-700 transition"
-                                title="Schedule follow-up"
-                              >
-                                <Phone size={14} />
-                              </button>
-                            </div>
                           </div>
                         </div>
                       ));
@@ -3579,114 +2927,12 @@ export default function IndustrialCRM() {
                   </div>
                 </div>
 
-                {/* Quick Actions */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <button
-                    onClick={() => {
-                      setFormData({});
-                      setEditingId(null);
-                      setShowFollowUpForm(true);
-                      setActiveTab('followups');
-                    }}
-                    className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow"
-                  >
-                    <Phone size={20} />
-                    <span>Log Call</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setFormData({ type: 'Email' });
-                      setEditingId(null);
-                      setShowFollowUpForm(true);
-                      setActiveTab('followups');
-                    }}
-                    className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition shadow"
-                  >
-                    <Mail size={20} />
-                    <span>Log Email</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setFormData({ type: 'Meeting' });
-                      setEditingId(null);
-                      setShowEventForm(true);
-                      setActiveTab('calendar');
-                    }}
-                    className="flex items-center justify-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition shadow"
-                  >
-                    <Video size={20} />
-                    <span>Schedule Meeting</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setFormData({});
-                      setEditingId(null);
-                      setShowFollowUpForm(true);
-                      setActiveTab('followups');
-                    }}
-                    className="flex items-center justify-center gap-2 bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-orange-700 transition shadow"
-                  >
-                    <MessageSquare size={20} />
-                    <span>Add Note</span>
-                  </button>
-                </div>
               </>
             )}
 
             {/* Today View */}
             {dashboardView === 'today' && (
               <>
-                {/* Quick Actions Bar */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <button
-                onClick={() => {
-                  setFormData({});
-                  setEditingId(null);
-                  setShowFollowUpForm(true);
-                  setActiveTab('followups');
-                }}
-                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow"
-              >
-                <Phone size={20} />
-                <span>New Call</span>
-              </button>
-              <button
-                onClick={() => {
-                  setFormData({ type: 'Email' });
-                  setEditingId(null);
-                  setShowFollowUpForm(true);
-                  setActiveTab('followups');
-                }}
-                className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition shadow"
-              >
-                <Mail size={20} />
-                <span>New Email</span>
-              </button>
-              <button
-                onClick={() => {
-                  setFormData({ type: 'Meeting' });
-                  setEditingId(null);
-                  setShowEventForm(true);
-                  setActiveTab('calendar');
-                }}
-                className="flex items-center justify-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition shadow"
-              >
-                <Video size={20} />
-                <span>Schedule Meeting</span>
-              </button>
-              <button
-                onClick={() => {
-                  setFormData({});
-                  setEditingId(null);
-                  setShowFollowUpForm(true);
-                  setActiveTab('followups');
-                }}
-                className="flex items-center justify-center gap-2 bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-orange-700 transition shadow"
-              >
-                <MessageSquare size={20} />
-                <span>Add Note</span>
-              </button>
-            </div>
 
             {/* Today's Agenda */}
             <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border-l-4 border-blue-500 ${borderClass}`}>
@@ -3704,54 +2950,16 @@ export default function IndustrialCRM() {
                 const tomorrow = new Date(today);
                 tomorrow.setDate(tomorrow.getDate() + 1);
 
-                const todaysFollowUps = followUps.filter(f => {
-                  if (f.status === 'completed') return false;
-                  const dueDate = new Date(f.dueDate);
-                  dueDate.setHours(0, 0, 0, 0);
-                  return dueDate <= today;
-                });
 
                 const todaysEvents = events.filter(e => {
                   const eventDate = new Date(e.date);
                   return eventDate >= today && eventDate < tomorrow;
                 });
 
-                const hasItems = todaysFollowUps.length > 0 || todaysEvents.length > 0;
+                const hasItems = todaysEvents.length > 0;
 
                 return hasItems ? (
                   <div className="space-y-2">
-                    {todaysFollowUps.map(followUp => {
-                      const overdue = isOverdue(followUp.dueDate);
-                      return (
-                        <div key={`today-followup-${followUp.id}`} className={`p-2.5 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-red-50'} border-l-4 ${overdue ? 'border-red-500' : 'border-yellow-500'}`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                {overdue ? <AlertCircle size={18} className="text-red-500" /> : <Clock size={18} className="text-yellow-500" />}
-                                <span className={`font-semibold ${textClass}`}>{followUp.contactName}</span>
-                                <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-slate-600' : 'bg-white'}`}>{followUp.type}</span>
-                                {overdue && <span className="text-xs font-semibold text-red-500">OVERDUE</span>}
-                              </div>
-                              {followUp.notes && (
-                                <div className={`ml-6 mt-2 p-2 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-100'}`}>
-                                  <p className={`text-sm ${textClass} leading-relaxed whitespace-pre-wrap`}>{followUp.notes}</p>
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => {
-                                setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
-                                showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
-                              }}
-                              className="ml-4 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-green-700 transition flex items-center gap-1"
-                            >
-                              <CheckCircle size={16} />
-                              Done
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
                     {todaysEvents.map(event => (
                       <div key={`today-event-${event.id}`} className={`p-2.5 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-l-4 border-blue-500`}>
                         <div className="flex items-center gap-2">
@@ -3775,33 +2983,7 @@ export default function IndustrialCRM() {
             </div>
 
             {/* Communication Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
-                  <Bell size={18} className="text-orange-500" />
-                </div>
-                <div className={`text-2xl font-bold ${textClass}`}>
-                  {followUps.filter(f => f.status !== 'completed').length}
-                </div>
-                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
-                  {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue • {followUps.filter(f => isDueToday(f.dueDate) && f.status !== 'completed').length} due today
-                </div>
-              </div>
-
-              <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Upcoming Events</div>
-                  <Calendar size={18} className="text-blue-500" />
-                </div>
-                <div className={`text-2xl font-bold ${textClass}`}>
-                  {events.filter(e => new Date(e.date) >= new Date()).length}
-                </div>
-                <div className={`text-xs ${textSecondaryClass} mt-0.5`}>
-                  Next 7 days
-                </div>
-              </div>
-
+            <div className="grid grid-cols-1 gap-3">
               <div className={`${cardBgClass} rounded-lg shadow p-3 border ${borderClass}`}>
                 <div className="flex items-center justify-between mb-1">
                   <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Contacts</div>
@@ -3816,157 +2998,6 @@ export default function IndustrialCRM() {
               </div>
             </div>
 
-            {/* Upcoming Follow-ups */}
-            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
-                  <Bell size={20} />
-                  Upcoming Follow-ups
-                </h3>
-                <button
-                  onClick={() => setActiveTab('followups')}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
-                >
-                  View All →
-                </button>
-              </div>
-
-              {followUps.filter(f => f.status !== 'completed').length === 0 ? (
-                <div className={`text-center py-8 ${textSecondaryClass}`}>
-                  <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
-                  <p>No pending follow-ups. You're all caught up!</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {followUps
-                    .filter(f => f.status !== 'completed')
-                    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
-                    .slice(0, 3)
-                    .map(followUp => {
-                      const overdue = isOverdue(followUp.dueDate);
-                      const dueToday = isDueToday(followUp.dueDate);
-                      const statusColor = overdue ? 'red' : dueToday ? 'yellow' : 'green';
-
-                      // Get related contact info
-                      let relatedContactInfo = null;
-                      if (followUp.relatedContact) {
-                        const [type, id] = followUp.relatedContact.split('-');
-                        const contactId = parseInt(id);
-                        if (type === 'broker') {
-                          const contact = brokers.find(b => b.id === contactId);
-                          if (contact) relatedContactInfo = { type: 'Broker', name: contact.name, icon: Target };
-                        } else if (type === 'partner') {
-                          const contact = partners.find(p => p.id === contactId);
-                          if (contact) relatedContactInfo = { type: 'Partner', name: contact.name, icon: DollarSign };
-                        } else if (type === 'gatekeeper') {
-                          const contact = gatekeepers.find(g => g.id === contactId);
-                          if (contact) relatedContactInfo = { type: 'Gatekeeper', name: contact.name, icon: AlertCircle };
-                        }
-                      }
-
-                      return (
-                        <div key={followUp.id} className={`p-3 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-sm font-semibold ${textClass}`}>{followUp.contactName}</span>
-                                <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
-                                  {followUp.type}
-                                </span>
-                                {followUp.priority === 'High' && (
-                                  <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">HIGH</span>
-                                )}
-                              </div>
-                              {followUp.notes && (
-                                <div className={`mt-1.5 p-2 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-100'}`}>
-                                  <p className={`text-xs ${textClass} leading-relaxed whitespace-pre-wrap line-clamp-2`}>{followUp.notes}</p>
-                                </div>
-                              )}
-                              <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} mt-1`}>
-                                {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
-                              </p>
-                            </div>
-                            <div className="flex gap-1.5 ml-3">
-                              <button
-                                onClick={() => {
-                                  setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
-                                  showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
-                                }}
-                                className="bg-green-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-green-700 transition"
-                                title="Mark as complete"
-                              >
-                                Done
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const newDate = new Date(followUp.dueDate);
-                                  newDate.setDate(newDate.getDate() + 1);
-                                  setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, dueDate: newDate.toISOString().split('T')[0] } : f));
-                                  showToast(`Follow-up snoozed to ${newDate.toLocaleDateString()}`, 'info');
-                                }}
-                                className={`${darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-200 hover:bg-slate-300'} ${textClass} px-2.5 py-1 rounded text-xs font-semibold transition`}
-                                title="Snooze until tomorrow"
-                              >
-                                Snooze
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-
-            {/* Upcoming Calendar Events */}
-            <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2`}>
-                  <Calendar size={20} />
-                  Upcoming Events
-                </h3>
-                <button
-                  onClick={() => setActiveTab('calendar')}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
-                >
-                  View All →
-                </button>
-              </div>
-
-              {events.filter(e => new Date(e.date) >= new Date()).length === 0 ? (
-                <div className={`text-center py-8 ${textSecondaryClass}`}>
-                  <Calendar size={48} className="mx-auto mb-2 opacity-50" />
-                  <p>No upcoming events scheduled.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {events
-                    .filter(e => new Date(e.date) >= new Date())
-                    .sort((a, b) => new Date(a.date) - new Date(b.date))
-                    .slice(0, 3)
-                    .map(event => (
-                      <div key={event.id} className={`p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-sm font-semibold ${textClass}`}>{event.title}</span>
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
-                                {event.type}
-                              </span>
-                            </div>
-                            {event.location && (
-                              <p className={`text-xs ${textSecondaryClass} mt-1`}>📍 {event.location}</p>
-                            )}
-                            <p className={`text-xs ${textSecondaryClass} mt-1`}>
-                              {formatDateTime(event.date)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
               </>
             )}
 
@@ -3994,15 +3025,8 @@ export default function IndustrialCRM() {
                           return eventDate >= day && eventDate < nextDay;
                         });
 
-                        const dayFollowUps = followUps.filter(f => {
-                          if (f.status === 'completed') return false;
-                          const dueDate = new Date(f.dueDate);
-                          dueDate.setHours(0, 0, 0, 0);
-                          return dueDate.getTime() === day.getTime();
-                        });
-
                         const isToday = day.toDateString() === today.toDateString();
-                        const totalItems = dayEvents.length + dayFollowUps.length;
+                        const totalItems = dayEvents.length;
 
                         return (
                           <div
@@ -4027,12 +3051,6 @@ export default function IndustrialCRM() {
                                   <div className="flex items-center gap-1">
                                     <Calendar size={12} className="text-blue-500" />
                                     <span>{dayEvents.length}</span>
-                                  </div>
-                                )}
-                                {dayFollowUps.length > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <Bell size={12} className="text-orange-500" />
-                                    <span>{dayFollowUps.length}</span>
                                   </div>
                                 )}
                               </div>
@@ -4102,79 +3120,6 @@ export default function IndustrialCRM() {
                   </div>
                 </div>
 
-                {/* This Week's Follow-ups */}
-                <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
-                  <h3 className={`text-lg font-bold ${textClass} flex items-center gap-2 mb-3`}>
-                    <Bell size={20} />
-                    This Week's Follow-ups
-                  </h3>
-                  <div className="space-y-2">
-                    {(() => {
-                      const today = new Date();
-                      const startOfWeek = new Date(today);
-                      startOfWeek.setDate(today.getDate() - today.getDay());
-                      startOfWeek.setHours(0, 0, 0, 0);
-                      const endOfWeek = new Date(startOfWeek);
-                      endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-                      const weekFollowUps = followUps
-                        .filter(f => {
-                          if (f.status === 'completed') return false;
-                          const dueDate = new Date(f.dueDate);
-                          dueDate.setHours(0, 0, 0, 0);
-                          return dueDate >= startOfWeek && dueDate < endOfWeek;
-                        })
-                        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-
-                      if (weekFollowUps.length === 0) {
-                        return (
-                          <div className={`text-center py-8 ${textSecondaryClass}`}>
-                            <CheckCircle size={48} className="mx-auto mb-2 opacity-50" />
-                            <p>No follow-ups this week</p>
-                          </div>
-                        );
-                      }
-
-                      return weekFollowUps.map(followUp => {
-                        const overdue = isOverdue(followUp.dueDate);
-                        const dueToday = isDueToday(followUp.dueDate);
-
-                        return (
-                          <div key={followUp.id} className={`p-3 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-sm font-semibold ${textClass}`}>{followUp.contactName}</span>
-                                  <span className={`text-xs px-1.5 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>
-                                    {followUp.type}
-                                  </span>
-                                </div>
-                                {followUp.notes && (
-                                  <p className={`text-xs ${textSecondaryClass} mt-1 line-clamp-1`}>{followUp.notes}</p>
-                                )}
-                                <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass} mt-1`}>
-                                  {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
-                                </p>
-                              </div>
-                              <div className="flex gap-1.5 ml-3">
-                                <button
-                                  onClick={() => {
-                                    setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
-                                    showToast(`Follow-up with ${followUp.contactName} completed!`, 'success');
-                                  }}
-                                  className="bg-green-600 text-white px-2.5 py-1 rounded text-xs font-semibold hover:bg-green-700 transition"
-                                  title="Mark as complete"
-                                >
-                                  Done
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
               </>
             )}
 
@@ -4182,7 +3127,7 @@ export default function IndustrialCRM() {
             {dashboardView === 'analytics' && (
               <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
                     <div className="flex items-center justify-between mb-1">
                       <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Contacts</div>
@@ -4193,32 +3138,6 @@ export default function IndustrialCRM() {
                     </div>
                     <div className={`text-xs ${textSecondaryClass} mt-1`}>
                       {brokers.length} Brokers • {partners.length} Partners • {gatekeepers.length} Gatekeepers
-                    </div>
-                  </div>
-
-                  <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Active Follow-ups</div>
-                      <Bell size={20} className="text-orange-500" />
-                    </div>
-                    <div className={`text-3xl font-bold ${textClass}`}>
-                      {followUps.filter(f => f.status !== 'completed').length}
-                    </div>
-                    <div className={`text-xs ${textSecondaryClass} mt-1`}>
-                      {followUps.filter(f => isOverdue(f.dueDate) && f.status !== 'completed').length} overdue
-                    </div>
-                  </div>
-
-                  <div className={`${cardBgClass} rounded-lg shadow p-4 border ${borderClass}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className={`text-xs font-semibold ${textSecondaryClass} uppercase`}>Total Events</div>
-                      <Calendar size={20} className="text-green-500" />
-                    </div>
-                    <div className={`text-3xl font-bold ${textClass}`}>
-                      {events.length}
-                    </div>
-                    <div className={`text-xs ${textSecondaryClass} mt-1`}>
-                      {events.filter(e => new Date(e.date) >= new Date()).length} upcoming
                     </div>
                   </div>
 
@@ -4237,39 +3156,7 @@ export default function IndustrialCRM() {
                 </div>
 
                 {/* Activity Breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Follow-ups by Type */}
-                  <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
-                    <h3 className={`text-lg font-bold ${textClass} mb-3`}>Follow-ups by Type</h3>
-                    <div className="space-y-2">
-                      {(() => {
-                        const types = ['Call', 'Email', 'Meeting', 'Text'];
-                        return types.map(type => {
-                          const count = followUps.filter(f => f.type === type).length;
-                          const completed = followUps.filter(f => f.type === type && f.status === 'completed').length;
-                          const percentage = count > 0 ? (completed / count) * 100 : 0;
-
-                          return (
-                            <div key={type}>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className={`text-sm ${textClass}`}>{type}</span>
-                                <span className={`text-sm ${textSecondaryClass}`}>
-                                  {completed}/{count}
-                                </span>
-                              </div>
-                              <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                                <div
-                                  className="h-full rounded-full bg-blue-600"
-                                  style={{ width: `${percentage}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>
-
+                <div className="grid grid-cols-1 gap-4">
                   {/* Events by Type */}
                   <div className={`${cardBgClass} rounded-xl shadow-lg p-4 border ${borderClass}`}>
                     <h3 className={`text-lg font-bold ${textClass} mb-3`}>Events by Type</h3>
@@ -4318,10 +3205,6 @@ export default function IndustrialCRM() {
 
                       const contactEngagement = allContacts
                         .map(contact => {
-                          const recentFollowUps = followUps.filter(f =>
-                            f.relatedContact === `${contact.contactType}-${contact.id}` &&
-                            new Date(f.createdAt || f.dueDate) > thirtyDaysAgo
-                          ).length;
 
                           const recentEvents = events.filter(e => {
                             const type = contact.contactType === 'partner' ? 'partners' : contact.contactType === 'gatekeeper' ? 'gatekeepers' : 'brokers';
@@ -4329,7 +3212,7 @@ export default function IndustrialCRM() {
                               new Date(e.date) > thirtyDaysAgo;
                           }).length;
 
-                          const totalInteractions = recentFollowUps + recentEvents;
+                          const totalInteractions = recentEvents;
 
                           return { contact, totalInteractions };
                         })
@@ -6814,1037 +5697,9 @@ export default function IndustrialCRM() {
           </div>
         )}
 
-        {/* Follow-ups Tab (keeping old brokers section start) */}
-        {activeTab === 'followups' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className={`text-2xl font-bold ${textClass}`}>Follow-ups</h2>
-                <p className={textSecondaryClass}>Track and manage contact follow-ups</p>
-              </div>
-              <button
-                onClick={() => {
-                  setFormData({});
-                  setEditingId(null);
-                  setShowFollowUpForm(true);
-                }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                <Plus size={20} />
-                Add Follow-up
-              </button>
-            </div>
-
-            {/* Follow-up Form */}
-            {showFollowUpForm && (
-              <FollowUpForm
-                contacts={[
-                  ...brokers.map(b => ({
-                    id: b.id,
-                    name: b.name,
-                    type: 'broker',
-                    typeLabel: 'Broker',
-                    company: b.firmName || b.company
-                  })),
-                  ...partners.map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    type: 'partner',
-                    typeLabel: 'Partner',
-                    company: p.entityName
-                  })),
-                  ...gatekeepers.map(g => ({
-                    id: g.id,
-                    name: g.name,
-                    type: 'gatekeeper',
-                    typeLabel: 'Gatekeeper',
-                    company: g.company
-                  }))
-                ]}
-                onSave={async (followUpData) => {
-                  const dataToSave = editingId ? { ...followUpData, id: editingId } : followUpData;
-                  const success = await handleSaveFollowUp(dataToSave);
-                  if (success) {
-                    setShowFollowUpForm(false);
-                    setFormData({});
-                    setEditingId(null);
-                  }
-                }}
-                onCancel={() => {
-                  setShowFollowUpForm(false);
-                  setFormData({});
-                  setEditingId(null);
-                }}
-                initialData={formData}
-                darkMode={darkMode}
-                isEditing={!!editingId}
-              />
-            )}
-
-            {/* Follow-ups List */}
-            <div className="space-y-4">
-              {followUps.filter(f => f.status !== 'completed').length === 0 && !showFollowUpForm && (
-                <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
-                  <CheckCircle size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
-                  <p className={`${textSecondaryClass} text-lg`}>No pending follow-ups. You're all caught up!</p>
-                </div>
-              )}
-
-              {followUps
-                .filter(f => f.status !== 'completed')
-                .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
-                .map(followUp => {
-                  const overdue = isOverdue(followUp.dueDate);
-                  const dueToday = isDueToday(followUp.dueDate);
-
-                  return (
-                    <div key={followUp.id} className={`${cardBgClass} rounded-xl shadow-lg p-6 border-l-4 ${
-                      overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'
-                    } ${borderClass}`}>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            {overdue && <AlertCircle size={20} className="text-red-500" />}
-                            {dueToday && <Clock size={20} className="text-yellow-500" />}
-                            {!overdue && !dueToday && <CheckCircle size={20} className="text-green-500" />}
-                            <h3 className={`text-lg font-bold ${textClass}`}>{followUp.contactName}</h3>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              darkMode ? 'bg-slate-700' : 'bg-slate-100'
-                            }`}>
-                              {followUp.type}
-                            </span>
-                            {followUp.priority === 'High' && (
-                              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">HIGH</span>
-                            )}
-                          </div>
-                          {followUp.notes && (
-                            <div className={`mb-3 p-3 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
-                              <p className={`text-sm ${textClass} leading-relaxed whitespace-pre-wrap`}>{followUp.notes}</p>
-                            </div>
-                          )}
-                          <p className={`text-sm font-semibold ${
-                            overdue ? 'text-red-500' : dueToday ? 'text-yellow-600' : 'text-green-600'
-                          }`}>
-                            {overdue ? `⚠️ Overdue by ${getDaysAgo(followUp.dueDate)} days` :
-                             dueToday ? '⏰ Due today' :
-                             `📅 Due ${formatDate(followUp.dueDate)}`}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
-                            }}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition flex items-center gap-2"
-                            title="Mark as completed"
-                          >
-                            <CheckCircle size={18} />
-                            Complete
-                          </button>
-                          <button
-                            onClick={() => {
-                              setFormData(followUp);
-                              setEditingId(followUp.id);
-                              setShowFollowUpForm(true);
-                            }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
-                            title="Edit"
-                          >
-                            <Edit2 size={18} style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              showConfirmDialog(
-                                'Delete Follow-up',
-                                'Are you sure you want to delete this follow-up?',
-                                () => setFollowUps(followUps.filter(f => f.id !== followUp.id)),
-                                'danger'
-                              );
-                            }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
-                            title="Delete"
-                            aria-label="Delete follow-up"
-                          >
-                            <Trash2 size={18} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-
-            {/* Completed Follow-ups */}
-            {followUps.filter(f => f.status === 'completed').length > 0 && (
-              <div className="mt-8">
-                <h3 className={`text-lg font-bold ${textClass} mb-4`}>Completed Follow-ups</h3>
-                <div className="space-y-3">
-                  {followUps
-                    .filter(f => f.status === 'completed')
-                    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
-                    .map(followUp => (
-                      <div key={followUp.id} className={`${cardBgClass} rounded-lg p-4 border ${borderClass} opacity-60`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <CheckCircle size={18} className="text-green-500" />
-                            <span className={`font-semibold ${textClass}`}>{followUp.contactName}</span>
-                            <span className={`text-xs ${textSecondaryClass}`}>({followUp.type})</span>
-                          </div>
-                          <span className={`text-xs ${textSecondaryClass}`}>
-                            Completed {formatDate(followUp.completedAt)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Calendar Tab */}
-        {activeTab === 'calendar' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className={`text-2xl font-bold ${textClass}`}>Calendar & Events</h2>
-                <p className={textSecondaryClass}>Schedule property tours, meetings, and deadlines</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCalendarView(calendarView === 'month' ? 'list' : 'month')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${
-                    darkMode ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
-                  }`}
-                >
-                  {calendarView === 'month' ? 'List View' : 'Month View'}
-                </button>
-                <button
-                  onClick={() => {
-                    setFormData({});
-                    setEditingId(null);
-                    setShowEventForm(true);
-                  }}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-                >
-                  <Plus size={20} />
-                  Add Event
-                </button>
-              </div>
-            </div>
-
-            {/* Event Form */}
-            {showEventForm && (
-              <div className={`${cardBgClass} rounded-xl shadow-lg p-8 border ${borderClass}`}>
-                <h3 className={`text-xl font-bold ${textClass} mb-6`}>
-                  {editingId ? 'Edit Event' : 'New Event'}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Event Title"
-                    value={formData.title || ''}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                  />
-                  <select
-                    value={formData.type || 'Property Tour'}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className={`px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                  >
-                    <option value="Property Tour">Property Tour</option>
-                    <option value="Broker Meeting">Broker Meeting</option>
-                    <option value="Partner Presentation">Partner Presentation</option>
-                    <option value="Due Diligence Deadline">Due Diligence Deadline</option>
-                    <option value="Closing Date">Closing Date</option>
-                    <option value="Follow-up Call">Follow-up Call</option>
-                    <option value="General">General</option>
-                  </select>
-
-                  {/* Date and Time Inputs */}
-                  <div className="col-span-2 space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className={`block text-sm font-medium ${textClass} mb-2`}>Date</label>
-                        <input
-                          type="date"
-                          value={formData.date ? formData.date.split('T')[0] : ''}
-                          onChange={(e) => {
-                            const time = formData.date ? formData.date.split('T')[1] || '12:00' : '12:00';
-                            setFormData({ ...formData, date: `${e.target.value}T${time}` });
-                          }}
-                          className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                        />
-                      </div>
-                      <div>
-                        <label className={`block text-sm font-medium ${textClass} mb-2`}>Time</label>
-                        <input
-                          type="time"
-                          value={formData.date ? formData.date.split('T')[1]?.slice(0, 5) || '12:00' : '12:00'}
-                          onChange={(e) => {
-                            const date = formData.date ? formData.date.split('T')[0] : new Date().toISOString().split('T')[0];
-                            setFormData({ ...formData, date: `${date}T${e.target.value}` });
-                          }}
-                          className={`w-full px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Time Presets */}
-                    <div>
-                      <label className={`block text-sm font-medium ${textClass} mb-2`}>Quick Time Presets</label>
-                      <div className="flex flex-wrap gap-2">
-                        {['09:00', '10:00', '12:00', '14:00', '15:00', '16:00', '17:00'].map(time => (
-                          <button
-                            key={time}
-                            type="button"
-                            onClick={() => {
-                              const date = formData.date ? formData.date.split('T')[0] : new Date().toISOString().split('T')[0];
-                              setFormData({ ...formData, date: `${date}T${time}` });
-                            }}
-                            className={`px-3 py-1.5 text-sm rounded-lg border ${borderClass} ${
-                              darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'
-                            } ${textClass} transition`}
-                          >
-                            {time}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Location (optional)"
-                    value={formData.location || ''}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                  />
-
-                  {/* Contact Tagging */}
-                  <div className="col-span-2 space-y-3">
-                    <label className={`block text-sm font-medium ${textClass}`}>Tag Contacts (Optional)</label>
-
-                    {/* Selected Contacts (Chips) */}
-                    {(formData.taggedContacts?.brokers?.length > 0 ||
-                      formData.taggedContacts?.partners?.length > 0 ||
-                      formData.taggedContacts?.gatekeepers?.length > 0) && (
-                      <div className={`flex flex-wrap gap-2 p-3 rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
-                        {formData.taggedContacts?.brokers?.map(brokerId => {
-                          const broker = brokers.find(b => b.id === brokerId);
-                          return broker ? (
-                            <span key={brokerId} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-blue-600 text-white">
-                              {broker.name}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFormData({
-                                    ...formData,
-                                    taggedContacts: {
-                                      ...formData.taggedContacts,
-                                      brokers: formData.taggedContacts.brokers.filter(id => id !== brokerId)
-                                    }
-                                  });
-                                }}
-                                className="hover:bg-blue-700 rounded"
-                              >
-                                <X size={12} />
-                              </button>
-                            </span>
-                          ) : null;
-                        })}
-                        {formData.taggedContacts?.partners?.map(partnerId => {
-                          const partner = partners.find(p => p.id === partnerId);
-                          return partner ? (
-                            <span key={partnerId} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-green-600 text-white">
-                              {partner.name}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFormData({
-                                    ...formData,
-                                    taggedContacts: {
-                                      ...formData.taggedContacts,
-                                      partners: formData.taggedContacts.partners.filter(id => id !== partnerId)
-                                    }
-                                  });
-                                }}
-                                className="hover:bg-green-700 rounded"
-                              >
-                                <X size={12} />
-                              </button>
-                            </span>
-                          ) : null;
-                        })}
-                        {formData.taggedContacts?.gatekeepers?.map(gatekeeperId => {
-                          const gatekeeper = gatekeepers.find(g => g.id === gatekeeperId);
-                          return gatekeeper ? (
-                            <span key={gatekeeperId} className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-purple-600 text-white">
-                              {gatekeeper.name}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFormData({
-                                    ...formData,
-                                    taggedContacts: {
-                                      ...formData.taggedContacts,
-                                      gatekeepers: formData.taggedContacts.gatekeepers.filter(id => id !== gatekeeperId)
-                                    }
-                                  });
-                                }}
-                                className="hover:bg-purple-700 rounded"
-                              >
-                                <X size={12} />
-                              </button>
-                            </span>
-                          ) : null;
-                        })}
-                      </div>
-                    )}
-
-                    {/* Search Input */}
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search contacts to tag..."
-                        value={contactTagSearch}
-                        onChange={(e) => setContactTagSearch(e.target.value)}
-                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      />
-                      <Search size={18} className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${textSecondaryClass}`} />
-                    </div>
-
-                    {/* Filtered Contacts List */}
-                    {contactTagSearch && (
-                      <div className={`max-h-64 overflow-y-auto rounded-lg border ${borderClass} ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                        {(() => {
-                          const searchLower = contactTagSearch.toLowerCase();
-                          const filteredBrokers = brokers.filter(b => b.name.toLowerCase().includes(searchLower));
-                          const filteredPartners = partners.filter(p => p.name.toLowerCase().includes(searchLower));
-                          const filteredGatekeepers = gatekeepers.filter(g => g.name.toLowerCase().includes(searchLower));
-
-                          const hasResults = filteredBrokers.length > 0 || filteredPartners.length > 0 || filteredGatekeepers.length > 0;
-
-                          if (!hasResults) {
-                            return (
-                              <div className="p-4 text-center">
-                                <p className={`text-sm ${textSecondaryClass}`}>No contacts found</p>
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <div className="p-2 space-y-2">
-                              {filteredBrokers.length > 0 && (
-                                <div>
-                                  <div className={`text-xs font-semibold ${textSecondaryClass} px-2 py-1`}>Brokers</div>
-                                  {filteredBrokers.map(broker => {
-                                    const isSelected = formData.taggedContacts?.brokers?.includes(broker.id);
-                                    return (
-                                      <button
-                                        key={broker.id}
-                                        type="button"
-                                        onClick={() => {
-                                          const currentBrokers = formData.taggedContacts?.brokers || [];
-                                          const newBrokers = isSelected
-                                            ? currentBrokers.filter(id => id !== broker.id)
-                                            : [...currentBrokers, broker.id];
-                                          setFormData({
-                                            ...formData,
-                                            taggedContacts: {
-                                              ...formData.taggedContacts,
-                                              brokers: newBrokers
-                                            }
-                                          });
-                                        }}
-                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                                          isSelected
-                                            ? 'bg-blue-600 text-white'
-                                            : `${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${textClass}`
-                                        }`}
-                                      >
-                                        <div className="flex items-center justify-between">
-                                          <span>{broker.name}</span>
-                                          {isSelected && <span className="text-xs">✓</span>}
-                                        </div>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-
-                              {filteredPartners.length > 0 && (
-                                <div>
-                                  <div className={`text-xs font-semibold ${textSecondaryClass} px-2 py-1`}>Partners</div>
-                                  {filteredPartners.map(partner => {
-                                    const isSelected = formData.taggedContacts?.partners?.includes(partner.id);
-                                    return (
-                                      <button
-                                        key={partner.id}
-                                        type="button"
-                                        onClick={() => {
-                                          const currentPartners = formData.taggedContacts?.partners || [];
-                                          const newPartners = isSelected
-                                            ? currentPartners.filter(id => id !== partner.id)
-                                            : [...currentPartners, partner.id];
-                                          setFormData({
-                                            ...formData,
-                                            taggedContacts: {
-                                              ...formData.taggedContacts,
-                                              partners: newPartners
-                                            }
-                                          });
-                                        }}
-                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                                          isSelected
-                                            ? 'bg-green-600 text-white'
-                                            : `${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${textClass}`
-                                        }`}
-                                      >
-                                        <div className="flex items-center justify-between">
-                                          <span>{partner.name}</span>
-                                          {isSelected && <span className="text-xs">✓</span>}
-                                        </div>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-
-                              {filteredGatekeepers.length > 0 && (
-                                <div>
-                                  <div className={`text-xs font-semibold ${textSecondaryClass} px-2 py-1`}>Gatekeepers</div>
-                                  {filteredGatekeepers.map(gatekeeper => {
-                                    const isSelected = formData.taggedContacts?.gatekeepers?.includes(gatekeeper.id);
-                                    return (
-                                      <button
-                                        key={gatekeeper.id}
-                                        type="button"
-                                        onClick={() => {
-                                          const currentGatekeepers = formData.taggedContacts?.gatekeepers || [];
-                                          const newGatekeepers = isSelected
-                                            ? currentGatekeepers.filter(id => id !== gatekeeper.id)
-                                            : [...currentGatekeepers, gatekeeper.id];
-                                          setFormData({
-                                            ...formData,
-                                            taggedContacts: {
-                                              ...formData.taggedContacts,
-                                              gatekeepers: newGatekeepers
-                                            }
-                                          });
-                                        }}
-                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                                          isSelected
-                                            ? 'bg-purple-600 text-white'
-                                            : `${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} ${textClass}`
-                                        }`}
-                                      >
-                                        <div className="flex items-center justify-between">
-                                          <span>{gatekeeper.name}</span>
-                                          {isSelected && <span className="text-xs">✓</span>}
-                                        </div>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
-
-                    {brokers.length === 0 && partners.length === 0 && gatekeepers.length === 0 && (
-                      <p className={`text-sm ${textSecondaryClass} italic`}>
-                        No contacts available. Add brokers, partners, or gatekeepers first.
-                      </p>
-                    )}
-                  </div>
-
-                  <textarea
-                    placeholder="Description (optional)"
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className={`col-span-2 px-4 py-3 rounded-lg border ${inputBorderClass} ${inputBgClass} ${inputTextClass}`}
-                    rows={3}
-                  />
-                </div>
-                <div className="flex gap-4 mt-6">
-                  <button
-                    onClick={async () => {
-                      const eventData = editingId ? { ...formData, id: editingId } : { ...formData };
-                      const success = await handleSaveEvent(eventData);
-                      if (success) {
-                        setShowEventForm(false);
-                        setFormData({});
-                        setEditingId(null);
-                        setContactTagSearch('');
-                      }
-                    }}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
-                  >
-                    {editingId ? 'Update' : 'Save'} Event
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowEventForm(false);
-                      setFormData({});
-                      setEditingId(null);
-                      setContactTagSearch('');
-                    }}
-                    className={`px-6 py-2 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-200 hover:bg-slate-300'}`}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Calendar Month View */}
-            {calendarView === 'month' && (
-              <div className={`${cardBgClass} rounded-xl shadow-lg border ${borderClass} overflow-hidden`}>
-                {/* Calendar Header */}
-                <div className={`p-6 border-b ${borderClass} flex items-center justify-between`}>
-                  <button
-                    onClick={goToPreviousMonth}
-                    className={`p-2 rounded-lg ${hoverBgClass} transition`}
-                    title="Previous Month"
-                  >
-                    <ChevronLeft size={24} className={textClass} />
-                  </button>
-
-                  <div className="text-center">
-                    <h3 className={`text-2xl font-bold ${textClass}`}>
-                      {MONTH_NAMES[currentMonth]} {currentYear}
-                    </h3>
-                    <button
-                      onClick={goToToday}
-                      className={`mt-1 text-sm ${textSecondaryClass} hover:text-blue-500 transition`}
-                    >
-                      Today
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={goToNextMonth}
-                    className={`p-2 rounded-lg ${hoverBgClass} transition`}
-                    title="Next Month"
-                  >
-                    <ChevronRight size={24} className={textClass} />
-                  </button>
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="p-6">
-                  {/* Day Headers */}
-                  <div className="grid grid-cols-7 gap-2 mb-2">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                      <div key={day} className={`text-center text-sm font-semibold ${textSecondaryClass} py-2`}>
-                        {day}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Calendar Days */}
-                  <div className="grid grid-cols-7 gap-2">
-                    {generateCalendarDays().map((day, index) => {
-                      const dayEvents = day ? getEventsForDay(day) : [];
-                      const isTodayCell = day && isToday(day);
-
-                      return (
-                        <div
-                          key={index}
-                          onClick={() => {
-                            if (day) {
-                              // Show day details modal
-                              setSelectedDayDetails({
-                                day,
-                                month: currentMonth,
-                                year: currentYear,
-                                events: dayEvents
-                              });
-                            }
-                          }}
-                          className={`min-h-[100px] p-2 rounded-lg border ${borderClass} ${
-                            day
-                              ? `${darkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-50'} cursor-pointer transition`
-                              : darkMode ? 'bg-slate-900' : 'bg-slate-100'
-                          } ${isTodayCell ? 'ring-2 ring-blue-500' : ''}`}
-                        >
-                          {day && (
-                            <>
-                              <div className={`text-sm font-semibold mb-1 ${
-                                isTodayCell ? 'text-blue-500' : textClass
-                              }`}>
-                                {day}
-                              </div>
-                              <div className="space-y-1">
-                                {dayEvents.slice(0, 2).map(event => {
-                                  const eventTime = new Date(event.date);
-                                  const timeStr = eventTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-                                  // Color code by event type
-                                  const eventTypeColors = {
-                                    'Property Tour': darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800',
-                                    'Broker Meeting': darkMode ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800',
-                                    'Partner Presentation': darkMode ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800',
-                                    'Due Diligence Deadline': darkMode ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-800',
-                                    'Closing Date': darkMode ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800',
-                                    'Follow-up Call': darkMode ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-800',
-                                    'General': darkMode ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-800',
-                                  };
-
-                                  return (
-                                    <div
-                                      key={event.id}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setFormData(event);
-                                        setEditingId(event.id);
-                                        setShowEventForm(true);
-                                      }}
-                                      className={`text-xs px-2 py-1 rounded ${
-                                        eventTypeColors[event.type] || (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800')
-                                      } hover:opacity-80 transition cursor-pointer`}
-                                      title={`${timeStr} - ${event.title}`}
-                                    >
-                                      <div className="font-semibold truncate">{timeStr}</div>
-                                      <div className="truncate">{event.title}</div>
-                                    </div>
-                                  );
-                                })}
-                                {dayEvents.length > 2 && (
-                                  <div
-                                    className={`text-xs ${textSecondaryClass} px-2 py-1 font-semibold hover:text-blue-500 cursor-pointer transition`}
-                                    title="Click day to view all events"
-                                  >
-                                    +{dayEvents.length - 2} more →
-                                  </div>
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Events List View */}
-            {calendarView === 'list' && (
-              <div className="space-y-4">
-              {events.length === 0 && !showEventForm && (
-                <div className={`${cardBgClass} rounded-xl shadow-lg p-12 text-center`}>
-                  <Calendar size={64} className={`mx-auto mb-4 ${textSecondaryClass} opacity-50`} />
-                  <p className={`${textSecondaryClass} text-lg`}>No events scheduled. Add your first event!</p>
-                </div>
-              )}
-
-              {events
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
-                .map(event => {
-                  const eventDate = new Date(event.date);
-                  const isPast = eventDate < new Date();
-
-                  return (
-                    <div key={event.id} className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass} ${isPast ? 'opacity-50' : ''}`}>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <Calendar size={20} className="text-blue-500" />
-                            <h3 className={`text-lg font-bold ${textClass}`}>{event.title}</h3>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              darkMode ? 'bg-slate-700' : 'bg-slate-100'
-                            }`}>
-                              {event.type}
-                            </span>
-                            {isPast && <span className="text-xs text-gray-500">(Past)</span>}
-                          </div>
-                          <p className={`${textSecondaryClass} mb-2`}>
-                            📅 {formatDateTime(event.date)}
-                          </p>
-                          {event.location && (
-                            <p className={`${textSecondaryClass} mb-2`}>
-                              📍 {event.location}
-                            </p>
-                          )}
-                          {event.description && (
-                            <p className={`${textSecondaryClass} text-sm`}>{event.description}</p>
-                          )}
-
-                          {/* Tagged Contacts */}
-                          {event.taggedContacts && (
-                            <div className="mt-3 space-y-2">
-                              {event.taggedContacts.brokers && event.taggedContacts.brokers.length > 0 && (
-                                <div className="flex flex-wrap gap-1 items-center">
-                                  <span className={`text-xs ${textSecondaryClass}`}>Brokers:</span>
-                                  {event.taggedContacts.brokers.map(brokerId => {
-                                    const broker = brokers.find(b => b.id === brokerId);
-                                    return broker ? (
-                                      <span key={brokerId} className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                        {broker.name}
-                                      </span>
-                                    ) : null;
-                                  })}
-                                </div>
-                              )}
-                              {event.taggedContacts.partners && event.taggedContacts.partners.length > 0 && (
-                                <div className="flex flex-wrap gap-1 items-center">
-                                  <span className={`text-xs ${textSecondaryClass}`}>Partners:</span>
-                                  {event.taggedContacts.partners.map(partnerId => {
-                                    const partner = partners.find(p => p.id === partnerId);
-                                    return partner ? (
-                                      <span key={partnerId} className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                        {partner.name}
-                                      </span>
-                                    ) : null;
-                                  })}
-                                </div>
-                              )}
-                              {event.taggedContacts.gatekeepers && event.taggedContacts.gatekeepers.length > 0 && (
-                                <div className="flex flex-wrap gap-1 items-center">
-                                  <span className={`text-xs ${textSecondaryClass}`}>Gatekeepers:</span>
-                                  {event.taggedContacts.gatekeepers.map(gatekeeperId => {
-                                    const gatekeeper = gatekeepers.find(g => g.id === gatekeeperId);
-                                    return gatekeeper ? (
-                                      <span key={gatekeeperId} className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                                        {gatekeeper.name}
-                                      </span>
-                                    ) : null;
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => exportToGoogleCalendar(event)}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
-                            title="Add to Google Calendar"
-                          >
-                            <Calendar size={18} />
-                            Google Cal
-                          </button>
-                          <button
-                            onClick={() => {
-                              setFormData(event);
-                              setEditingId(event.id);
-                              setShowEventForm(true);
-                            }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
-                            title="Edit"
-                          >
-                            <Edit2 size={18} style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              showConfirmDialog(
-                                'Delete Event',
-                                'Are you sure you want to delete this event?',
-                                () => setEvents(events.filter(e => e.id !== event.id)),
-                                'danger'
-                              );
-                            }}
-                            className={`p-2 rounded-lg ${hoverBgClass} transition`}
-                            title="Delete"
-                            aria-label="Delete event"
-                          >
-                            <Trash2 size={18} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
         </div>
       </div>
 
-      {/* Day Details Modal */}
-      {selectedDayDetails && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
-          onClick={() => setSelectedDayDetails(null)}
-        >
-          <div
-            className={`${cardBgClass} rounded-xl shadow-xl border ${borderClass} max-w-2xl w-full max-h-[80vh] overflow-y-auto`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className={`p-6 border-b ${borderClass} flex items-center justify-between sticky top-0 ${cardBgClass} z-10`}>
-              <div>
-                <h3 className={`text-2xl font-bold ${textClass}`}>
-                  {MONTH_NAMES[selectedDayDetails.month]} {selectedDayDetails.day}, {selectedDayDetails.year}
-                </h3>
-                <p className={`text-sm ${textSecondaryClass} mt-1`}>
-                  {selectedDayDetails.events.length} event{selectedDayDetails.events.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedDayDetails(null)}
-                className={`p-2 rounded-lg ${hoverBgClass} transition`}
-                title="Close"
-              >
-                <X size={24} className={textClass} />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 space-y-4">
-              {/* Create New Event Button */}
-              <button
-                onClick={() => {
-                  const selectedDate = new Date(selectedDayDetails.year, selectedDayDetails.month, selectedDayDetails.day, 12, 0);
-                  const dateTimeString = selectedDate.toISOString().slice(0, 16);
-                  setFormData({ date: dateTimeString });
-                  setEditingId(null);
-                  setShowEventForm(true);
-                  setSelectedDayDetails(null);
-                }}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                <Plus size={20} />
-                Create Event on This Day
-              </button>
-
-              {/* Events List */}
-              {selectedDayDetails.events.length === 0 ? (
-                <div className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-8 text-center`}>
-                  <Calendar size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
-                  <p className={`${textSecondaryClass}`}>No events scheduled for this day</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {selectedDayDetails.events
-                    .sort((a, b) => new Date(a.date) - new Date(b.date))
-                    .map(event => {
-                      const eventDate = new Date(event.date);
-                      const isPast = eventDate < new Date();
-
-                      return (
-                        <div
-                          key={event.id}
-                          className={`${darkMode ? 'bg-slate-800' : 'bg-slate-50'} rounded-lg p-4 border ${borderClass} ${
-                            isPast ? 'opacity-60' : ''
-                          }`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className={`font-bold ${textClass}`}>{event.title}</span>
-                                <span className={`text-xs px-2 py-1 rounded ${
-                                  darkMode ? 'bg-slate-700' : 'bg-slate-200'
-                                } ${textSecondaryClass}`}>
-                                  {event.type}
-                                </span>
-                                {isPast && <span className="text-xs text-gray-500">(Past)</span>}
-                              </div>
-                              <p className={`text-sm ${textSecondaryClass} mb-1`}>
-                                🕐 {formatDateTime(event.date)}
-                              </p>
-                              {event.location && (
-                                <p className={`text-sm ${textSecondaryClass} mb-1`}>
-                                  📍 {event.location}
-                                </p>
-                              )}
-                              {event.description && (
-                                <p className={`text-sm ${textSecondaryClass} mt-2`}>{event.description}</p>
-                              )}
-
-                              {/* Tagged Contacts */}
-                              {event.taggedContacts && (
-                                <div className="mt-3 space-y-2">
-                                  {event.taggedContacts.brokers && event.taggedContacts.brokers.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 items-center">
-                                      <span className={`text-xs ${textSecondaryClass}`}>Brokers:</span>
-                                      {event.taggedContacts.brokers.map(brokerId => {
-                                        const broker = brokers.find(b => b.id === brokerId);
-                                        return broker ? (
-                                          <span key={brokerId} className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                            {broker.name}
-                                          </span>
-                                        ) : null;
-                                      })}
-                                    </div>
-                                  )}
-                                  {event.taggedContacts.partners && event.taggedContacts.partners.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 items-center">
-                                      <span className={`text-xs ${textSecondaryClass}`}>Partners:</span>
-                                      {event.taggedContacts.partners.map(partnerId => {
-                                        const partner = partners.find(p => p.id === partnerId);
-                                        return partner ? (
-                                          <span key={partnerId} className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                            {partner.name}
-                                          </span>
-                                        ) : null;
-                                      })}
-                                    </div>
-                                  )}
-                                  {event.taggedContacts.gatekeepers && event.taggedContacts.gatekeepers.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 items-center">
-                                      <span className={`text-xs ${textSecondaryClass}`}>Gatekeepers:</span>
-                                      {event.taggedContacts.gatekeepers.map(gatekeeperId => {
-                                        const gatekeeper = gatekeepers.find(g => g.id === gatekeeperId);
-                                        return gatekeeper ? (
-                                          <span key={gatekeeperId} className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                                            {gatekeeper.name}
-                                          </span>
-                                        ) : null;
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  setFormData(event);
-                                  setEditingId(event.id);
-                                  setShowEventForm(true);
-                                  setSelectedDayDetails(null);
-                                }}
-                                className={`p-2 rounded-lg ${hoverBgClass} transition`}
-                                title="Edit"
-                              >
-                                <Edit2 size={16} style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  showConfirmDialog(
-                                    'Delete Event',
-                                    'Are you sure you want to delete this event?',
-                                    () => {
-                                      setEvents(events.filter(e => e.id !== event.id));
-                                      setSelectedDayDetails({
-                                        ...selectedDayDetails,
-                                        events: selectedDayDetails.events.filter(e => e.id !== event.id)
-                                      });
-                                    },
-                                    'danger'
-                                  );
-                                }}
-                                className={`p-2 rounded-lg ${hoverBgClass} transition`}
-                                title="Delete"
-                              >
-                                <Trash2 size={16} style={{ color: darkMode ? '#f87171' : '#dc2626' }} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Photo Lightbox Modal */}
       {lightboxOpen && lightboxPhotos.length > 0 && (
@@ -8527,132 +6382,8 @@ export default function IndustrialCRM() {
                 </div>
               </div>
 
-              {/* Follow-ups & Events Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Follow-ups */}
-                <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className={`text-xl font-bold ${textClass} flex items-center gap-2`}>
-                      <Bell size={24} />
-                      Follow-ups
-                    </h2>
-                    <button
-                      onClick={() => {
-                        setShowInlineFollowUpForm(!showInlineFollowUpForm);
-                        if (!showInlineFollowUpForm) {
-                          setInlineFollowUpData({ contactName: profileContact.displayName, type: 'Call', dueDate: new Date().toISOString().split('T')[0], priority: 'Medium' });
-                        }
-                      }}
-                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
-                    >
-                      <Plus size={16} />
-                      {showInlineFollowUpForm ? 'Cancel' : 'New'}
-                    </button>
-                  </div>
-
-                  {showInlineFollowUpForm && (
-                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-700' : 'bg-blue-50'} border-2 border-blue-500 mb-4`}>
-                      <h3 className={`text-sm font-bold ${textClass} mb-3`}>Create Follow-up</h3>
-                      <div className="space-y-3">
-                        <select
-                          value={inlineFollowUpData.type || 'Call'}
-                          onChange={(e) => setInlineFollowUpData({ ...inlineFollowUpData, type: e.target.value })}
-                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        >
-                          <option>Call</option>
-                          <option>Email</option>
-                          <option>Meeting</option>
-                          <option>Site Visit</option>
-                        </select>
-                        <input
-                          type="date"
-                          value={inlineFollowUpData.dueDate || ''}
-                          onChange={(e) => setInlineFollowUpData({ ...inlineFollowUpData, dueDate: e.target.value })}
-                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        />
-                        <select
-                          value={inlineFollowUpData.priority || 'Medium'}
-                          onChange={(e) => setInlineFollowUpData({ ...inlineFollowUpData, priority: e.target.value })}
-                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        >
-                          <option>Low</option>
-                          <option>Medium</option>
-                          <option>High</option>
-                        </select>
-                        <textarea
-                          placeholder="Notes..."
-                          value={inlineFollowUpData.notes || ''}
-                          onChange={(e) => setInlineFollowUpData({ ...inlineFollowUpData, notes: e.target.value })}
-                          className={`w-full px-3 py-2 rounded-lg border ${inputBorderClass} ${inputBgClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
-                          rows="2"
-                        />
-                        <button
-                          onClick={async () => {
-                            const newFollowUp = {
-                              ...inlineFollowUpData,
-                              contactName: profileContact.displayName,
-                              status: 'pending',
-                              createdAt: new Date().toISOString()
-                            };
-                            const success = await handleSaveFollowUp(newFollowUp);
-                            if (success) {
-                              setShowInlineFollowUpForm(false);
-                              setInlineFollowUpData({});
-                            }
-                          }}
-                          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-                        >
-                          Create Follow-up
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {(() => {
-                      const contactFollowUps = followUps.filter(f => f.contactName === profileContact.displayName).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-                      if (contactFollowUps.length === 0) {
-                        return (
-                          <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-50'} rounded-lg p-8 text-center`}>
-                            <Bell size={48} className={`mx-auto mb-3 ${textSecondaryClass} opacity-50`} />
-                            <p className={`text-sm ${textSecondaryClass}`}>No follow-ups</p>
-                          </div>
-                        );
-                      }
-                      return contactFollowUps.map(followUp => {
-                        const overdue = isOverdue(followUp.dueDate);
-                        const dueToday = isDueToday(followUp.dueDate);
-                        return (
-                          <div key={followUp.id} className={`p-3 rounded-lg border-l-4 ${overdue ? 'border-red-500' : dueToday ? 'border-yellow-500' : 'border-green-500'} ${borderClass} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className={`text-xs px-2 py-0.5 rounded ${darkMode ? 'bg-slate-600' : 'bg-slate-200'} ${textSecondaryClass}`}>{followUp.type}</span>
-                                  {followUp.status === 'completed' && (<span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">COMPLETED</span>)}
-                                </div>
-                                {followUp.notes && (<p className={`text-sm ${textClass} mb-1`}>{followUp.notes}</p>)}
-                                <p className={`text-xs ${overdue ? 'text-red-500 font-semibold' : dueToday ? 'text-yellow-600 font-semibold' : textSecondaryClass}`}>
-                                  {overdue ? `Overdue by ${getDaysAgo(followUp.dueDate)} days` : dueToday ? 'Due today' : `Due ${formatDate(followUp.dueDate)}`}
-                                </p>
-                              </div>
-                              {followUp.status !== 'completed' && (
-                                <button
-                                  onClick={() => {
-                                    setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, status: 'completed', completedAt: new Date().toISOString() } : f));
-                                    showToast('Follow-up completed!', 'success');
-                                  }}
-                                  className="bg-green-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-green-700 transition"
-                                >
-                                  Done
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
+              {/* Events */}
+              <div className="grid grid-cols-1 gap-6">
 
                 {/* Calendar Events */}
                 <div className={`${cardBgClass} rounded-xl shadow-lg p-6 border ${borderClass}`}>
