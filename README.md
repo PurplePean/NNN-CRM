@@ -2,7 +2,7 @@
 
 Professional CRM and underwriting platform for NNN (Triple Net) industrial properties.
 
-**Live:** [crm.axispoint.llc](https://crm.axispoint.llc)
+**Live:** [crm.axispoint.llc](https://crm.axispoint.llc) (Coming Soon)
 
 ---
 
@@ -16,11 +16,10 @@ Professional CRM and underwriting platform for NNN (Triple Net) industrial prope
 - Debt service modeling (standard amortization vs interest-only)
 
 ### Contact Management
-- **Brokers:** Track brokers, firms, and license details
-- **Partners:** Manage equity partners and investment criteria
-- **Gatekeepers:** Track attorneys, accountants, and other defined gatekeepers
+- Broker, Partner, and Gatekeeper tracking
 - Activity feed with notes and categorization
 - Follow-up tracking and event scheduling
+- Full contact profiles with objectives and history
 
 ### User Experience
 - Dark mode with persistent preferences
@@ -33,29 +32,28 @@ Professional CRM and underwriting platform for NNN (Triple Net) industrial prope
 ## Tech Stack
 
 **Frontend:**
-- **Framework:** React 18 (Create React App)
-- **Styling:** Tailwind CSS + Vanilla CSS (Glassmorphism design)
-- **Icons:** Lucide React
-- **Router:** React Router DOM
+- React 18
+- Tailwind CSS
+- Lucide Icons
 
 **Backend:**
-- **Database:** Supabase (PostgreSQL)
-- **Data Standard:** `snake_case` column naming convention
-- **Service Layer:** Custom adapter pattern for automatic `snake_case` (DB) <-> `camelCase` (Frontend) conversion
+- Supabase (PostgreSQL)
+- Real-time database sync
+- Row-level security
 
-**Infrastructure:**
-- **Hosting:** Namecheap Stellar Hosting
-- **CI/CD:** GitHub Actions (Automated building and deployment via FTP)
-- **Environment:** Node.js 20+
+**Deployment:**
+- Namecheap Stellar Hosting
+- GitHub Actions CI/CD
+- Automated staging and production deploys
 
 ---
 
 ## Quick Start
 
 ### Prerequisites
-- Node.js 20+
-- npm
-- Supabase account
+- Node.js 18+
+- npm or yarn
+- Supabase account (free tier)
 
 ### Installation
 
@@ -87,26 +85,23 @@ Creates optimized production build in `build/` folder.
 
 ---
 
-## Project Structure
+## Environment Variables
 
-- **`src/pages/`**: core application pages (Properties, Brokers, etc.)
-- **`src/components/`**: Reusable UI components (NotesSidebar, InlineEditField, etc.)
-- **`src/services/`**: API and Database interaction (Supabase adapter)
-- **`src/utils/`**: Helper functions (Calculations, Formatters, Date handlers)
-- **`sql/`**: Database migration scripts
+Create `.env.local` for local development:
+
+```bash
+REACT_APP_SUPABASE_URL=your_supabase_project_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+See `.env.example` for template.
 
 ---
 
-## Database Architecture
+## Documentation
 
-The project uses a standard **snake_case** naming convention for all database columns.
-The frontend automatically converts this to **camelCase** for React usage via the `supabaseService` adapter.
-
-### Migrations
-If you need to update the schema:
-1.  Write a SQL script in the `sql/` directory.
-2.  Use `snake_case` for all new columns.
-3.  Apply the script via Supabase SQL Editor.
+- **[DEPLOYMENT-BACKEND-PLAN.md](./DEPLOYMENT-BACKEND-PLAN.md)** - Complete deployment and backend architecture guide
+- **[docs/archive/](./docs/archive/)** - Historical documentation and guides
 
 ---
 
@@ -117,10 +112,51 @@ This project uses automated CI/CD via GitHub Actions:
 - **Production:** Pushes to `main` branch auto-deploy to [crm.axispoint.llc](https://crm.axispoint.llc)
 - **Staging:** Pushes to `develop` branch auto-deploy to [staging.axispoint.llc](https://staging.axispoint.llc)
 
-See [DEPLOYMENT-BACKEND-PLAN.md](./DEPLOYMENT-BACKEND-PLAN.md) for detailed architecture.
+See [DEPLOYMENT-BACKEND-PLAN.md](./DEPLOYMENT-BACKEND-PLAN.md) for setup details.
+
+---
+
+## Development Workflow
+
+```bash
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Make changes, commit
+git add .
+git commit -m "Add feature description"
+
+# Push to GitHub
+git push origin feature/your-feature-name
+
+# Merge to develop for staging testing
+# Merge to main for production deployment
+```
+
+---
+
+## Project Status
+
+**Current Version:** 1.0 (Production Ready)
+
+**Infrastructure:**
+- ✅ React frontend complete
+- ✅ Component architecture
+- ✅ Dark mode support
+- 🚧 Supabase backend integration (in progress)
+- 🚧 CI/CD pipeline setup (in progress)
+- 📋 Authentication (planned)
 
 ---
 
 ## License
 
-Private project - All rights reserved. Built for Axispoint LLC.
+Private project - All rights reserved
+
+---
+
+## Contact
+
+Built for Axispoint LLC - Industrial real estate professionals.
+
+**Issues?** Contact via GitHub Issues or email.
