@@ -117,16 +117,15 @@ export default function IndustrialCRM() {
   // ==================
   // FORM/MODAL STATE
   // ==================
-  const [showPropertyForm, setShowPropertyForm] = useState(false);
-  const [showBrokerForm, setShowBrokerForm] = useState(false);
+
   const [showPartnerForm, setShowPartnerForm] = useState(false);
   const [showGatekeeperForm, setShowGatekeeperForm] = useState(false);
-  const [showInlineBrokerForm, setShowInlineBrokerForm] = useState(false);
+
   const [showEventForm, setShowEventForm] = useState(false);
   const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
-  const [inlineBrokerData, setInlineBrokerData] = useState({});
+
 
   // ==================
   // CALENDAR STATE
@@ -1694,53 +1693,7 @@ export default function IndustrialCRM() {
     );
   };
 
-  // Inline broker handlers (for quick-add within property form)
-  const handleShowInlineBrokerForm = () => {
-    setInlineBrokerData({
-      name: '',
-      email: '',
-      phone: '',
-      firmName: '',
-      firmWebsite: '',
-      crexiLink: '',
-      licenseNumber: ''
-    });
-    setShowInlineBrokerForm(true);
-  };
 
-  const handleSaveInlineBroker = () => {
-    if (!inlineBrokerData.name) {
-      showToast('Please enter broker name', 'error');
-      return;
-    }
-
-    const newBroker = { ...inlineBrokerData, id: Date.now(), conversations: '' };
-    setBrokers([...brokers, newBroker]);
-
-    // Auto-select the newly created broker
-    setFormData({
-      ...formData,
-      brokerIds: [...(formData.brokerIds || []), newBroker.id]
-    });
-
-    setShowInlineBrokerForm(false);
-    setInlineBrokerData({});
-  };
-
-  const handleToggleBroker = (brokerId) => {
-    const currentBrokerIds = formData.brokerIds || [];
-    if (currentBrokerIds.includes(brokerId)) {
-      setFormData({
-        ...formData,
-        brokerIds: currentBrokerIds.filter(id => id !== brokerId)
-      });
-    } else {
-      setFormData({
-        ...formData,
-        brokerIds: [...currentBrokerIds, brokerId]
-      });
-    }
-  };
 
   // ==================
   // PARTNER CRUD OPERATIONS
@@ -2780,10 +2733,7 @@ export default function IndustrialCRM() {
     };
   };
 
-  const filteredProperties = properties.filter(p =>
-    p.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.crexi?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+
 
   // Dynamic classes based on dark mode
   const bgClass = darkMode ? 'bg-slate-900' : 'bg-gradient-to-br from-slate-50 to-slate-100';
