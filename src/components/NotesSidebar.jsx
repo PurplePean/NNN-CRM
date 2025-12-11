@@ -140,8 +140,8 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
 
     try {
       const newNote = await notesService.createNote({
-        entity_type: entityType,
-        entity_id: entityId,
+        entityType: entityType,
+        entityId: entityId,
         category: categoryToUse,
         content: newNoteContent.trim()
       });
@@ -267,11 +267,10 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
               <div className="flex items-center gap-2">
                 <div
                   onClick={() => setSelectedCategory(suggestedCategory.value)}
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-all ${
-                    darkMode
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-all ${darkMode
                       ? 'bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30'
                       : 'bg-blue-50 hover:bg-blue-100 border border-blue-200'
-                  }`}
+                    }`}
                 >
                   <AlertCircle size={14} className="text-blue-500" />
                   <span className={`text-sm font-medium ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>
@@ -437,10 +436,10 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
                               </p>
                               <div className="flex items-center justify-between pt-2">
                                 <span className={`text-xs ${theme.textMuted}`}>
-                                  {formatDate(note.created_at)}
-                                  {note.edited && note.updated_at && (
+                                  {formatDate(note.createdAt)}
+                                  {note.edited && note.updatedAt && (
                                     <span className="ml-2">
-                                      • Edited {formatDate(note.updated_at)}
+                                      • Edited {formatDate(note.updatedAt)}
                                     </span>
                                   )}
                                 </span>
@@ -481,7 +480,7 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
   };
 
   const renderHistoryTab = () => {
-    const sortedNotes = [...notes].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const sortedNotes = [...notes].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     return (
       <div className="space-y-3">
@@ -531,16 +530,16 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
                             {category?.label || 'Note'}
                           </span>
                           <span className={`text-xs ${theme.textMuted}`}>
-                            • {formatDate(note.created_at)}
+                            • {formatDate(note.createdAt)}
                           </span>
                         </div>
                         <p className={`${theme.textSecondary} text-sm leading-relaxed`}>
                           {note.content.substring(0, 150)}
                           {note.content.length > 150 && '...'}
                         </p>
-                        {note.edited && note.updated_at && (
+                        {note.edited && note.updatedAt && (
                           <p className={`text-xs ${theme.textMuted} mt-2`}>
-                            Edited {formatDate(note.updated_at)}
+                            Edited {formatDate(note.updatedAt)}
                           </p>
                         )}
                       </div>
@@ -623,13 +622,13 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
     const totalNotes = notes.length;
     const oldestNote = notes.length > 0
       ? notes.reduce((oldest, note) =>
-          new Date(note.created_at) < new Date(oldest.created_at) ? note : oldest
-        )
+        new Date(note.createdAt) < new Date(oldest.createdAt) ? note : oldest
+      )
       : null;
     const newestNote = notes.length > 0
       ? notes.reduce((newest, note) =>
-          new Date(note.created_at) > new Date(newest.created_at) ? note : newest
-        )
+        new Date(note.createdAt) > new Date(newest.createdAt) ? note : newest
+      )
       : null;
 
     return (
@@ -646,7 +645,7 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
               <div className="flex justify-between items-center pt-3 border-t" style={{ borderColor: darkMode ? '#334155' : '#e2e8f0' }}>
                 <span className={`text-sm ${theme.textSecondary}`}>First Note</span>
                 <span className={`text-sm font-medium ${theme.text}`}>
-                  {formatDate(oldestNote.created_at)}
+                  {formatDate(oldestNote.createdAt)}
                 </span>
               </div>
             )}
@@ -654,7 +653,7 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
               <div className="flex justify-between items-center pt-3 border-t" style={{ borderColor: darkMode ? '#334155' : '#e2e8f0' }}>
                 <span className={`text-sm ${theme.textSecondary}`}>Latest Note</span>
                 <span className={`text-sm font-medium ${theme.text}`}>
-                  {formatDate(newestNote.created_at)}
+                  {formatDate(newestNote.createdAt)}
                 </span>
               </div>
             )}
@@ -731,44 +730,40 @@ const NotesSidebar = ({ entityType, entityId, darkMode, onNotesChange }) => {
         <div className="flex gap-1">
           <button
             onClick={() => setActiveTab('notes')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'notes'
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'notes'
                 ? theme.tab.active
                 : theme.tab.inactive
-            }`}
+              }`}
           >
             <StickyNote size={15} />
             <span>Notes</span>
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'history'
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'history'
                 ? theme.tab.active
                 : theme.tab.inactive
-            }`}
+              }`}
           >
             <Clock size={15} />
             <span>History</span>
           </button>
           <button
             onClick={() => setActiveTab('preferences')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'preferences'
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'preferences'
                 ? theme.tab.active
                 : theme.tab.inactive
-            }`}
+              }`}
           >
             <Settings size={15} />
             <span>Prefs</span>
           </button>
           <button
             onClick={() => setActiveTab('general')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'general'
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'general'
                 ? theme.tab.active
                 : theme.tab.inactive
-            }`}
+              }`}
           >
             <Info size={15} />
             <span>Stats</span>

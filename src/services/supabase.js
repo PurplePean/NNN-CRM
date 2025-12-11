@@ -16,6 +16,29 @@ export const isSupabaseConfigured = () => {
   return supabase !== null;
 };
 
+// Case conversion helpers
+const toCamel = (str) => str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+const toSnake = (str) => str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+
+const mapKeys = (obj, fn) => {
+  if (Array.isArray(obj)) {
+    return obj.map(val => mapKeys(val, fn));
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc, current) => {
+      const key = fn(current);
+      const val = obj[current];
+      // Recursively map keys for nested objects, but maybe not deep for all JSONB?
+      // For simplicity and standard React usage, recursive is usually better.
+      acc[key] = (val !== null && typeof val === 'object') ? mapKeys(val, fn) : val;
+      return acc;
+    }, {});
+  }
+  return obj;
+};
+
+const keysToCamel = (o) => mapKeys(o, toCamel);
+const keysToSnake = (o) => mapKeys(o, toSnake);
+
 // Generic CRUD operations
 export const supabaseService = {
   // Fetch all items from a table
@@ -30,7 +53,7 @@ export const supabaseService = {
       console.error(`Error fetching ${table}:`, error);
       return null;
     }
-    return data;
+    return keysToCamel(data);
   },
 
   // Get single item by ID
@@ -46,7 +69,7 @@ export const supabaseService = {
       console.error(`Error fetching ${table} by ID:`, error);
       return null;
     }
-    return data;
+    return keysToCamel(data);
   },
 
   // Create new item
@@ -54,7 +77,7 @@ export const supabaseService = {
     if (!supabase) return null;
     const { data, error } = await supabase
       .from(table)
-      .insert([item])
+      .insert([keysToSnake(item)])
       .select()
       .single();
 
@@ -62,7 +85,7 @@ export const supabaseService = {
       console.error(`Error creating ${table}:`, error);
       return null;
     }
-    return data;
+    return keysToCamel(data);
   },
 
   // Update existing item
@@ -70,7 +93,7 @@ export const supabaseService = {
     if (!supabase) return null;
     const { data, error } = await supabase
       .from(table)
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...keysToSnake(updates), updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -79,7 +102,7 @@ export const supabaseService = {
       console.error(`Error updating ${table}:`, error);
       return null;
     }
-    return data;
+    return keysToCamel(data);
   },
 
   // Delete item
@@ -102,14 +125,14 @@ export const supabaseService = {
     if (!supabase) return null;
     const { data, error } = await supabase
       .from(table)
-      .insert(items)
+      .insert(keysToSnake(items))
       .select();
 
     if (error) {
       console.error(`Error bulk inserting ${table}:`, error);
       return null;
     }
-    return data;
+    return keysToCamel(data);
   }
 };
 
@@ -136,7 +159,7 @@ export const notesService = {
       console.error(`Error fetching notes for ${entityType} ${entityId}:`, error);
       return [];
     }
-    return data || [];
+    return keysToCamel(data) || [];
   },
 
   /**
@@ -152,12 +175,12 @@ export const notesService = {
 
     const { data, error } = await supabase
       .from('notes')
-      .insert([{
+      .insert([keysToSnake({
         ...noteData,
-        user_id: user?.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }])
+        userId: user?.id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })])
       .select()
       .single();
 
@@ -165,7 +188,7 @@ export const notesService = {
       console.error('Error creating note:', error);
       throw error;
     }
-    return data;
+    return keysToCamel(data);
   },
 
   /**
@@ -178,11 +201,11 @@ export const notesService = {
     if (!supabase) return null;
     const { data, error } = await supabase
       .from('notes')
-      .update({
+      .update(keysToSnake({
         ...updates,
         edited: true,
-        updated_at: new Date().toISOString()
-      })
+        updatedAt: new Date().toISOString()
+      }))
       .eq('id', noteId)
       .select()
       .single();
@@ -191,7 +214,7 @@ export const notesService = {
       console.error('Error updating note:', error);
       throw error;
     }
-    return data;
+    return keysToCamel(data);
   },
 
   /**
@@ -228,6 +251,6 @@ export const notesService = {
       console.error('Error fetching all notes:', error);
       return [];
     }
-    return data || [];
+    return keysToCamel(data) || [];
   }
 };
