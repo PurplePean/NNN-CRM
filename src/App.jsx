@@ -714,49 +714,13 @@ export default function IndustrialCRM() {
   /**
    * Initialize property form for adding new property
    */
-  const handleAddProperty = () => {
-    setFormData({
-      address: '',
-      squareFeet: '',
-      monthlyBaseRentPerSqft: '',
-      purchasePrice: '',
-      improvements: '',
-      closingCosts: '',
-      ltvPercent: '',
-      interestRate: '',
-      loanTerm: '30',
-      debtServiceType: 'standard',
-      exitCapRate: '',
-      holdingPeriodMonths: '',
-      initialLeaseTermYears: '',
-      renewalOptionCount: '',
-      renewalTermYears: '',
-      annualRentEscalator: '',
-      optionRentEscalator: '',
-      crexi: '',
-      notes: '',
-      brokerIds: [],
-      photos: []
-    });
-    setEditingId(null);
-    setShowPropertyForm(true);
-    setShowInlineBrokerForm(false);
-  };
+
 
   /**
    * Initialize property form for editing existing property
    * @param {Object} property - Property object to edit
    */
-  const handleEditProperty = (property) => {
-    setFormData({
-      ...property,
-      brokerIds: property.brokerIds || [],
-      photos: property.photos || []
-    });
-    setEditingId(property.id);
-    setShowPropertyForm(true);
-    setShowInlineBrokerForm(false);
-  };
+
 
   const handleSaveProperty = async (data, id) => {
     try {
@@ -1537,26 +1501,9 @@ export default function IndustrialCRM() {
   /**
    * Initialize broker form for adding new broker
    */
-  const handleAddBroker = () => {
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      firmName: '',
-      firmWebsite: '',
-      crexiLink: '',
-      licenseNumber: '',
-      conversations: ''
-    });
-    setEditingId(null);
-    setShowBrokerForm(true);
-  };
 
-  const handleEditBroker = (broker) => {
-    setFormData(broker);
-    setEditingId(broker.id);
-    setShowBrokerForm(true);
-  };
+
+
 
   const handleSaveBroker = async (data, id) => {
     try {
